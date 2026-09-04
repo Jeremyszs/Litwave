@@ -293,6 +293,23 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
 static float g_synth_out_l[1024];
 static float g_synth_out_r[1024];
 
+// Lock-free Ring Buffer for Incoming Backing Track PCM Stream (from Python)
+static const int TRACK_RING_SIZE = 131072; // ~1.5s at 44.1kHz stereo
+static float g_track_ring_l[TRACK_RING_SIZE];
+static float g_track_ring_r[TRACK_RING_SIZE];
+static std::atomic<int> g_track_write_idx{0};
+static std::atomic<int> g_track_read_idx{0};
+
+void enqueue_track_audio(const float* l_samples, const float* r_samples, int num_samples) {
+    int w = g_track_write_idx.load(std::memory_order_relaxed);
+    for (int i = 0; i < num_samples; i++) {
+        g_track_ring_l[w] = l_samples[i];
+        g_track_ring_r[w] = r_samples[i];
+        w = (w + 1) % TRACK_RING_SIZE;
+    }
+    g_track_write_idx.store(w, std::memory_order_release);
+}
+
 void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
     float* pOut = (float*)pOutput;
     memset(pOut, 0, frameCount * 2 * sizeof(float));
@@ -364,10 +381,26 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
 
     g_processor->process(data);
 
+    // Mix VST output with incoming backing track PCM frames
+    int r = g_track_read_idx.load(std::memory_order_relaxed);
+    int w = g_track_write_idx.load(std::memory_order_acquire);
+    int available = (w >= r) ? (w - r) : (TRACK_RING_SIZE - r + w);
+
     for (ma_uint32 i = 0; i < frameCount; i++) {
-        pOut[i * 2 + 0] = g_synth_out_l[i];
-        pOut[i * 2 + 1] = g_synth_out_r[i];
+        float track_l = 0.0f;
+        float track_r = 0.0f;
+        if (available > 0) {
+            track_l = g_track_ring_l[r];
+            track_r = g_track_ring_r[r];
+            r = (r + 1) % TRACK_RING_SIZE;
+            available--;
+        }
+
+        // Sum VST synth and backing track into unified stereo output
+        pOut[i * 2 + 0] = g_synth_out_l[i] + track_l;
+        pOut[i * 2 + 1] = g_synth_out_r[i] + track_r;
     }
+    g_track_read_idx.store(r, std::memory_order_release);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -410,25 +443,42 @@ void UdpControlServerThread() {
         return;
     }
 
-    std::cout << "[OK] UDP Control Server listening on port 9123 (for phone / backend CC control)" << std::endl;
+    std::cout << "[OK] UDP Control Server listening on port 9123 (for phone / backend CC & audio stream)" << std::endl;
 
-    // Buffer for packet: [cmd: 1 byte, channel: 1 byte, param: 1 byte, value: 1 byte]
-    char buf[64];
+    // Buffer for packet: control or audio frames [header: 4 bytes, data: N bytes]
+    char buf[4096];
     while (g_udp_running.load(std::memory_order_relaxed)) {
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(sock, &fds);
-        timeval tv = {0, 100000}; // 100ms timeout check
+        timeval tv = {0, 50000}; // 50ms check
         int sel = select(0, &fds, NULL, NULL, &tv);
         if (sel > 0 && FD_ISSET(sock, &fds)) {
             sockaddr_in client_addr;
             int client_len = sizeof(client_addr);
-            int len = recvfrom(sock, buf, sizeof(buf) - 1, 0, (sockaddr*)&client_addr, &client_len);
-            if (len >= 3) {
+            int len = recvfrom(sock, buf, sizeof(buf), 0, (sockaddr*)&client_addr, &client_len);
+            if (len >= 4) {
                 unsigned char cmd = (unsigned char)buf[0];
+
+                if (cmd == 0x41) { // 'A': Raw Audio Stream chunk: [ 'A', 0, frames_high, frames_low, float_stereo_interleaved_samples... ]
+                    uint16_t num_frames = ((uint16_t)(unsigned char)buf[2] << 8) | (uint16_t)(unsigned char)buf[3];
+                    int expected_bytes = 4 + (num_frames * 2 * sizeof(float));
+                    if (len >= expected_bytes && num_frames > 0 && num_frames <= 512) {
+                        const float* interleaved = (const float*)(buf + 4);
+                        float temp_l[512];
+                        float temp_r[512];
+                        for (int i = 0; i < num_frames; i++) {
+                            temp_l[i] = interleaved[i * 2 + 0];
+                            temp_r[i] = interleaved[i * 2 + 1];
+                        }
+                        enqueue_track_audio(temp_l, temp_r, num_frames);
+                    }
+                    continue;
+                }
+
                 unsigned char ch = (unsigned char)buf[1];
                 unsigned char d1 = (unsigned char)buf[2];
-                unsigned char d2 = (len >= 4) ? (unsigned char)buf[3] : 0;
+                unsigned char d2 = (unsigned char)buf[3];
 
                 if (cmd == 0xB0) { // Control Change
                     // If CC#7 (Channel Volume)

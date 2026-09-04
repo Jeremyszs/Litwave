@@ -10,6 +10,7 @@ Provides:
 import os
 os.environ["SD_ENABLE_ASIO"] = "1"
 
+import socket
 import sounddevice as sd
 import numpy as np
 import threading
@@ -44,6 +45,10 @@ class AudioEngine:
         self.is_clipping: bool = False
         
         self.lock = threading.Lock()
+
+        # Dedicated UDP socket for real-time PCM loopback submix to montage_live_engine (Port 9123)
+        self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_target = ("127.0.0.1", 9123)
 
     def get_output_devices(self) -> List[Dict[str, Any]]:
         """List all available audio output devices with special emphasis on ASIO and dedicated Soundcards"""
@@ -145,7 +150,18 @@ class AudioEngine:
         # Soft limiter / saturator to prevent harsh digital clipping: tanh saturation
         np.tanh(mix, out=mix)
         
-        # Transfer to output
+        # Stream backing track PCM chunks directly to montage_live_engine C++ host for OBS Studio Submix
+        try:
+            interleaved = np.ascontiguousarray(mix, dtype=np.float32)
+            n_frames = min(frames, 512)
+            # Header: [0x41 ('A'), 0, n_frames >> 8, n_frames & 0xFF]
+            header = bytes([0x41, 0, (n_frames >> 8) & 0xFF, n_frames & 0xFF])
+            payload = header + interleaved[:n_frames].tobytes()
+            self.udp_sock.sendto(payload, self.udp_target)
+        except Exception:
+            pass
+
+        # Transfer to local output
         outdata[:] = mix
         
         # Compute real-time peak telemetry
