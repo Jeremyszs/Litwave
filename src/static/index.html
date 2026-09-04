@@ -1063,6 +1063,10 @@
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Load
             </button>
+            <button class="btn" id="analyzeTrackBtn" onclick="triggerTrackAnalysis()" style="display: none; align-items: center; gap: 4px; border-color: var(--accent); color: var(--accent);" title="Automatically detect Key, BPM, and Chord Progression for backing track">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+              <span>Analyze</span>
+            </button>
             <button class="btn btn-danger" id="clearTrackBtn" onclick="clearSongTrack()" title="Unload track">
               Clear
             </button>
@@ -1085,6 +1089,16 @@
           </div>
 
           <div class="timecode-box" id="timecodeDisplay">00:00.00 / 00:00.00</div>
+
+          <!-- Song Intelligence Summary Badge -->
+          <div id="songIntelBadge" style="display: none; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; background: var(--bg-sunken); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border-dim);">
+            <span style="color: var(--accent); font-weight: 700;" id="intelKeyText">Key: --</span>
+            <span style="color: var(--text-faint);">·</span>
+            <span style="color: var(--text-main); font-weight: 600;" id="intelBpmText">-- BPM</span>
+            <span style="color: var(--text-faint);">·</span>
+            <span style="color: var(--accent-secondary); font-weight: 600;" id="intelMeterText">4/4</span>
+            <button class="btn" style="padding: 1px 5px; font-size: 9px;" onclick="syncMetronomeToTrack()" title="Sync Metronome BPM & Grid directly to track">Sync Click</button>
+          </div>
 
           <!-- A-B Practice Loop Controls -->
           <div style="display: flex; align-items: center; gap: 6px;">
@@ -2387,6 +2401,10 @@
         document.getElementById("songFilename").innerText = song.filename || "";
         document.getElementById("songEmptyState").style.display = "none";
         document.getElementById("clearTrackBtn").style.display = "inline-flex";
+        document.getElementById("analyzeTrackBtn").style.display = "inline-flex";
+        if (song.analysis) {
+          displayTrackIntelligence(song.analysis);
+        }
 
         const curSec = song.current_time_seconds || 0;
         const durSec = song.duration_seconds || 0;
@@ -2789,7 +2807,70 @@
       });
     }
 
-    async function clearSongTrack() { await transportAction("clear_track"); }
+    async function clearSongTrack() { 
+      await transportAction("clear_track");
+      document.getElementById("songIntelBadge").style.display = "none";
+      document.getElementById("analyzeTrackBtn").style.display = "none";
+    }
+
+    async function triggerTrackAnalysis() {
+      const btn = document.getElementById("analyzeTrackBtn");
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<span style="color: var(--accent);">Analyzing...</span>`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/analyze", { method: "POST" });
+        const data = await res.json();
+        if (data.success && data.result) {
+          const r = data.result;
+          displayTrackIntelligence(r);
+          btn.innerHTML = `<span style="color: var(--success);">✓ Done</span>`;
+          setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
+        } else {
+          btn.innerHTML = `<span style="color: var(--danger);">Error</span>`;
+          setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
+        }
+      } catch (e) {
+        btn.innerHTML = `<span style="color: var(--danger);">Failed</span>`;
+        setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
+      }
+    }
+
+    function displayTrackIntelligence(intel) {
+      if (!intel) return;
+      const badge = document.getElementById("songIntelBadge");
+      const keyText = document.getElementById("intelKeyText");
+      const bpmText = document.getElementById("intelBpmText");
+      const meterText = document.getElementById("intelMeterText");
+
+      if (badge && keyText && bpmText && meterText) {
+        badge.style.display = "inline-flex";
+        keyText.innerText = `Key: ${intel.key_full || '--'}`;
+        bpmText.innerText = `${intel.bpm || '--'} BPM`;
+        meterText.innerText = `${intel.time_signature || 4}/4`;
+
+        // Automatically set user Nashville key selector to match detected song key
+        if (intel.key_root) {
+          userNashvilleKey = intel.key_root;
+          const kSel = document.getElementById("nashvilleKeySelect");
+          if (kSel) kSel.value = intel.key_root;
+          const rSel = document.getElementById("remoteNashvilleKeySelect");
+          if (rSel) rSel.value = intel.key_root;
+        }
+      }
+    }
+
+    function syncMetronomeToTrack() {
+      const bpmEl = document.getElementById("intelBpmText");
+      if (bpmEl && bpmEl.innerText !== "-- BPM") {
+        const bpmVal = parseFloat(bpmEl.innerText);
+        if (bpmVal > 30) {
+          document.getElementById("bpmInput").value = Math.round(bpmVal);
+          updateMixer("metronome_bpm", bpmVal);
+        }
+      }
+    }
 
     function updatePitchUI() {
       const sign = currentTrackPitch > 0 ? "+" : "";

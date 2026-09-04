@@ -44,6 +44,9 @@ class SongPlayer:
         self.markers: List[Dict[str, Any]] = [] # [{'id': 1, 'name': 'Verse 1', 'time': 12.5}]
         self.chord_chart: List[Dict[str, Any]] = [] # [{'time': 12.5, 'chord': 'Fmaj7', 'nashville': '[4]'}]
         
+        # Audio Intelligence metadata
+        self.analysis_data: Optional[Dict[str, Any]] = None
+        
         # Waveform peak cache for UI visualizer (normalized 0.0 - 1.0)
         self.waveform_peaks: list[float] = []
 
@@ -196,6 +199,7 @@ class SongPlayer:
                     self.chord_chart = data.get("chord_chart", [])
                     if "markers" in data and not self.markers:
                         self.markers = data.get("markers", [])
+                    self.analysis_data = data.get("analysis", None)
             except Exception as e:
                 print(f"[SongPlayer] Failed to load chord chart: {e}")
 
@@ -207,7 +211,8 @@ class SongPlayer:
                     json.dump({
                         "filename": self.filename,
                         "markers": self.markers,
-                        "chord_chart": self.chord_chart
+                        "chord_chart": self.chord_chart,
+                        "analysis": self.analysis_data
                     }, f, indent=2)
             except Exception as e:
                 print(f"[SongPlayer] Failed to persist chord chart: {e}")
@@ -403,5 +408,6 @@ class SongPlayer:
                 "loop_b": self.loop_b_sec,
                 "markers": list(self.markers),
                 "chord_chart": list(self.chord_chart),
+                "analysis": self.analysis_data,
                 "waveform_peaks": self.waveform_peaks
             }

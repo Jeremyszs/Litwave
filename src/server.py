@@ -17,6 +17,7 @@ from src.audio_engine import AudioEngine
 from src.midi_manager import MidiManager
 from src.montage_host import MontageHost
 from src.ear_training import EarTrainingManager
+from src.analyzer import analyze_track
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -360,6 +361,47 @@ async def api_playlist_select(request):
     ok = state.audio.song_player.load_file(fpath)
     return JSONResponse({"success": ok, "filename": filename, "song": state.audio.song_player.get_telemetry()})
 
+async def api_analyze_song(request):
+    """Trigger deep MIR analysis: BPM, Key, Time Signature, and Chord Progression"""
+    try:
+        data = await request.json() if request.method == "POST" else {}
+        filename = data.get("filename") or state.audio.song_player.filename
+        if not filename:
+            return JSONResponse({"error": "No active song loaded"}, status_code=400)
+            
+        upload_dir = os.path.join(STATIC_DIR, "uploads")
+        fpath = os.path.join(upload_dir, filename)
+        if not os.path.exists(fpath):
+            return JSONResponse({"error": "File not found"}, status_code=404)
+
+        # Run analysis (optimized 22kHz CQT)
+        res = analyze_track(fpath)
+        if "error" not in res:
+            # Auto-populate song player chord progression & analysis data
+            sp = state.audio.song_player
+            sp.analysis_data = {
+                "bpm": res["bpm"],
+                "key_full": res["key_full"],
+                "key_root": res["key_root"],
+                "is_major": res["is_major"],
+                "time_signature": res["time_signature"],
+                "first_downbeat_seconds": res["first_downbeat_seconds"]
+            }
+            # Auto-fill chord progression if none recorded yet
+            if not sp.chord_chart:
+                sp.chord_chart = res["chord_progression"]
+            sp._persist_chart()
+            
+            # Auto-sync metronome BPM & time signature to song
+            if res.get("bpm"):
+                state.audio.metronome.set_bpm(float(res["bpm"]))
+            if res.get("time_signature"):
+                state.audio.metronome.set_time_sig(int(res["time_signature"]))
+
+        return JSONResponse({"success": True, "result": res, "song": state.audio.song_player.get_telemetry()})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 routes = [
     Route("/", index),
     Route("/remote", remote_page),
@@ -372,6 +414,7 @@ routes = [
     Route("/api/upload", api_upload_song, methods=["POST"]),
     Route("/api/playlist", api_playlist, methods=["GET"]),
     Route("/api/playlist/select", api_playlist_select, methods=["POST"]),
+    Route("/api/analyze", api_analyze_song, methods=["GET", "POST"]),
     Route("/api/montage/editor", api_open_editor, methods=["POST"]),
     Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
     Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
