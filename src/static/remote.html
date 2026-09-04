@@ -668,7 +668,7 @@
         return `${rootName}${slash}`;
       }
 
-      return NAMES[bassNote];
+      return `${NAMES[bassNote]} Poly`;
     }
 
     // Nashville Number System Generator for Detected Chord against Key Center
@@ -703,10 +703,6 @@
       }
 
       return { chord: chordName, nashville: `[${nash}]` };
-    }
-      }
-
-      return `${NAMES[bassNote]} Poly`;
     }
 
     // Render Remote Scene Selectors

@@ -89,7 +89,14 @@ class MontageHost:
         """Launch the exact native Yamaha MONTAGE M GUI window directly"""
         if os.path.exists(MONTAGE_ENGINE_EXE):
             try:
-                subprocess.Popen([MONTAGE_ENGINE_EXE], shell=False)
+                subprocess.Popen(
+                    [MONTAGE_ENGINE_EXE],
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    close_fds=True,
+                    creationflags=subprocess.DETACHED_PROCESS
+                )
                 return True
             except Exception as e:
                 print(f"Error launching native host: {e}")
