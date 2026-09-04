@@ -8,6 +8,7 @@ Supports MP3, WAV, FLAC, OGG, AAC playback with:
 """
 
 import os
+import json
 import threading
 import numpy as np
 import soundfile as sf
@@ -39,8 +40,9 @@ class SongPlayer:
         self.loop_a_sec: Optional[float] = None
         self.loop_b_sec: Optional[float] = None
 
-        # Song Section Practice Markers
+        # Song Section Practice Markers & Synced Live Chord Progression
         self.markers: List[Dict[str, Any]] = [] # [{'id': 1, 'name': 'Verse 1', 'time': 12.5}]
+        self.chord_chart: List[Dict[str, Any]] = [] # [{'time': 12.5, 'chord': 'Fmaj7', 'nashville': '[4]'}]
         
         # Waveform peak cache for UI visualizer (normalized 0.0 - 1.0)
         self.waveform_peaks: list[float] = []
@@ -177,6 +179,62 @@ class SongPlayer:
             self.loop_b_sec = None
             self.waveform_peaks = []
             self.markers = []
+            self.chord_chart = []
+            self._load_persisted_chart()
+
+    def _get_chart_file(self) -> Optional[str]:
+        if not self.filepath:
+            return None
+        return self.filepath + ".chords.json"
+
+    def _load_persisted_chart(self):
+        chart_file = self._get_chart_file()
+        if chart_file and os.path.exists(chart_file):
+            try:
+                with open(chart_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.chord_chart = data.get("chord_chart", [])
+                    if "markers" in data and not self.markers:
+                        self.markers = data.get("markers", [])
+            except Exception as e:
+                print(f"[SongPlayer] Failed to load chord chart: {e}")
+
+    def _persist_chart(self):
+        chart_file = self._get_chart_file()
+        if chart_file:
+            try:
+                with open(chart_file, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "filename": self.filename,
+                        "markers": self.markers,
+                        "chord_chart": self.chord_chart
+                    }, f, indent=2)
+            except Exception as e:
+                print(f"[SongPlayer] Failed to persist chord chart: {e}")
+
+    def record_chord(self, chord_name: str, nashville: str, sec: Optional[float] = None):
+        """Records a played chord into the song's real-time timeline"""
+        with self.lock:
+            if sec is None:
+                sec = self.current_frame / float(self.target_samplerate) if self.target_samplerate > 0 else 0.0
+            sec = round(float(sec), 2)
+            
+            # Avoid duplicate rapid triggers within 0.4s of same chord
+            if self.chord_chart:
+                last = self.chord_chart[-1]
+                if last["chord"] == chord_name and abs(sec - last["time"]) < 0.4:
+                    return
+            
+            # Insert or replace chord at current time
+            self.chord_chart = [c for c in self.chord_chart if abs(c["time"] - sec) > 0.25]
+            self.chord_chart.append({"time": sec, "chord": chord_name, "nashville": nashville})
+            self.chord_chart.sort(key=lambda c: c["time"])
+            self._persist_chart()
+
+    def clear_chord_chart(self):
+        with self.lock:
+            self.chord_chart = []
+            self._persist_chart()
 
     def add_marker(self, name: Optional[str] = None, sec: Optional[float] = None) -> Dict[str, Any]:
         with self.lock:
@@ -188,6 +246,7 @@ class SongPlayer:
             marker = {"id": idx, "name": marker_name, "time": sec}
             self.markers.append(marker)
             self.markers.sort(key=lambda m: m["time"])
+            self._persist_chart()
             return marker
 
     def update_marker_time(self, marker_id: int, new_sec: float):
@@ -197,14 +256,17 @@ class SongPlayer:
                     m["time"] = round(float(new_sec), 2)
                     break
             self.markers.sort(key=lambda m: m["time"])
+            self._persist_chart()
 
     def remove_marker(self, marker_id: int):
         with self.lock:
             self.markers = [m for m in self.markers if m["id"] != marker_id]
+            self._persist_chart()
 
     def clear_markers(self):
         with self.lock:
             self.markers = []
+            self._persist_chart()
 
     def clear_loop(self):
         with self.lock:
@@ -340,5 +402,6 @@ class SongPlayer:
                 "loop_a": self.loop_a_sec,
                 "loop_b": self.loop_b_sec,
                 "markers": list(self.markers),
+                "chord_chart": list(self.chord_chart),
                 "waveform_peaks": self.waveform_peaks
             }

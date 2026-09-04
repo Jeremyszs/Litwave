@@ -111,6 +111,14 @@ async def api_transport(request):
         sp.update_marker_time(m_id, new_time)
     elif action == "clear_markers":
         sp.clear_markers()
+    elif action == "record_chord":
+        c_name = body.get("chord")
+        nash = body.get("nashville", "")
+        sec = body.get("time")
+        if c_name:
+            sp.record_chord(c_name, nash, float(sec) if sec is not None else None)
+    elif action == "clear_chords":
+        sp.clear_chord_chart()
     elif action == "speed":
         spd = float(body.get("speed", 1.0))
         sp.set_speed(spd)
@@ -122,7 +130,9 @@ async def api_transport(request):
         sp.set_volume(vol)
         state.audio.track_volume = vol
         
-    return JSONResponse(sp.get_telemetry())
+    telem = sp.get_telemetry()
+    telem["success"] = True
+    return JSONResponse(telem)
 
 async def api_mixer(request):
     body = await request.json()
@@ -136,6 +146,8 @@ async def api_mixer(request):
         state.audio.metronome_volume = float(body["metronome_volume"])
     if "metronome_bpm" in body:
         state.audio.metronome.set_bpm(float(body["metronome_bpm"]))
+    if "metronome_time_sig" in body:
+        state.audio.metronome.set_time_sig(int(body["metronome_time_sig"]))
     if "toggle_metronome" in body:
         state.audio.metronome.toggle()
         

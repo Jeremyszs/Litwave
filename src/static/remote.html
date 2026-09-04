@@ -530,14 +530,22 @@
         </div>
 
         <!-- Metronome Playback Toggle & BPM Bar -->
-        <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border-dim); gap: 8px;">
-          <button class="btn" id="remoteMetroToggleBtn" onclick="toggleRemoteMetronome()" style="font-size: 11px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border-dim); gap: 6px;">
+          <button class="btn" id="remoteMetroToggleBtn" onclick="toggleRemoteMetronome()" style="font-size: 11px; padding: 5px 8px; display: inline-flex; align-items: center; gap: 4px;">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
             <span id="remoteMetroStatusText">Click [Off]</span>
           </button>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <button class="btn" style="padding: 5px 9px; font-size: 11px; font-weight: 600;" onclick="handleRemoteTapTempo()">Tap</button>
-            <span style="font-size: 12px; font-family: var(--font-mono); font-weight: 600; color: var(--accent);" id="remoteBpmText">120 BPM</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <select id="remoteTimeSigSelect" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 3px; padding: 3px 4px; outline: none;" onchange="handleRemoteTimeSigChange(this.value)">
+              <option value="4">4/4</option>
+              <option value="3">3/4</option>
+              <option value="6">6/8</option>
+              <option value="5">5/4</option>
+              <option value="7">7/8</option>
+              <option value="2">2/4</option>
+            </select>
+            <button class="btn" style="padding: 5px 7px; font-size: 11px; font-weight: 600;" onclick="handleRemoteTapTempo()">Tap</button>
+            <span style="font-size: 11px; font-family: var(--font-mono); font-weight: 600; color: var(--accent);" id="remoteBpmText">120 BPM</span>
           </div>
         </div>
       </div>
@@ -1137,6 +1145,14 @@
       }
     }
 
+    function handleRemoteTimeSigChange(val) {
+      fetch("/api/mixer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metronome_time_sig: parseInt(val) })
+      }).catch(console.error);
+    }
+
     // Mobile Ear Training Handlers
     let rEarModule = "chord_quality";
     let rEarLocked = false;
@@ -1419,6 +1435,12 @@
             if (audio.metronome_bpm !== undefined && audio.metronome_bpm !== currentBpm) {
               currentBpm = audio.metronome_bpm;
               document.getElementById("remoteBpmText").innerText = `${Math.round(currentBpm)} BPM`;
+            }
+            if (audio.metronome_time_sig !== undefined) {
+              const sel = document.getElementById("remoteTimeSigSelect");
+              if (sel && sel.value !== String(audio.metronome_time_sig)) {
+                sel.value = String(audio.metronome_time_sig);
+              }
             }
           }
           if (montage) {

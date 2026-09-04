@@ -191,5 +191,6 @@ class AudioEngine:
             "vu_track": round(self.peak_track_db, 1),
             "is_clipping": self.is_clipping,
             "metronome_bpm": self.metronome.bpm,
-            "metronome_enabled": self.metronome.enabled
+            "metronome_enabled": self.metronome.enabled,
+            "metronome_time_sig": self.metronome.time_sig_num
         }
