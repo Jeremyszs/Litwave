@@ -384,8 +384,24 @@
     <!-- Live Chord Recognition Display from MIDI Keyboard -->
     <div class="chord-display-box">
       <div>
-        <div class="util-label">Live Chord</div>
-        <div style="display: flex; align-items: baseline; gap: 6px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span class="util-label">Live Chord</span>
+          <select id="remoteNashvilleKeySelect" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 3px; padding: 1px 4px; outline: none;" onchange="onRemoteNashvilleKeyChange(this.value)">
+            <option value="C">Key: C</option>
+            <option value="C#">Key: C# / Db</option>
+            <option value="D">Key: D</option>
+            <option value="D#">Key: D# / Eb</option>
+            <option value="E">Key: E</option>
+            <option value="F">Key: F</option>
+            <option value="F#">Key: F# / Gb</option>
+            <option value="G">Key: G</option>
+            <option value="G#">Key: G# / Ab</option>
+            <option value="A">Key: A</option>
+            <option value="A#">Key: A# / Bb</option>
+            <option value="B">Key: B</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 2px;">
           <div class="chord-name" id="remoteChordText">--</div>
           <div id="remoteNashvilleText" style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent);"></div>
         </div>
@@ -623,52 +639,138 @@
     let songDuration = 0;
     let currentPosition = 0;
 
-    // Advanced Chord Detection (1:1 with Desktop Engine)
+    let remoteNashvilleKey = 'C';
+    function onRemoteNashvilleKeyChange(val) {
+      remoteNashvilleKey = val;
+    }
+
+    const CHORD_LIBRARY = [
+      // 13ths & Altered
+      { name: '13',       intervals: [0, 4, 7, 10, 2, 9] },
+      { name: 'Maj13',    intervals: [0, 4, 7, 11, 2, 9] },
+      { name: 'm13',      intervals: [0, 3, 7, 10, 2, 9] },
+      { name: '7#11',     intervals: [0, 4, 7, 10, 6] },
+      { name: '7b13',     intervals: [0, 4, 7, 10, 8] },
+      { name: '7b9',      intervals: [0, 4, 7, 10, 1] },
+      { name: '7#9',      intervals: [0, 4, 10, 3] },
+
+      // 11ths
+      { name: 'm11',      intervals: [0, 3, 7, 10, 2, 5] },
+      { name: '11',       intervals: [0, 4, 7, 10, 2, 5] },
+      { name: 'Maj11',    intervals: [0, 4, 7, 11, 2, 5] },
+
+      // 9ths & Add9
+      { name: 'Maj9',     intervals: [0, 4, 7, 11, 2] },
+      { name: 'm9',       intervals: [0, 3, 7, 10, 2] },
+      { name: '9',        intervals: [0, 4, 7, 10, 2] },
+      { name: '9sus4',    intervals: [0, 5, 7, 10, 2] },
+      { name: '6/9',      intervals: [0, 4, 7, 9, 2] },
+      { name: 'add9',     intervals: [0, 4, 7, 2] },
+      { name: 'm(add9)',  intervals: [0, 3, 7, 2] },
+
+      // 7ths
+      { name: 'Maj7',     intervals: [0, 4, 7, 11] },
+      { name: 'm7',       intervals: [0, 3, 7, 10] },
+      { name: '7',        intervals: [0, 4, 7, 10] },
+      { name: 'm(Maj7)',  intervals: [0, 3, 7, 11] },
+      { name: 'm7b5',     intervals: [0, 3, 6, 10] },
+      { name: 'dim7',     intervals: [0, 3, 6, 9] },
+      { name: '7#5',      intervals: [0, 4, 8, 10] },
+      { name: '7b5',      intervals: [0, 4, 6, 10] },
+      { name: '7sus4',    intervals: [0, 5, 7, 10] },
+
+      // 6ths & Suspended
+      { name: '6',        intervals: [0, 4, 7, 9] },
+      { name: 'm6',       intervals: [0, 3, 7, 9] },
+      { name: 'sus4',     intervals: [0, 5, 7] },
+      { name: 'sus2',     intervals: [0, 2, 7] },
+
+      // Triads
+      { name: '',         intervals: [0, 4, 7] },
+      { name: 'm',        intervals: [0, 3, 7] },
+      { name: 'dim',      intervals: [0, 3, 6] },
+      { name: 'aug',      intervals: [0, 4, 8] },
+      { name: '5',        intervals: [0, 7] }
+    ];
+
+    // Advanced Chord Detection (Precision scoring & exact match with jazz extensions)
     function detectAdvancedChord(notes) {
       if (!notes || notes.length === 0) return "--";
       const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
       if (notes.length === 1) return NAMES[notes[0] % 12];
 
-      const bassNote = notes[0] % 12;
-      const semitones = [...new Set(notes.map(n => n % 12))];
+      const sortedNotes = [...notes].sort((a, b) => a - b);
+      const bassPitch = sortedNotes[0] % 12;
+      const uniqueSemitones = [...new Set(notes.map(n => n % 12))];
 
-      for (let r = 0; r < 12; r++) {
-        if (!semitones.includes(r)) continue;
-        const intervals = semitones.map(s => (s - r + 12) % 12).sort((a, b) => a - b);
-        const set = new Set(intervals);
-        const rootName = NAMES[r];
-        const slash = (r !== bassNote) ? `/${NAMES[bassNote]}` : "";
+      let candidates = [];
 
-        if (set.has(4) && set.has(7) && set.has(11) && set.has(2)) return `${rootName}Maj9${slash}`;
-        if (set.has(4) && set.has(7) && set.has(10) && set.has(2)) return `${rootName}9${slash}`;
-        if (set.has(3) && set.has(7) && set.has(10) && set.has(2)) return `${rootName}m9${slash}`;
+      for (const root of uniqueSemitones) {
+        const presentIntervals = new Set(uniqueSemitones.map(p => (p - root + 12) % 12));
 
-        if (set.has(4) && set.has(7) && set.has(11)) return `${rootName}Maj7${slash}`;
-        if (set.has(4) && set.has(7) && set.has(10)) return `${rootName}7${slash}`;
-        if (set.has(3) && set.has(7) && set.has(10)) return `${rootName}m7${slash}`;
-        if (set.has(3) && set.has(7) && set.has(11)) return `${rootName}m(Maj7)${slash}`;
-        if (set.has(3) && set.has(6) && set.has(10)) return `${rootName}m7b5${slash}`;
-        if (set.has(3) && set.has(6) && set.has(9)) return `${rootName}dim7${slash}`;
-        if (set.has(4) && set.has(8) && set.has(10)) return `${rootName}7#5${slash}`;
+        for (const formula of CHORD_LIBRARY) {
+          const fSet = new Set(formula.intervals);
 
-        if (set.has(4) && set.has(7) && set.has(2)) return `${rootName}add9${slash}`;
-        if (set.has(3) && set.has(7) && set.has(2)) return `${rootName}m(add9)${slash}`;
-        if (set.has(5) && set.has(7) && set.has(10)) return `${rootName}7sus4${slash}`;
-        if (set.has(5) && set.has(7)) return `${rootName}sus4${slash}`;
-        if (set.has(2) && set.has(7)) return `${rootName}sus2${slash}`;
+          let matched = 0;
+          for (const req of formula.intervals) {
+            if (presentIntervals.has(req)) matched++;
+          }
 
-        if (set.has(4) && set.has(7) && set.has(9)) return `${rootName}6${slash}`;
-        if (set.has(3) && set.has(7) && set.has(9)) return `${rootName}m6${slash}`;
+          let extra = 0;
+          for (const p of presentIntervals) {
+            if (!fSet.has(p)) extra++;
+          }
 
-        if (set.has(4) && set.has(7)) return `${rootName}${slash}`;
-        if (set.has(3) && set.has(7)) return `${rootName}m${slash}`;
-        if (set.has(3) && set.has(6)) return `${rootName}dim${slash}`;
-        if (set.has(4) && set.has(8)) return `${rootName}aug${slash}`;
-        if (set.has(7) && set.size === 2) return `${rootName}5`;
-        return `${rootName}${slash}`;
+          if (extra === 0 && matched === formula.intervals.length) {
+            candidates.push({
+              name: NAMES[root] + formula.name,
+              root: NAMES[root],
+              rootIdx: root,
+              isExact: true,
+              matchedRatio: 1.0,
+              notesCount: formula.intervals.length,
+              isBassRoot: (root === bassPitch)
+            });
+          }
+          else if (extra === 0 && fSet.has(7) && !presentIntervals.has(7) && matched === (formula.intervals.length - 1) && formula.intervals.length >= 4) {
+            candidates.push({
+              name: NAMES[root] + formula.name,
+              root: NAMES[root],
+              rootIdx: root,
+              isExact: false,
+              matchedRatio: 0.95,
+              notesCount: formula.intervals.length,
+              isBassRoot: (root === bassPitch)
+            });
+          }
+          else if (extra === 0 && matched >= 3 && (matched / formula.intervals.length) >= 0.75) {
+            candidates.push({
+              name: NAMES[root] + formula.name,
+              root: NAMES[root],
+              rootIdx: root,
+              isExact: false,
+              matchedRatio: matched / formula.intervals.length,
+              notesCount: formula.intervals.length,
+              isBassRoot: (root === bassPitch)
+            });
+          }
+        }
       }
 
-      return `${NAMES[bassNote]} Poly`;
+      if (candidates.length === 0) {
+        return `${NAMES[bassPitch]} Poly`;
+      }
+
+      candidates.sort((a, b) => {
+        if (a.isExact !== b.isExact) return a.isExact ? -1 : 1;
+        if (a.isBassRoot !== b.isBassRoot) return a.isBassRoot ? -1 : 1;
+        if (Math.abs(a.matchedRatio - b.matchedRatio) > 0.05) return b.matchedRatio - a.matchedRatio;
+        return b.notesCount - a.notesCount;
+      });
+
+      const best = candidates[0];
+      const slash = (best.rootIdx !== bassPitch) ? `/${NAMES[bassPitch]}` : "";
+      return best.name + slash;
     }
 
     // Nashville Number System Generator for Detected Chord against Key Center
@@ -1266,7 +1368,7 @@
             const activeNotes = midi.active_notes || [];
             if (activeNotes.length > 0) {
               const chordName = detectAdvancedChord(activeNotes);
-              const nashObj = getChordWithNashville(chordName, 'C');
+              const nashObj = getChordWithNashville(chordName, remoteNashvilleKey);
               document.getElementById("remoteChordText").innerText = chordName;
               document.getElementById("remoteNashvilleText").innerText = nashObj.nashville;
               if (midi.active_note_names && midi.active_note_names.length > 0) {
