@@ -11,8 +11,7 @@ VST3_DIR = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin
 VST3_BIN = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin for MONTAGE M.vst3\Contents\x86_64-win\Expanded Softsynth Plugin for MONTAGE M.vst3"
 DATA_DIR = r"C:\ProgramData\Yamaha\Expanded Softsynth Plugin for MONTAGE M"
 STEINBERG_SAM = r"C:\Program Files\Steinberg\Activation Manager\SteinbergActivationManager.exe"
-CARLA_EXE = r"C:\Users\Jeremy Rukmana\Projects\montage-practice-daw\cpp_host\montage_live_engine.exe"
-CARLA_PROJ = ""
+MONTAGE_ENGINE_EXE = r"C:\Users\Jeremy Rukmana\Projects\montage-practice-daw\cpp_host\montage_live_engine.exe"
 
 class MontageHost:
     def __init__(self):
@@ -26,7 +25,7 @@ class MontageHost:
         has_vst = os.path.exists(self.vst_path)
         has_data = os.path.exists(self.data_dir)
         has_sam = os.path.exists(STEINBERG_SAM)
-        has_host = os.path.exists(CARLA_EXE)
+        has_host = os.path.exists(MONTAGE_ENGINE_EXE)
         
         perf_count = 0
         perf_dir = os.path.join(self.data_dir, "contents", "current", "performance")
@@ -46,9 +45,9 @@ class MontageHost:
 
     def open_vst_editor(self) -> bool:
         """Launch the exact native Yamaha MONTAGE M GUI window directly"""
-        if os.path.exists(CARLA_EXE):
+        if os.path.exists(MONTAGE_ENGINE_EXE):
             try:
-                subprocess.Popen([CARLA_EXE], shell=False)
+                subprocess.Popen([MONTAGE_ENGINE_EXE], shell=False)
                 return True
             except Exception as e:
                 print(f"Error launching native host: {e}")
