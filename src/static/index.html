@@ -2850,18 +2850,18 @@
 
       if (badge && keyText && bpmText && meterText) {
         badge.style.display = "inline-flex";
-        keyText.innerText = `Key: ${intel.key_full || '--'}`;
+        const kDisplay = intel.key || intel.key_full || '--';
+        keyText.innerText = `Key: ${kDisplay}`;
         bpmText.innerText = `${intel.bpm || '--'} BPM`;
-        meterText.innerText = `${intel.time_signature || 4}/4`;
+        meterText.innerText = `${intel.time_sig || intel.time_signature || '4/4'}`;
 
         // Automatically set user Nashville key selector to match detected song key
-        if (intel.key_root) {
-          userNashvilleKey = intel.key_root;
-          const kSel = document.getElementById("nashvilleKeySelect");
-          if (kSel) kSel.value = intel.key_root;
-          const rSel = document.getElementById("remoteNashvilleKeySelect");
-          if (rSel) rSel.value = intel.key_root;
-        }
+        const rootKey = (intel.key || intel.key_root || 'C').replace("m", "");
+        userNashvilleKey = rootKey;
+        const kSel = document.getElementById("nashvilleKeySelect");
+        if (kSel) kSel.value = rootKey;
+        const rSel = document.getElementById("remoteNashvilleKeySelect");
+        if (rSel) rSel.value = rootKey;
       }
     }
 

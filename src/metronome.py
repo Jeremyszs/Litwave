@@ -24,6 +24,31 @@ class Metronome:
         
         self.active_click = None
         self.click_pos = 0
+        self.phase_offset_frames = 0
+
+    def sync_to_playhead(self, playhead_seconds: float, first_downbeat_sec: float = 0.0):
+        """
+        Locks the metronome phase to the song's actual acoustic beat grid.
+        Eliminates the 2-3 beat latency/drift.
+        """
+        if self.bpm <= 0 or self.samplerate <= 0:
+            return
+        beat_interval_sec = 60.0 / self.bpm
+        # Time elapsed since the very first downbeat of the track
+        rel_time = playhead_seconds - first_downbeat_sec
+        if rel_time < 0:
+            # Still in pickup / pre-downbeat time
+            beats_passed = 0
+            phase_within_beat = (first_downbeat_sec - playhead_seconds) % beat_interval_sec
+            self.frame_counter = int(phase_within_beat * self.samplerate)
+            self.current_beat = 0
+        else:
+            total_beats = int(rel_time / beat_interval_sec)
+            self.current_beat = total_beats % self.time_sig_num
+            phase_within_beat = rel_time % beat_interval_sec
+            # If we are right at the beat boundary (< 20ms), trigger click now
+            time_to_next_beat = beat_interval_sec - phase_within_beat
+            self.frame_counter = int(time_to_next_beat * self.samplerate) % self.sample_interval
 
     def _generate_click(self, freq: float, duration: float) -> np.ndarray:
         frames = int(duration * self.samplerate)

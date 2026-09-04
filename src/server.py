@@ -379,29 +379,28 @@ async def api_analyze_song(request):
         if not os.path.exists(fpath):
             return JSONResponse({"error": "File not found"}, status_code=404)
 
-        # Run analysis (optimized 22kHz CQT)
+        # Run analysis (optimized 22kHz CQT + BTC Transformer)
         res = analyze_track(fpath)
         if "error" not in res:
             # Auto-populate song player chord progression & analysis data
             sp = state.audio.song_player
             sp.analysis_data = {
                 "bpm": res["bpm"],
-                "key_full": res["key_full"],
-                "key_root": res["key_root"],
-                "is_major": res["is_major"],
-                "time_signature": res["time_signature"],
-                "first_downbeat_seconds": res["first_downbeat_seconds"]
+                "key_full": res["key"],
+                "key_root": res["key"].replace("m", ""),
+                "is_major": not res["key"].endswith("m"),
+                "time_signature": 4,
+                "first_downbeat_seconds": res.get("first_downbeat_seconds", 0.0)
             }
-            # Auto-fill chord progression if none recorded yet
-            if not sp.chord_chart:
-                sp.chord_chart = res["chord_progression"]
+            # Auto-fill chord progression with BTC clean progression
+            sp.chord_chart = res["chords"]
             sp._persist_chart()
             
-            # Auto-sync metronome BPM & time signature to song
+            # Auto-sync metronome BPM & phase to song
             if res.get("bpm"):
                 state.audio.metronome.set_bpm(float(res["bpm"]))
-            if res.get("time_signature"):
-                state.audio.metronome.set_time_sig(int(res["time_signature"]))
+            if res.get("time_sig"):
+                state.audio.metronome.set_time_sig(4)
 
         return JSONResponse({"success": True, "result": res, "song": state.audio.song_player.get_telemetry()})
     except Exception as e:
