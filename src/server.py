@@ -364,7 +364,12 @@ async def api_playlist_select(request):
 async def api_analyze_song(request):
     """Trigger deep MIR analysis: BPM, Key, Time Signature, and Chord Progression"""
     try:
-        data = await request.json() if request.method == "POST" else {}
+        data = {}
+        if request.method == "POST":
+            try:
+                data = await request.json()
+            except Exception:
+                data = {}
         filename = data.get("filename") or state.audio.song_player.filename
         if not filename:
             return JSONResponse({"error": "No active song loaded"}, status_code=400)
