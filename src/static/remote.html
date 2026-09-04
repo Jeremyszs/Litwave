@@ -446,17 +446,6 @@
           <button class="btn-mini" style="font-size: 9px; color: var(--text-dim);" onclick="setPitch(0)">Reset</button>
         </div>
       </div>
-
-      <!-- MIDI Keyboard Transpose Stepper -->
-      <div class="util-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-dim);">
-        <span class="util-label">MIDI Transpose</span>
-        <div class="stepper-wrap">
-          <button class="btn-mini" onclick="stepMidiTranspose(-1)">-</button>
-          <span class="stepper-val" id="remoteMidiTransposeVal" style="color: var(--accent);">0 st</span>
-          <button class="btn-mini" onclick="stepMidiTranspose(+1)">+</button>
-          <button class="btn-mini" style="font-size: 9px; color: var(--text-dim);" onclick="setMidiTranspose(0)">Reset</button>
-        </div>
-      </div>
     </div>
 
     <!-- Output Mixer: Backing Track, Synth, and Master Volumes -->
@@ -588,7 +577,6 @@
     let isPlaying = false;
     let isLooping = false;
     let currentPitch = 0;
-    let currentMidiTranspose = 0;
     let currentBpm = 120;
     let metroEnabled = false;
     let tapTimes = [];
@@ -822,23 +810,6 @@
       sendTransport("pitch_shift", { semitones: val });
     }
 
-    // MIDI Keyboard Transposition (+/- 12 semitones)
-    function stepMidiTranspose(delta) {
-      const target = Math.max(-12, Math.min(12, currentMidiTranspose + delta));
-      setMidiTranspose(target);
-    }
-
-    function setMidiTranspose(val) {
-      currentMidiTranspose = val;
-      const sign = currentMidiTranspose > 0 ? "+" : "";
-      document.getElementById("remoteMidiTransposeVal").innerText = `${sign}${currentMidiTranspose} st`;
-      fetch("/api/midi/transpose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transpose: val })
-      }).catch(console.error);
-    }
-
     // Remote Metronome Controls
     async function toggleRemoteMetronome() {
       try {
@@ -1021,11 +992,6 @@
 
           // 3. Live MIDI Chord Recognition & Notes Display
           if (midi) {
-            if (midi.transpose !== undefined && midi.transpose !== currentMidiTranspose) {
-              currentMidiTranspose = midi.transpose;
-              const sign = currentMidiTranspose > 0 ? "+" : "";
-              document.getElementById("remoteMidiTransposeVal").innerText = `${sign}${currentMidiTranspose} st`;
-            }
             const activeNotes = midi.active_notes || [];
             if (activeNotes.length > 0) {
               const chordName = detectAdvancedChord(activeNotes);

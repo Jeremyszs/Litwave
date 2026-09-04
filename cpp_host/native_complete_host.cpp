@@ -52,11 +52,10 @@ struct MidiNoteEvent {
     uint8 sysex_data[32];
 };
 
-static const int MAX_MIDI_EVENTS = 512;
+static const int MAX_MIDI_EVENTS = 256;
 static MidiNoteEvent g_midi_queue[MAX_MIDI_EVENTS];
 static std::atomic<int> g_midi_head{0};
 static std::atomic<int> g_midi_tail{0};
-static std::atomic<int> g_transpose_semitones{0};
 
 void enqueue_midi_note(int16 type, int16 channel, int16 pitch, float velocity) {
     int next = (g_midi_head.load(std::memory_order_relaxed) + 1) % MAX_MIDI_EVENTS;
@@ -275,15 +274,12 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
         unsigned char type = status & 0xF0;
         unsigned char channel = status & 0x0F;
 
-        int trans = g_transpose_semitones.load(std::memory_order_relaxed);
-        int transposed_pitch = max(0, min(127, (int)data1 + trans));
-
         if (type == 0x90) {
             float vel = (float)data2 / 127.0f;
-            if (data2 > 0) enqueue_midi_note(Event::kNoteOnEvent, channel, (int16)transposed_pitch, vel);
-            else enqueue_midi_note(Event::kNoteOffEvent, channel, (int16)transposed_pitch, 0.0f);
+            if (data2 > 0) enqueue_midi_note(Event::kNoteOnEvent, channel, (int16)data1, vel);
+            else enqueue_midi_note(Event::kNoteOffEvent, channel, (int16)data1, 0.0f);
         } else if (type == 0x80) {
-            enqueue_midi_note(Event::kNoteOffEvent, channel, (int16)transposed_pitch, 0.0f);
+            enqueue_midi_note(Event::kNoteOffEvent, channel, (int16)data1, 0.0f);
         } else if (type == 0xB0) {
             enqueue_midi_note((int16)Event::kLegacyMIDICCOutEvent, channel, data1, (float)data2 / 127.0f);
         }
@@ -524,9 +520,6 @@ void UdpControlServerThread() {
                     enqueue_midi_note(Event::kNoteOffEvent, ch, (int16)d1, 0.0f);
                 } else if (cmd == 0xF0) { // System Exclusive Packet
                     enqueue_sysex((const uint8*)buf, (uint32)len);
-                } else if (cmd == 0x54) { // 'T': Transpose command: [ 'T', semitones (signed char) ]
-                    int8_t semi = (int8_t)buf[1];
-                    g_transpose_semitones.store((int)semi);
                 }
             }
         }
@@ -536,12 +529,9 @@ void UdpControlServerThread() {
     WSACleanup();
 }
 
-int main(int argc, char* argv[]) {
+int main() {
     OleInitialize(NULL);
 
-    if (argc > 1) {
-        g_transpose_semitones.store(atoi(argv[1]));
-    }
     std::cout << "==================================================" << std::endl;
     std::cout << "  YAMAHA MONTAGE M - COMPLETE ENGINE & AUDIO CHAIN" << std::endl;
     std::cout << "==================================================" << std::endl;

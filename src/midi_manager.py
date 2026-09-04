@@ -33,7 +33,6 @@ class MidiManager:
         }
         self.pitch_bend: int = 8192
         self.modulation: int = 0
-        self.transpose_semitones: int = 0
         
         # Background worker for auto-detect and reading
         self._running = True
@@ -111,30 +110,28 @@ class MidiManager:
         }
         
         if msg.type == 'note_on':
-            transposed_note = max(0, min(127, msg.note + self.transpose_semitones))
             if msg.velocity > 0:
-                self.active_notes[transposed_note] = msg.velocity
+                self.active_notes[msg.note] = msg.velocity
                 event_dict.update({
                     "type": "note_on",
-                    "note": transposed_note,
+                    "note": msg.note,
                     "original_note": msg.note,
-                    "note_name": midi_note_to_name(transposed_note),
+                    "note_name": midi_note_to_name(msg.note),
                     "velocity": msg.velocity
                 })
             else:
-                self.active_notes.pop(transposed_note, None)
+                self.active_notes.pop(msg.note, None)
                 event_dict.update({
                     "type": "note_off",
-                    "note": transposed_note,
-                    "note_name": midi_note_to_name(transposed_note)
+                    "note": msg.note,
+                    "note_name": midi_note_to_name(msg.note)
                 })
         elif msg.type == 'note_off':
-            transposed_note = max(0, min(127, msg.note + self.transpose_semitones))
-            self.active_notes.pop(transposed_note, None)
+            self.active_notes.pop(msg.note, None)
             event_dict.update({
                 "type": "note_off",
-                "note": transposed_note,
-                "note_name": midi_note_to_name(transposed_note)
+                "note": msg.note,
+                "note_name": midi_note_to_name(msg.note)
             })
         elif msg.type == 'control_change':
             cc_num = msg.control
@@ -189,6 +186,5 @@ class MidiManager:
                 "active_note_names": active_names,
                 "pedals": dict(self.pedals),
                 "pitch_bend": self.pitch_bend,
-                "modulation": self.modulation,
-                "transpose": self.transpose_semitones
+                "modulation": self.modulation
             }
