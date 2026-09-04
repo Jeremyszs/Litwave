@@ -1013,6 +1013,10 @@
     </div>
 
     <div class="header-actions">
+      <button class="btn-header-action" onclick="openPartsModal()" title="MONTAGE M Parts 1-8 Mixer, Reverb & Mute/Solo">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        <span>Parts Mixer</span>
+      </button>
       <button class="btn-header-action" onclick="openPlaylistModal()" title="View and switch songs in practice playlist">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
         Playlist
@@ -1321,6 +1325,26 @@
       </section>
     </div>
   </main>
+
+  <!-- MONTAGE M Parts 1-8 Mixer Modal -->
+  <div class="modal-backdrop" id="partsModal">
+    <div class="modal-window" style="width: 520px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title">Yamaha MONTAGE M Parts 1–8 Mixer</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closePartsModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; color: var(--text-dim);">
+          Direct control of individual MONTAGE M synthesizer voice levels, reverb sends, and mute/solo states:
+        </div>
+        <div id="desktopPartsGrid" style="display: flex; flex-direction: column; gap: 6px;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Playlist & Song Library Modal -->
   <div class="modal-backdrop" id="playlistModal">
@@ -1631,6 +1655,124 @@
     // Modal Handlers
     function openSettingsModal() { document.getElementById("preferencesModal").style.display = "flex"; }
     function closeSettingsModal() { document.getElementById("preferencesModal").style.display = "none"; }
+
+    // Parts Mixer Modal Handlers
+    const desktopPartsState = [
+      { part: 1, name: "Part 1", val: 100, rev: 40, mute: false, solo: false },
+      { part: 2, name: "Part 2", val: 100, rev: 40, mute: false, solo: false },
+      { part: 3, name: "Part 3", val: 90, rev: 40, mute: false, solo: false },
+      { part: 4, name: "Part 4", val: 95, rev: 40, mute: false, solo: false },
+      { part: 5, name: "Part 5", val: 105, rev: 40, mute: false, solo: false },
+      { part: 6, name: "Part 6", val: 85, rev: 40, mute: false, solo: false },
+      { part: 7, name: "Part 7", val: 100, rev: 40, mute: false, solo: false },
+      { part: 8, name: "Part 8", val: 95, rev: 40, mute: false, solo: false }
+    ];
+
+    function openPartsModal() {
+      document.getElementById("partsModal").style.display = "flex";
+      renderDesktopParts();
+    }
+
+    function closePartsModal() {
+      document.getElementById("partsModal").style.display = "none";
+    }
+
+    function renderDesktopParts() {
+      const container = document.getElementById("desktopPartsGrid");
+      if (!container) return;
+      container.innerHTML = "";
+
+      desktopPartsState.forEach((p) => {
+        const row = document.createElement("div");
+        row.style.background = "var(--bg-panel)";
+        row.style.border = "1px solid var(--border-dim)";
+        row.style.borderRadius = "6px";
+        row.style.padding = "10px 12px";
+        row.style.display = "flex";
+        row.style.flexDirection = "column";
+        row.style.gap = "8px";
+
+        const pctVol = ((p.val / 127) * 100).toFixed(1);
+        const pctRev = (((p.rev || 40) / 127) * 100).toFixed(1);
+
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 12px; font-weight: 600; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'};">${p.name}</span>
+              <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleDesktopMute(${p.part})">M</button>
+              <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleDesktopSolo(${p.part})">S</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 11px;">
+              <span id="dtPartVal_${p.part}" style="color: ${p.mute ? 'var(--text-faint)' : 'var(--accent)'};">Volume: ${p.val}</span>
+              <span id="dtPartRev_${p.part}" style="color: var(--accent-secondary);">Reverb: ${p.rev || 40}</span>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px; opacity: ${p.mute ? '0.4' : '1.0'};">
+            <span style="font-size: 9px; font-weight: 600; font-family: var(--font-mono); color: var(--text-faint); width: 26px;">VOL</span>
+            <input type="range" min="0" max="127" value="${p.val}" style="flex: 1; accent-color: var(--accent); cursor: pointer;" oninput="onDesktopVolChange(${p.part}, this.value)">
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 9px; font-weight: 600; font-family: var(--font-mono); color: var(--text-faint); width: 26px;">REV</span>
+            <input type="range" min="0" max="127" value="${p.rev || 40}" style="flex: 1; accent-color: var(--accent-secondary); cursor: pointer;" oninput="onDesktopRevChange(${p.part}, this.value)">
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    async function onDesktopVolChange(partNum, val) {
+      desktopPartsState[partNum - 1].val = parseInt(val);
+      const text = document.getElementById(`dtPartVal_${partNum}`);
+      if (text) text.innerText = `Volume: ${val}`;
+      await fetch("/api/montage/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ part: partNum, volume: parseInt(val) })
+      });
+    }
+
+    async function onDesktopRevChange(partNum, val) {
+      desktopPartsState[partNum - 1].rev = parseInt(val);
+      const text = document.getElementById(`dtPartRev_${partNum}`);
+      if (text) text.innerText = `Reverb: ${val}`;
+      await fetch("/api/montage/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ part: partNum, reverb: parseInt(val) })
+      });
+    }
+
+    async function toggleDesktopMute(partNum) {
+      const p = desktopPartsState[partNum - 1];
+      const newMute = !p.mute;
+      p.mute = newMute;
+      renderDesktopParts();
+      await fetch("/api/montage/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ part: partNum, mute: newMute })
+      });
+    }
+
+    async function toggleDesktopSolo(partNum) {
+      const p = desktopPartsState[partNum - 1];
+      p.solo = !p.solo;
+      const res = await fetch("/api/montage/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ part: partNum, solo: true })
+      });
+      const data = await res.json();
+      if (data.solos) {
+        for (let s = 1; s <= 8; s++) {
+          desktopPartsState[s - 1].solo = Boolean(data.solos[s]);
+          desktopPartsState[s - 1].mute = Boolean(data.mutes[s]);
+        }
+      }
+      renderDesktopParts();
+    }
 
     // Playlist Modal Handlers
     async function openPlaylistModal() {
@@ -1957,6 +2099,38 @@
           for (let s = 1; s <= 8; s++) {
             const b = document.getElementById(`sceneBtn_${s}`);
             if (b) b.classList.toggle("btn-active", s === activeScene);
+          }
+        }
+        if (montage.part_volumes) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_volumes[p] !== undefined) {
+              desktopPartsState[p - 1].val = montage.part_volumes[p];
+              const t = document.getElementById(`dtPartVal_${p}`);
+              if (t) t.innerText = `Volume: ${montage.part_volumes[p]}`;
+            }
+          }
+        }
+        if (montage.part_reverbs) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_reverbs[p] !== undefined) {
+              desktopPartsState[p - 1].rev = montage.part_reverbs[p];
+              const t = document.getElementById(`dtPartRev_${p}`);
+              if (t) t.innerText = `Reverb: ${montage.part_reverbs[p]}`;
+            }
+          }
+        }
+        if (montage.part_mutes) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_mutes[p] !== undefined) {
+              desktopPartsState[p - 1].mute = Boolean(montage.part_mutes[p]);
+            }
+          }
+        }
+        if (montage.part_solos) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_solos[p] !== undefined) {
+              desktopPartsState[p - 1].solo = Boolean(montage.part_solos[p]);
+            }
           }
         }
       }

@@ -562,16 +562,16 @@
   </div>
 
   <script>
-    // State for Parts 1 to 8 (Standard clean Part 1 - 8 labeling)
+    // State for Parts 1 to 8 (Standard clean Part 1 - 8 labeling with Reverb, Mute & Solo)
     const partsState = [
-      { part: 1, name: "Part 1", val: 100 },
-      { part: 2, name: "Part 2", val: 100 },
-      { part: 3, name: "Part 3", val: 90 },
-      { part: 4, name: "Part 4", val: 95 },
-      { part: 5, name: "Part 5", val: 105 },
-      { part: 6, name: "Part 6", val: 85 },
-      { part: 7, name: "Part 7", val: 100 },
-      { part: 8, name: "Part 8", val: 95 }
+      { part: 1, name: "Part 1", val: 100, rev: 40, mute: false, solo: false },
+      { part: 2, name: "Part 2", val: 100, rev: 40, mute: false, solo: false },
+      { part: 3, name: "Part 3", val: 90, rev: 40, mute: false, solo: false },
+      { part: 4, name: "Part 4", val: 95, rev: 40, mute: false, solo: false },
+      { part: 5, name: "Part 5", val: 105, rev: 40, mute: false, solo: false },
+      { part: 6, name: "Part 6", val: 85, rev: 40, mute: false, solo: false },
+      { part: 7, name: "Part 7", val: 100, rev: 40, mute: false, solo: false },
+      { part: 8, name: "Part 8", val: 95, rev: 40, mute: false, solo: false }
     ];
 
     let isPlaying = false;
@@ -692,24 +692,138 @@
       container.innerHTML = "";
 
       partsState.forEach((p) => {
-        const pct = ((p.val / 127) * 100).toFixed(1);
+        const pctVol = ((p.val / 127) * 100).toFixed(1);
+        const pctRev = (((p.rev || 40) / 127) * 100).toFixed(1);
         const row = document.createElement("div");
         row.className = "part-row";
+        row.style.flexDirection = "column";
+        row.style.gap = "6px";
+        row.style.padding = "8px 0";
+        row.style.borderBottom = "1px solid var(--border-dim)";
+
         row.innerHTML = `
-          <div class="part-info">
-            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">${p.name}</span>
-            <span class="part-val" id="partValText_${p.part}">${p.val} / 127</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="part-num" style="font-size: 12px; font-weight: 600; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans);">${p.name}</span>
+              <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleRemoteMute(${p.part})">M</button>
+              <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleRemoteSolo(${p.part})">S</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 10px;">
+              <span id="partValText_${p.part}" style="color: ${p.mute ? 'var(--text-faint)' : 'var(--accent)'};">Vol: ${p.val}</span>
+              <span id="partRevText_${p.part}" style="color: var(--text-dim);">Rev: ${p.rev || 40}</span>
+            </div>
           </div>
-          <div class="part-slider-wrap" id="sliderWrap_${p.part}">
-            <div class="part-slider-fill" id="sliderFill_${p.part}" style="width: ${pct}%;"></div>
-            <div class="part-slider-thumb" id="sliderThumb_${p.part}" style="left: ${pct}%;"></div>
+
+          <!-- Volume Fader -->
+          <div class="part-slider-wrap" id="sliderWrap_${p.part}" style="opacity: ${p.mute ? '0.4' : '1.0'};">
+            <div class="part-slider-fill" id="sliderFill_${p.part}" style="width: ${pctVol}%;"></div>
+            <div class="part-slider-thumb" id="sliderThumb_${p.part}" style="left: ${pctVol}%;"></div>
+          </div>
+
+          <!-- Reverb Secondary Fader -->
+          <div style="display: flex; align-items: center; gap: 8px; width: 100%; padding-left: 2px;">
+            <span style="font-size: 9px; font-weight: 600; color: var(--text-faint); font-family: var(--font-mono); width: 24px;">REV</span>
+            <div class="part-slider-wrap" id="reverbWrap_${p.part}" style="height: 12px; flex: 1; background: var(--bg-sunken);">
+              <div class="part-slider-fill" id="reverbFill_${p.part}" style="width: ${pctRev}%; background: var(--accent-secondary);"></div>
+              <div class="part-slider-thumb" id="reverbThumb_${p.part}" style="left: ${pctRev}%; width: 10px; height: 10px; top: -1px; background: var(--accent-secondary);"></div>
+            </div>
           </div>
         `;
         container.appendChild(row);
 
-        const wrap = row.querySelector(`#sliderWrap_${p.part}`);
-        bindSliderDrag(wrap, p.part);
+        const wrapVol = row.querySelector(`#sliderWrap_${p.part}`);
+        bindSliderDrag(wrapVol, p.part);
+
+        const wrapRev = row.querySelector(`#reverbWrap_${p.part}`);
+        bindReverbSliderDrag(wrapRev, p.part);
       });
+    }
+
+    function bindReverbSliderDrag(element, partNum) {
+      let isDragging = false;
+
+      function updateFromX(clientX) {
+        const rect = element.getBoundingClientRect();
+        let ratio = (clientX - rect.left) / rect.width;
+        ratio = Math.max(0, Math.min(1, ratio));
+        const val = Math.round(ratio * 127);
+
+        partsState[partNum - 1].rev = val;
+
+        const pct = (ratio * 100).toFixed(1);
+        const fill = document.getElementById(`reverbFill_${partNum}`);
+        const thumb = document.getElementById(`reverbThumb_${partNum}`);
+        const text = document.getElementById(`partRevText_${partNum}`);
+
+        if (fill) fill.style.width = pct + "%";
+        if (thumb) thumb.style.left = pct + "%";
+        if (text) text.innerText = `Rev: ${val}`;
+
+        fetch("/api/montage/volume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ part: partNum, reverb: val })
+        }).catch(console.error);
+      }
+
+      element.addEventListener("touchstart", (e) => {
+        isDragging = true;
+        updateFromX(e.touches[0].clientX);
+      }, { passive: true });
+
+      element.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+        updateFromX(e.touches[0].clientX);
+      }, { passive: true });
+
+      window.addEventListener("touchend", () => { isDragging = false; });
+
+      element.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        updateFromX(e.clientX);
+        const onMove = (mv) => { if (isDragging) updateFromX(mv.clientX); };
+        const onUp = () => { isDragging = false; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+      });
+    }
+
+    async function toggleRemoteMute(partNum) {
+      const p = partsState[partNum - 1];
+      const newMute = !p.mute;
+      p.mute = newMute;
+      renderParts();
+      try {
+        await fetch("/api/montage/volume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ part: partNum, mute: newMute })
+        });
+      } catch (e) {
+        console.error("Failed to set mute:", e);
+      }
+    }
+
+    async function toggleRemoteSolo(partNum) {
+      const p = partsState[partNum - 1];
+      p.solo = !p.solo;
+      try {
+        const res = await fetch("/api/montage/volume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ part: partNum, solo: true })
+        });
+        const data = await res.json();
+        if (data.solos) {
+          for (let s = 1; s <= 8; s++) {
+            partsState[s - 1].solo = Boolean(data.solos[s]);
+            partsState[s - 1].mute = Boolean(data.mutes[s]);
+          }
+        }
+        renderParts();
+      } catch (e) {
+        console.error("Failed to toggle solo:", e);
+      }
     }
 
     function bindSliderDrag(element, partNum) {
@@ -1073,7 +1187,36 @@
                   const text = document.getElementById(`partValText_${p}`);
                   if (fill) fill.style.width = pct + "%";
                   if (thumb) thumb.style.left = pct + "%";
-                  if (text) text.innerText = `${val} / 127`;
+                  if (text) text.innerText = `Vol: ${val}`;
+                }
+              }
+            }
+            if (montage.part_reverbs) {
+              for (let p = 1; p <= 8; p++) {
+                if (montage.part_reverbs[p] !== undefined) {
+                  const rVal = montage.part_reverbs[p];
+                  partsState[p - 1].rev = rVal;
+                  const pct = ((rVal / 127) * 100).toFixed(1);
+                  const fill = document.getElementById(`reverbFill_${p}`);
+                  const thumb = document.getElementById(`reverbThumb_${p}`);
+                  const text = document.getElementById(`partRevText_${p}`);
+                  if (fill) fill.style.width = pct + "%";
+                  if (thumb) thumb.style.left = pct + "%";
+                  if (text) text.innerText = `Rev: ${rVal}`;
+                }
+              }
+            }
+            if (montage.part_mutes) {
+              for (let p = 1; p <= 8; p++) {
+                if (montage.part_mutes[p] !== undefined) {
+                  partsState[p - 1].mute = Boolean(montage.part_mutes[p]);
+                }
+              }
+            }
+            if (montage.part_solos) {
+              for (let p = 1; p <= 8; p++) {
+                if (montage.part_solos[p] !== undefined) {
+                  partsState[p - 1].solo = Boolean(montage.part_solos[p]);
                 }
               }
             }

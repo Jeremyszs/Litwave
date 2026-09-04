@@ -201,6 +201,9 @@ async def ws_telemetry(websocket: WebSocket):
                 "montage": {
                     "master_volume": state.montage.master_vst_volume,
                     "part_volumes": state.montage.part_volumes,
+                    "part_reverbs": state.montage.part_reverbs,
+                    "part_mutes": state.montage.part_mutes,
+                    "part_solos": state.montage.part_solos,
                     "current_scene": state.montage.current_scene
                 }
             }
@@ -224,6 +227,17 @@ async def api_montage_volume(request):
             ok = state.montage.set_master_vst_volume(val)
             return JSONResponse({"success": ok, "master_volume": val})
         part = int(data.get("part", 1))
+        if "reverb" in data:
+            rev = int(data["reverb"])
+            ok = state.montage.set_part_reverb(part, rev)
+            return JSONResponse({"success": ok, "part": part, "reverb": rev})
+        if "mute" in data:
+            m = bool(data["mute"])
+            ok = state.montage.set_part_mute(part, m)
+            return JSONResponse({"success": ok, "part": part, "mute": m})
+        if "solo" in data:
+            ok = state.montage.toggle_part_solo(part)
+            return JSONResponse({"success": ok, "part": part, "solos": state.montage.part_solos, "mutes": state.montage.part_mutes})
         volume = int(data.get("volume", 100)) # 0 - 127
         ok = state.montage.set_part_volume(part, volume)
         return JSONResponse({"success": ok, "part": part, "volume": volume})

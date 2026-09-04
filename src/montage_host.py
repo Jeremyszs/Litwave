@@ -21,6 +21,9 @@ class MontageHost:
         self.editor_process = None
         self.master_vst_volume = 127
         self.part_volumes = {i: 100 for i in range(1, 9)}
+        self.part_reverbs = {i: 40 for i in range(1, 9)}
+        self.part_mutes = {i: False for i in range(1, 9)}
+        self.part_solos = {i: False for i in range(1, 9)}
         self.current_scene = 1
         self.presets_file = os.path.join(os.path.dirname(__file__), "scene_presets.json")
         # Persistent storage for Scene snapshots: scene 1-8 -> { "master": 127, "parts": { 1: 100, ... } }
@@ -131,6 +134,72 @@ class MontageHost:
         except Exception as e:
             print(f"Failed to set part volume: {e}")
             return False
+
+    def set_part_reverb(self, part_number: int, reverb_val: int) -> bool:
+        """
+        Sets Reverb Send for Part (1-8) in MONTAGE M (Tag 568872068, etc.).
+        reverb_val: 0 - 127
+        """
+        if not (1 <= part_number <= 8):
+            return False
+        import socket
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Command 'R' (0x52): [ 'R', partNum (1-8), reverbVal (0-127), 0 ]
+            packet_r = bytes([0x52, part_number & 0xFF, reverb_val & 0x7F, 0])
+            sock.sendto(packet_r, ("127.0.0.1", 9123))
+            sock.close()
+            self.part_reverbs[part_number] = reverb_val
+            return True
+        except Exception as e:
+            print(f"Failed to set part reverb: {e}")
+            return False
+
+    def set_part_mute(self, part_number: int, is_muted: bool) -> bool:
+        """
+        Sets Mute Switch for Part (1-8) in MONTAGE M (Tag 568871075, etc.).
+        """
+        if not (1 <= part_number <= 8):
+            return False
+        import socket
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Command 'U' (0x55): [ 'U', partNum (1-8), isMuted (1 or 0), 0 ]
+            packet_u = bytes([0x55, part_number & 0xFF, 1 if is_muted else 0, 0])
+            sock.sendto(packet_u, ("127.0.0.1", 9123))
+            sock.close()
+            self.part_mutes[part_number] = bool(is_muted)
+            return True
+        except Exception as e:
+            print(f"Failed to set part mute: {e}")
+            return False
+
+    def toggle_part_solo(self, part_number: int) -> bool:
+        """
+        Toggles Solo for Part (1-8). If soloed, mutes all other parts.
+        If un-soloed, unmutes all parts that were not individually muted.
+        """
+        if not (1 <= part_number <= 8):
+            return False
+        new_solo = not self.part_solos[part_number]
+        self.part_solos[part_number] = new_solo
+        
+        has_any_solo = any(self.part_solos.values())
+        for p in range(1, 9):
+            if has_any_solo:
+                should_mute = not self.part_solos[p]
+            else:
+                should_mute = self.part_mutes.get(p, False)
+            # Send mute packet directly to engine
+            import socket
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                packet_u = bytes([0x55, p & 0xFF, 1 if should_mute else 0, 0])
+                sock.sendto(packet_u, ("127.0.0.1", 9123))
+                sock.close()
+            except Exception:
+                pass
+        return True
 
     def set_master_vst_volume(self, volume_val: int) -> bool:
         """

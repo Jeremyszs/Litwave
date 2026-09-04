@@ -5,6 +5,7 @@
 #include <mmsystem.h>
 #include <ole2.h>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <atomic>
 #include <thread>
@@ -228,9 +229,9 @@ public:
 };
 
 class SimpleMemoryStream : public IBStream {
+public:
     std::vector<char> buffer;
     int64 cursor = 0;
-public:
     virtual tresult PLUGIN_API read(void* buf, int32 numBytes, int32* numBytesRead) SMTG_OVERRIDE {
         int64 available = (int64)buffer.size() - cursor;
         int32 toRead = (int32)min((int64)numBytes, available);
@@ -408,7 +409,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 static std::atomic<bool> g_udp_running{true};
 static std::thread g_udp_thread;
 
-// Table of exact Parameter IDs for Parts 1 to 8 Volume in MONTAGE M
+// Table of exact Parameter IDs for Parts 1 to 8 Volume, Reverb Send, and Mute in MONTAGE M
 static const ParamID kPartVolumeParamIDs[8] = {
     568872064,  // Part 1 Volume
     1456375745, // Part 2 Volume
@@ -419,6 +420,29 @@ static const ParamID kPartVolumeParamIDs[8] = {
     1598926854, // Part 7 Volume
     338946887   // Part 8 Volume
 };
+
+static const ParamID kPartReverbParamIDs[8] = {
+    568872068,  // Part 1 Reverb Send
+    1456375749, // Part 2 Reverb Send
+    196395782,  // Part 3 Reverb Send
+    1083899463, // Part 4 Reverb Send
+    1971403144, // Part 5 Reverb Send
+    711423177,  // Part 6 Reverb Send
+    1598926858, // Part 7 Reverb Send
+    338946891   // Part 8 Reverb Send
+};
+
+static const ParamID kPartMuteParamIDs[8] = {
+    568871075,  // Part 1 Mute Switch
+    1456374756, // Part 2 Mute Switch
+    196394789,  // Part 3 Mute Switch
+    1083898470, // Part 4 Mute Switch
+    1971402151, // Part 5 Mute Switch
+    711422184,  // Part 6 Mute Switch
+    1598925865, // Part 7 Mute Switch
+    338945898   // Part 8 Mute Switch
+};
+
 static const ParamID kCommonPerformanceVolumeID = 2003600142; // C Performance Volume
 
 void UdpControlServerThread() {
@@ -492,11 +516,31 @@ void UdpControlServerThread() {
                     if (part >= 1 && part <= 8) {
                         float normVal = (float)val / 127.0f;
                         ParamID pid = kPartVolumeParamIDs[part - 1];
-                        // 1. Update GUI EditController
                         if (g_controller) {
                             g_controller->setParamNormalized(pid, normVal);
                         }
-                        // 2. Queue into DSP ProcessData inputParameterChanges for real-time audio computation
+                        enqueue_param_change(pid, normVal);
+                    }
+                } else if (cmd == 0x52) { // 'R' Direct Part Reverb Send Command: [ 'R', partNum (1-8), value (0-127) ]
+                    int part = (int)ch;
+                    int val = (int)d1;
+                    if (part >= 1 && part <= 8) {
+                        float normVal = (float)val / 127.0f;
+                        ParamID pid = kPartReverbParamIDs[part - 1];
+                        if (g_controller) {
+                            g_controller->setParamNormalized(pid, normVal);
+                        }
+                        enqueue_param_change(pid, normVal);
+                    }
+                } else if (cmd == 0x55) { // 'U' Direct Part Mute Switch Command: [ 'U', partNum (1-8), isMuted (0 or 1) ]
+                    int part = (int)ch;
+                    int isMuted = (int)d1;
+                    if (part >= 1 && part <= 8) {
+                        float normVal = isMuted ? 1.0f : 0.0f;
+                        ParamID pid = kPartMuteParamIDs[part - 1];
+                        if (g_controller) {
+                            g_controller->setParamNormalized(pid, normVal);
+                        }
                         enqueue_param_change(pid, normVal);
                     }
                 } else if (cmd == 0x4D) { // 'M' Master / Common Performance VST Volume Command: [ 'M', 0, value (0-127) ]
@@ -571,9 +615,29 @@ int main() {
     }
 
     SimpleMemoryStream stream;
-    if (g_comp->getState(&stream) == kResultOk) {
-        stream.seek(0, IBStream::kIBSeekSet, nullptr);
-        g_controller->setComponentState(&stream);
+    // Check if there is a saved state from last practice session
+    const char* stateFilePath = "last_session_state.bin";
+    std::ifstream stateIn(stateFilePath, std::ios::binary);
+    if (stateIn.is_open()) {
+        stateIn.seekg(0, std::ios::end);
+        size_t size = stateIn.tellg();
+        stateIn.seekg(0, std::ios::beg);
+        if (size > 0) {
+            stream.buffer.resize(size);
+            stateIn.read(stream.buffer.data(), size);
+            stream.seek(0, IBStream::kIBSeekSet, nullptr);
+            if (g_comp->setState(&stream) == kResultOk) {
+                stream.seek(0, IBStream::kIBSeekSet, nullptr);
+                g_controller->setComponentState(&stream);
+                std::cout << "[OK] Restored last MONTAGE M sound preset state (" << size << " bytes)" << std::endl;
+            }
+        }
+        stateIn.close();
+    } else {
+        if (g_comp->getState(&stream) == kResultOk) {
+            stream.seek(0, IBStream::kIBSeekSet, nullptr);
+            g_controller->setComponentState(&stream);
+        }
     }
 
     // Explicitly activate Audio & MIDI buses
@@ -699,6 +763,17 @@ int main() {
     ma_device_uninit(&device);
     ma_context_uninit(&context);
     if (view) { view->removed(); view->release(); }
+    // Save complete sound preset state before shutdown
+    SimpleMemoryStream saveStream;
+    if (g_comp->getState(&saveStream) == kResultOk && saveStream.buffer.size() > 0) {
+        std::ofstream stateOut(stateFilePath, std::ios::binary);
+        if (stateOut.is_open()) {
+            stateOut.write(saveStream.buffer.data(), saveStream.buffer.size());
+            stateOut.close();
+            std::cout << "[OK] Auto-saved sound preset state (" << saveStream.buffer.size() << " bytes) for next launch" << std::endl;
+        }
+    }
+
     g_processor->setProcessing(false);
     g_comp->setActive(false);
     g_controller->terminate();
