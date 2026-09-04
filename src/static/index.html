@@ -1013,6 +1013,10 @@
     </div>
 
     <div class="header-actions">
+      <button class="btn-header-action" onclick="openEarModal()" title="Ear Training & Chord Progression Practice">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
+        <span>Ear Training</span>
+      </button>
       <button class="btn-header-action" onclick="openPartsModal()" title="MONTAGE M Parts 1-8 Mixer, Reverb & Mute/Solo">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
         <span>Parts Mixer</span>
@@ -1138,7 +1142,10 @@
 
         <div class="midi-body">
           <div class="chord-hud">
-            <div class="chord-name" id="chordNameDisplay">--</div>
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <div class="chord-name" id="chordNameDisplay">--</div>
+              <div id="chordNashvilleDisplay" style="font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: var(--accent-secondary);"></div>
+            </div>
             <div class="chord-meta" id="chordNotesDisplay">READY</div>
           </div>
 
@@ -1325,6 +1332,51 @@
       </section>
     </div>
   </main>
+
+  <!-- Ear Training Studio Modal -->
+  <div class="modal-backdrop" id="earModal">
+    <div class="modal-window" style="width: 480px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="modal-title">Ear Training Studio</div>
+          <span style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);" id="earScoreText">Score: 0/0 (Streak: 0)</span>
+        </div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEarModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Module Selector Tabs -->
+        <div style="display: flex; gap: 6px; border-bottom: 1px solid var(--border-dim); padding-bottom: 8px;">
+          <button class="btn btn-active" id="earTab_chord" onclick="setEarModule('chord_quality')" style="flex: 1; font-size: 10px; padding: 4px;">Chords</button>
+          <button class="btn" id="earTab_prog" onclick="setEarModule('progression')" style="flex: 1; font-size: 10px; padding: 4px;">Progressions</button>
+          <button class="btn" id="earTab_mel" onclick="setEarModule('melodic_response')" style="flex: 1; font-size: 10px; padding: 4px;">Melody</button>
+          <button class="btn" id="earTab_rel" onclick="setEarModule('relative_interval')" style="flex: 1; font-size: 10px; padding: 4px;">Intervals</button>
+        </div>
+
+        <!-- Exercise Prompt & Replay Button -->
+        <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div id="earQuestionText" style="font-size: 12px; font-weight: 600; color: var(--text-main);">Loading exercise...</div>
+            <button class="btn" onclick="replayEarSound()" style="padding: 3px 8px; font-size: 10px; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Replay</span>
+            </button>
+          </div>
+          <div id="earFeedbackText" style="font-size: 11px; min-height: 16px; font-weight: 500;"></div>
+        </div>
+
+        <!-- Choices Grid -->
+        <div id="earChoicesGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+          <!-- Loaded dynamically -->
+        </div>
+
+        <button class="btn btn-primary" onclick="nextEarExercise()" style="padding: 8px; font-weight: 600; justify-content: center; margin-top: 4px;">
+          Next Question →
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MONTAGE M Parts 1-8 Mixer Modal -->
   <div class="modal-backdrop" id="partsModal">
@@ -1655,6 +1707,112 @@
     // Modal Handlers
     function openSettingsModal() { document.getElementById("preferencesModal").style.display = "flex"; }
     function closeSettingsModal() { document.getElementById("preferencesModal").style.display = "none"; }
+
+    // Ear Training Modal Handlers
+    let currentEarModule = "chord_quality";
+    let activeEarExercise = null;
+    let earLocked = false;
+
+    function openEarModal() {
+      document.getElementById("earModal").style.display = "flex";
+      loadEarExercise();
+    }
+
+    function closeEarModal() {
+      document.getElementById("earModal").style.display = "none";
+    }
+
+    function setEarModule(mod) {
+      currentEarModule = mod;
+      ['chord', 'prog', 'mel', 'rel'].forEach(k => {
+        const b = document.getElementById(`earTab_${k}`);
+        if (b) b.classList.remove("btn-active");
+      });
+      if (mod === "chord_quality") document.getElementById("earTab_chord").classList.add("btn-active");
+      else if (mod === "progression") document.getElementById("earTab_prog").classList.add("btn-active");
+      else if (mod === "melodic_response") document.getElementById("earTab_mel").classList.add("btn-active");
+      else if (mod === "relative_interval") document.getElementById("earTab_rel").classList.add("btn-active");
+      loadEarExercise();
+    }
+
+    async function loadEarExercise() {
+      earLocked = false;
+      document.getElementById("earFeedbackText").innerText = "";
+      const qText = document.getElementById("earQuestionText");
+      qText.innerText = "Generating exercise in MONTAGE M...";
+      const grid = document.getElementById("earChoicesGrid");
+      grid.innerHTML = "";
+
+      try {
+        const res = await fetch("/api/ear-training", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generate", module: currentEarModule })
+        });
+        const data = await res.json();
+        if (data.exercise) {
+          activeEarExercise = data.exercise;
+          qText.innerText = data.exercise.question;
+          updateEarScore(data.score);
+
+          if (data.exercise.choices) {
+            grid.innerHTML = data.exercise.choices.map(c => `
+              <button class="btn" style="padding: 10px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;" onclick="submitEarAnswer('${c.id}')">
+                <span style="font-weight: 600; font-size: 12px;">${c.label || c.nashville || c.id}</span>
+                <span style="font-size: 10px; color: var(--text-dim); font-family: var(--font-mono);">${c.abbr || c.roman || c.deg || ''}</span>
+              </button>
+            `).join("");
+          } else if (currentEarModule === "melodic_response") {
+            grid.innerHTML = `
+              <div style="grid-column: span 2; text-align: center; padding: 12px; font-size: 11px; color: var(--accent);">
+                ▶ Listen to the lick, then play it on your CASIO keyboard keys!
+              </div>
+            `;
+          }
+        }
+      } catch (e) {
+        qText.innerText = `Error: ${e}`;
+      }
+    }
+
+    async function replayEarSound() {
+      await fetch("/api/ear-training", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "replay" })
+      });
+    }
+
+    async function submitEarAnswer(answerId) {
+      if (earLocked) return;
+      earLocked = true;
+      try {
+        const res = await fetch("/api/ear-training", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "check", answer: answerId })
+        });
+        const data = await res.json();
+        const fb = document.getElementById("earFeedbackText");
+        if (data.is_correct) {
+          fb.innerHTML = `<span style="color: var(--success); font-weight: 600;">✓ Correct! Excellent ear.</span>`;
+        } else {
+          fb.innerHTML = `<span style="color: var(--danger); font-weight: 600;">✕ Not quite. Correct answer: ${data.correct_answer}</span>`;
+        }
+        updateEarScore(data.score);
+      } catch (e) {
+        console.error("Failed to check answer:", e);
+      }
+    }
+
+    function updateEarScore(score) {
+      if (!score) return;
+      document.getElementById("earScoreText").innerText = `Score: ${score.correct}/${score.total} (Streak: ${score.streak})`;
+    }
+
+    function nextEarExercise() {
+      loadEarExercise();
+    }
 
     // Parts Mixer Modal Handlers
     const desktopPartsState = [
@@ -2248,9 +2406,13 @@
 
         if (midi.active_note_names && midi.active_note_names.length > 0) {
           document.getElementById("chordNotesDisplay").innerText = midi.active_note_names.join(" ");
-          document.getElementById("chordNameDisplay").innerText = detectAdvancedChord(midi.active_notes);
+          const cName = detectAdvancedChord(midi.active_notes);
+          const nashObj = getChordWithNashville(cName, 'C');
+          document.getElementById("chordNameDisplay").innerText = cName;
+          document.getElementById("chordNashvilleDisplay").innerText = nashObj.nashville;
         } else {
           document.getElementById("chordNameDisplay").innerText = "--";
+          document.getElementById("chordNashvilleDisplay").innerText = "";
           document.getElementById("chordNotesDisplay").innerText = "READY";
         }
       }
@@ -2347,6 +2509,47 @@
         if (set.has(3) && set.has(6)) return `${rootName}dim${slash}`;
         if (set.has(4) && set.has(8)) return `${rootName}aug${slash}`;
         if (set.has(7) && set.size === 2) return `${rootName}5`;
+        return `${rootName}${slash}`;
+      }
+
+      return NAMES[bassNote];
+    }
+
+    // Nashville Number System Generator for Detected Chord against Key Center
+    function getChordWithNashville(chordName, keyRootName = 'C') {
+      if (!chordName || chordName === "--") return { chord: "--", nashville: "--" };
+      const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const NASHVILLE_DEGREES = ['1', 'b2', '2', 'b3', '3', '4', '#4', '5', 'b6', '6', 'b7', '7'];
+      
+      const keyIdx = NAMES.indexOf(keyRootName);
+      if (keyIdx === -1) return { chord: chordName, nashville: "" };
+
+      // Parse root from chordName (e.g. "F#m7/C#" -> root "F#")
+      const match = chordName.match(/^([A-G][#b]?)(.*)/);
+      if (!match) return { chord: chordName, nashville: "" };
+
+      const root = match[1];
+      const suffix = match[2];
+      const rootIdx = NAMES.indexOf(root);
+      if (rootIdx === -1) return { chord: chordName, nashville: "" };
+
+      const interval = (rootIdx - keyIdx + 12) % 12;
+      const deg = NASHVILLE_DEGREES[interval];
+
+      // Format clean Nashville notation
+      let nash = deg;
+      if (suffix.startsWith("m") && !suffix.startsWith("maj")) {
+        nash += "-"; // Nashville minor designation
+      } else if (suffix.includes("dim")) {
+        nash += "°";
+      } else if (suffix.includes("sus")) {
+        nash += "sus";
+      } else if (suffix.includes("7") && !suffix.includes("Maj7")) {
+        nash += "7";
+      }
+
+      return { chord: chordName, nashville: `[${nash}]` };
+    }
       }
 
       return `${NAMES[bassNote]} Poly`;

@@ -16,6 +16,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from src.audio_engine import AudioEngine
 from src.midi_manager import MidiManager
 from src.montage_host import MontageHost
+from src.ear_training import EarTrainingManager
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -25,6 +26,7 @@ class AppState:
         self.audio = AudioEngine()
         self.midi = MidiManager(on_event_callback=self._on_midi_event)
         self.montage = MontageHost()
+        self.ear_training = EarTrainingManager()
         self.ws_clients: List[WebSocket] = []
         self._loop: asyncio.AbstractEventLoop = None
         
@@ -299,6 +301,25 @@ async def api_montage_scene(request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
+async def api_ear_exercise(request):
+    """Generate or retrieve ear training exercise"""
+    try:
+        body = await request.json() if request.method == "POST" else {}
+        action = body.get("action", "generate")
+        if action == "replay":
+            ok = state.ear_training.replay_current()
+            return JSONResponse({"success": ok})
+        elif action == "check":
+            ans = body.get("answer")
+            res = state.ear_training.check_answer(ans)
+            return JSONResponse(res)
+        else: # generate
+            module = body.get("module", "chord_quality")
+            ex = state.ear_training.generate_exercise(module)
+            return JSONResponse({"success": True, "exercise": ex, "score": state.ear_training.current_score})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
 async def api_playlist(request):
     """List all audio files present in uploads/ library for instant one-click switching"""
     upload_dir = os.path.join(STATIC_DIR, "uploads")
@@ -342,6 +363,7 @@ routes = [
     Route("/api/montage/editor", api_open_editor, methods=["POST"]),
     Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
     Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
+    Route("/api/ear-training", api_ear_exercise, methods=["GET", "POST"]),
     Route("/api/montage/license", api_launch_license_manager, methods=["POST"]),
     WebSocketRoute("/ws", ws_telemetry),
     Mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
