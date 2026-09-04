@@ -4,6 +4,7 @@ Manages discovery, verification, license state, and native editor launching
 """
 
 import os
+import json
 import subprocess
 from typing import Dict, Any
 
@@ -21,11 +22,43 @@ class MontageHost:
         self.master_vst_volume = 127
         self.part_volumes = {i: 100 for i in range(1, 9)}
         self.current_scene = 1
-        # Memory storage for Scene snapshots: scene 1-8 -> { "master": 127, "parts": { 1: 100, ... } }
-        self.saved_scenes = {
+        self.presets_file = os.path.join(os.path.dirname(__file__), "scene_presets.json")
+        # Persistent storage for Scene snapshots: scene 1-8 -> { "master": 127, "parts": { 1: 100, ... } }
+        self.saved_scenes = self._load_saved_scenes()
+
+    def _load_saved_scenes(self) -> Dict[int, Any]:
+        default_scenes = {
             s: {"master": 127, "parts": {p: 100 for p in range(1, 9)}}
             for s in range(1, 9)
         }
+        if os.path.exists(self.presets_file):
+            try:
+                with open(self.presets_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    # Convert string keys back to int
+                    parsed = {}
+                    for k, v in data.items():
+                        s_num = int(k)
+                        parts = {int(pk): int(pv) for pk, pv in v.get("parts", {}).items()}
+                        parsed[s_num] = {
+                            "master": int(v.get("master", 127)),
+                            "parts": parts
+                        }
+                    # Ensure all 1..8 exist
+                    for s in range(1, 9):
+                        if s not in parsed:
+                            parsed[s] = default_scenes[s]
+                    return parsed
+            except Exception as e:
+                print(f"[WARN] Failed to load scene presets from disk: {e}")
+        return default_scenes
+
+    def _persist_saved_scenes(self):
+        try:
+            with open(self.presets_file, "w", encoding="utf-8") as f:
+                json.dump(self.saved_scenes, f, indent=2)
+        except Exception as e:
+            print(f"[WARN] Failed to write scene presets to disk: {e}")
 
     def check_installation(self) -> Dict[str, Any]:
         has_vst = os.path.exists(self.vst_path)
@@ -139,7 +172,8 @@ class MontageHost:
 
     def save_scene_snapshot(self, scene_number: int) -> bool:
         """
-        Saves the current master volume and Part 1-8 volumes into the specified scene slot (1-8).
+        Saves the current master volume and Part 1-8 volumes into the specified scene slot (1-8)
+        and persists them to disk so they survive application restarts.
         """
         if not (1 <= scene_number <= 8):
             return False
@@ -147,6 +181,7 @@ class MontageHost:
             "master": self.master_vst_volume,
             "parts": dict(self.part_volumes)
         }
+        self._persist_saved_scenes()
         return True
 
     def recall_saved_scene(self, scene_number: int) -> bool:
