@@ -48,9 +48,11 @@ vst3_sample/
 vst3_sdk/
 
 # IDE, OS & Editor Cache
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
+.hermes/
+last_session_state.bin
