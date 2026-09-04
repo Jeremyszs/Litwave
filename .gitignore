@@ -1,0 +1,56 @@
+# Virtual Environments & Packages
+.venv/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+wheels/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Audio & Media Scratch Files (Uploaded user tracks & test audio)
+src/static/uploads/
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.ogg
+*.pdf
+
+# C++ Build Artifacts & Binaries
+cpp_host/*.obj
+cpp_host/*.exe
+cpp_host/*.ilk
+cpp_host/*.pdb
+cpp_host/*.txt
+cpp_host/run_*.bat
+cpp_host/inspect_*.cpp
+cpp_host/test_*.cpp
+bin/
+*.exe
+*.obj
+*.pdb
+*.ilk
+
+# Scratch scripts & one-off exploration files
+test_*.py
+scan_*.py
+setup_*.py
+launch_*.py
+create_*.py
+make_*.py
+inspect_*.py
+update_*.py
+native_host/
+vst3_sample/
+vst3_sdk/
+
+# IDE, OS & Editor Cache
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

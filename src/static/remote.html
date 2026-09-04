@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Litwave Remote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #090a0c;
+      --bg-surface: #111317;
+      --bg-panel: #16181e;
+      --bg-elevated: #1e222a;
+      --bg-sunken: #0c0d10;
+      --border-subtle: #242933;
+      --border-dim: #1e222a;
+      --border-strong: #333a48;
+      --accent: #38bdf8;
+      --accent-muted: rgba(56, 189, 248, 0.15);
+      --text-main: #f1f3f7;
+      --text-dim: #8b949e;
+      --text-faint: #484f58;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #eab308;
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-dim);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      text-transform: none;
+      color: var(--text-main);
+    }
+
+    .status-badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+      background: var(--bg-sunken);
+      border: 1px solid var(--border-dim);
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-faint);
+    }
+    .status-dot.active {
+      background: var(--success);
+    }
+
+    /* Main Scrollable Body */
+    .remote-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Studio Card */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-dim);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Audio Playback Controls */
+    .transport-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .btn:active {
+      background: var(--border-strong);
+    }
+
+    .btn-play {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      flex: 1;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-play:active {
+      opacity: 0.85;
+    }
+
+    .btn.is-active-loop {
+      background: var(--accent-muted) !important;
+      border-color: var(--accent) !important;
+      color: var(--accent) !important;
+    }
+
+    .time-display {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    .seek-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--bg-sunken);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+      margin-top: 4px;
+      cursor: pointer;
+    }
+
+    .seek-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 4px;
+      transition: width 0.08s linear;
+    }
+
+    /* Additional Utility Controls (Pitch, Markers, Speed) */
+    .util-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding-top: 4px;
+      border-top: 1px solid var(--border-dim);
+    }
+
+    .util-label {
+      font-size: 10px;
+      color: var(--text-faint);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stepper-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-sunken);
+      border: 1px solid var(--border-dim);
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
+
+    .btn-mini {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 12px;
+      padding: 1px 6px;
+      cursor: pointer;
+    }
+
+    .stepper-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+      min-width: 38px;
+      text-align: center;
+    }
+
+    /* Practice Bookmark Selector Pill List */
+    .markers-pill-container {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .markers-pill-container::-webkit-scrollbar { display: none; }
+
+    .marker-pill {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-dim);
+      white-space: nowrap;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .marker-pill:active {
+      border-color: var(--accent);
+      color: var(--text-main);
+    }
+
+    /* Live Chord & Telemetry Display */
+    .chord-display-box {
+      background: var(--bg-sunken);
+      border: 1px solid var(--border-dim);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chord-name {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+
+    /* MONTAGE M Parts Matrix */
+    .parts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .part-row {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-dim);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .part-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .part-num {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .part-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Custom Mobile Slider */
+    .part-slider-wrap {
+      position: relative;
+      height: 28px;
+      background: var(--bg-sunken);
+      border: 1px solid var(--border-dim);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .part-slider-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 78%;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.45));
+      border-right: 2px solid var(--accent);
+      pointer-events: none;
+    }
+
+    .part-slider-thumb {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 14px;
+      margin-left: -7px;
+      background: #ffffff;
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="brand-title">Litwave Remote</span>
+      <span style="font-size: 11px; color: var(--text-faint); font-weight: 500;">Practice Station</span>
+    </div>
+    <div class="status-badge">
+      <span id="connDot" class="status-dot"></span>
+      <span id="connText">Connecting</span>
+    </div>
+  </header>
+
+  <div class="remote-content">
+    <!-- Live Chord Recognition Display from MIDI Keyboard -->
+    <div class="chord-display-box">
+      <div>
+        <div class="util-label">Detected Chord</div>
+        <div class="chord-name" id="remoteChordText">--</div>
+      </div>
+      <div style="text-align: right;">
+        <div class="util-label">Active Notes</div>
+        <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);" id="remoteLastNote">READY</div>
+      </div>
+    </div>
+
+    <!-- Backing Track Playback Controller -->
+    <div class="card">
+      <div class="card-title">
+        <span>Backing Track</span>
+        <span id="remoteTimeText" class="time-display">00:00 / 00:00</span>
+      </div>
+
+      <div style="font-size: 11px; font-weight: 500; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="remoteSongTitle">
+        No Track Loaded
+      </div>
+
+      <div class="seek-bar-wrap" id="seekWrap" onclick="handleSeekTap(event)">
+        <div class="seek-bar-fill" id="seekFill"></div>
+      </div>
+
+      <div class="transport-row">
+        <button class="btn" onclick="sendTransport('stop')" title="Stop and rewind to start">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          <span>Stop</span>
+        </button>
+        <button class="btn btn-play" id="remotePlayBtn" onclick="togglePlay()">
+          <span id="playIcon">▶ Play</span>
+        </button>
+        <button class="btn" id="remoteLoopBtn" onclick="sendTransport('toggle_loop')" title="Toggle A-B loop">
+          <span id="loopText">Loop [Off]</span>
+        </button>
+      </div>
+
+      <!-- Practice Section Bookmarks -->
+      <div id="markersSection" style="display: none; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid var(--border-dim);">
+        <div class="util-label">Jump to Section</div>
+        <div class="markers-pill-container" id="markersContainer"></div>
+      </div>
+
+      <!-- Pitch Shifter Stepper -->
+      <div class="util-row">
+        <span class="util-label">Track Key Shift</span>
+        <div class="stepper-wrap">
+          <button class="btn-mini" onclick="stepPitch(-1)">-</button>
+          <span class="stepper-val" id="remotePitchVal">0 st</span>
+          <button class="btn-mini" onclick="stepPitch(+1)">+</button>
+          <button class="btn-mini" style="font-size: 9px; color: var(--text-dim);" onclick="setPitch(0)">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output Mixer: Backing Track, Synth, and Master Volumes -->
+    <div class="card">
+      <div class="card-title">
+        <span>Output Levels</span>
+        <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">Mixer</span>
+      </div>
+
+      <div class="parts-grid">
+        <!-- Backing Track Volume -->
+        <div class="part-row">
+          <div class="part-info">
+            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Track Volume</span>
+            <span class="part-val" id="remoteTrackVolText">-1.9 dB</span>
+          </div>
+          <div class="part-slider-wrap" id="sliderWrap_track">
+            <div class="part-slider-fill" id="sliderFill_track" style="width: 80%;"></div>
+            <div class="part-slider-thumb" id="sliderThumb_track" style="left: 80%;"></div>
+          </div>
+        </div>
+
+        <!-- Synth Master Volume -->
+        <div class="part-row">
+          <div class="part-info">
+            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Synth Master</span>
+            <span class="part-val" id="remoteSynthVolText">0.0 dB</span>
+          </div>
+          <div class="part-slider-wrap" id="sliderWrap_synth">
+            <div class="part-slider-fill" id="sliderFill_synth" style="width: 100%;"></div>
+            <div class="part-slider-thumb" id="sliderThumb_synth" style="left: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Master DAW Volume -->
+        <div class="part-row">
+          <div class="part-info">
+            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Master Out</span>
+            <span class="part-val" id="remoteMasterVolText">0.0 dB</span>
+          </div>
+          <div class="part-slider-wrap" id="sliderWrap_master">
+            <div class="part-slider-fill" id="sliderFill_master" style="width: 83.3%;"></div>
+            <div class="part-slider-thumb" id="sliderThumb_master" style="left: 83.3%;"></div>
+          </div>
+        </div>
+
+        <!-- Metronome Boost Volume -->
+        <div class="part-row">
+          <div class="part-info">
+            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Click Level</span>
+            <span class="part-val" id="remoteMetroVolText" style="color: var(--accent);">Boost 100%</span>
+          </div>
+          <div class="part-slider-wrap" id="sliderWrap_metro">
+            <div class="part-slider-fill" id="sliderFill_metro" style="width: 50%;"></div>
+            <div class="part-slider-thumb" id="sliderThumb_metro" style="left: 50%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Yamaha MONTAGE M Part Faders (CC#7 Injection) -->
+    <div class="card">
+      <div class="card-title">
+        <span>Yamaha MONTAGE M Part Faders</span>
+        <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">Voice Levels</span>
+      </div>
+
+      <div class="parts-grid" id="partsGrid">
+        <!-- Render 8 parts dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State for Parts 1 to 8 (Standard clean Part 1 - 8 labeling)
+    const partsState = [
+      { part: 1, name: "Part 1", val: 100 },
+      { part: 2, name: "Part 2", val: 100 },
+      { part: 3, name: "Part 3", val: 90 },
+      { part: 4, name: "Part 4", val: 95 },
+      { part: 5, name: "Part 5", val: 105 },
+      { part: 6, name: "Part 6", val: 85 },
+      { part: 7, name: "Part 7", val: 100 },
+      { part: 8, name: "Part 8", val: 95 }
+    ];
+
+    let isPlaying = false;
+    let isLooping = false;
+    let currentPitch = 0;
+    let songDuration = 0;
+    let currentPosition = 0;
+
+    // Advanced Chord Detection (1:1 with Desktop Engine)
+    function detectAdvancedChord(notes) {
+      if (!notes || notes.length === 0) return "--";
+      const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      if (notes.length === 1) return NAMES[notes[0] % 12];
+
+      const bassNote = notes[0] % 12;
+      const semitones = [...new Set(notes.map(n => n % 12))];
+
+      for (let r = 0; r < 12; r++) {
+        if (!semitones.includes(r)) continue;
+        const intervals = semitones.map(s => (s - r + 12) % 12).sort((a, b) => a - b);
+        const set = new Set(intervals);
+        const rootName = NAMES[r];
+        const slash = (r !== bassNote) ? `/${NAMES[bassNote]}` : "";
+
+        if (set.has(4) && set.has(7) && set.has(11) && set.has(2)) return `${rootName}Maj9${slash}`;
+        if (set.has(4) && set.has(7) && set.has(10) && set.has(2)) return `${rootName}9${slash}`;
+        if (set.has(3) && set.has(7) && set.has(10) && set.has(2)) return `${rootName}m9${slash}`;
+
+        if (set.has(4) && set.has(7) && set.has(11)) return `${rootName}Maj7${slash}`;
+        if (set.has(4) && set.has(7) && set.has(10)) return `${rootName}7${slash}`;
+        if (set.has(3) && set.has(7) && set.has(10)) return `${rootName}m7${slash}`;
+        if (set.has(3) && set.has(7) && set.has(11)) return `${rootName}m(Maj7)${slash}`;
+        if (set.has(3) && set.has(6) && set.has(10)) return `${rootName}m7b5${slash}`;
+        if (set.has(3) && set.has(6) && set.has(9)) return `${rootName}dim7${slash}`;
+        if (set.has(4) && set.has(8) && set.has(10)) return `${rootName}7#5${slash}`;
+
+        if (set.has(4) && set.has(7) && set.has(2)) return `${rootName}add9${slash}`;
+        if (set.has(3) && set.has(7) && set.has(2)) return `${rootName}m(add9)${slash}`;
+        if (set.has(5) && set.has(7) && set.has(10)) return `${rootName}7sus4${slash}`;
+        if (set.has(5) && set.has(7)) return `${rootName}sus4${slash}`;
+        if (set.has(2) && set.has(7)) return `${rootName}sus2${slash}`;
+
+        if (set.has(4) && set.has(7) && set.has(9)) return `${rootName}6${slash}`;
+        if (set.has(3) && set.has(7) && set.has(9)) return `${rootName}m6${slash}`;
+
+        if (set.has(4) && set.has(7)) return `${rootName}${slash}`;
+        if (set.has(3) && set.has(7)) return `${rootName}m${slash}`;
+        if (set.has(3) && set.has(6)) return `${rootName}dim${slash}`;
+        if (set.has(4) && set.has(8)) return `${rootName}aug${slash}`;
+        if (set.has(7) && set.size === 2) return `${rootName}5`;
+      }
+
+      return `${NAMES[bassNote]} Poly`;
+    }
+
+    // Render Parts
+    function renderParts() {
+      const container = document.getElementById("partsGrid");
+      container.innerHTML = "";
+
+      partsState.forEach((p) => {
+        const pct = ((p.val / 127) * 100).toFixed(1);
+        const row = document.createElement("div");
+        row.className = "part-row";
+        row.innerHTML = `
+          <div class="part-info">
+            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">${p.name}</span>
+            <span class="part-val" id="partValText_${p.part}">${p.val} / 127</span>
+          </div>
+          <div class="part-slider-wrap" id="sliderWrap_${p.part}">
+            <div class="part-slider-fill" id="sliderFill_${p.part}" style="width: ${pct}%;"></div>
+            <div class="part-slider-thumb" id="sliderThumb_${p.part}" style="left: ${pct}%;"></div>
+          </div>
+        `;
+        container.appendChild(row);
+
+        const wrap = row.querySelector(`#sliderWrap_${p.part}`);
+        bindSliderDrag(wrap, p.part);
+      });
+    }
+
+    function bindSliderDrag(element, partNum) {
+      let isDragging = false;
+
+      function updateFromX(clientX) {
+        const rect = element.getBoundingClientRect();
+        let ratio = (clientX - rect.left) / rect.width;
+        ratio = Math.max(0, Math.min(1, ratio));
+        const val = Math.round(ratio * 127);
+
+        partsState[partNum - 1].val = val;
+
+        const pct = (ratio * 100).toFixed(1);
+        const fill = document.getElementById(`sliderFill_${partNum}`);
+        const thumb = document.getElementById(`sliderThumb_${partNum}`);
+        const text = document.getElementById(`partValText_${partNum}`);
+
+        if (fill) fill.style.width = pct + "%";
+        if (thumb) thumb.style.left = pct + "%";
+        if (text) text.innerText = `${val} / 127`;
+
+        sendPartVolume(partNum, val);
+      }
+
+      element.addEventListener("touchstart", (e) => {
+        isDragging = true;
+        updateFromX(e.touches[0].clientX);
+      }, { passive: true });
+
+      element.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+        updateFromX(e.touches[0].clientX);
+      }, { passive: true });
+
+      window.addEventListener("touchend", () => { isDragging = false; });
+
+      element.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        updateFromX(e.clientX);
+        const onMove = (mv) => { if (isDragging) updateFromX(mv.clientX); };
+        const onUp = () => { isDragging = false; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+      });
+    }
+
+    function sendPartVolume(part, volume) {
+      fetch("/api/montage/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ part: part, volume: volume })
+      }).catch(err => console.error("Volume send failed:", err));
+    }
+
+    // Transport Actions
+    function togglePlay() {
+      const action = isPlaying ? "pause" : "play";
+      sendTransport(action);
+    }
+
+    function sendTransport(action, extra = {}) {
+      // Optimistic local state update so loop / play reflects instantly
+      if (action === "toggle_loop") {
+        isLooping = !isLooping;
+        const loopBtn = document.getElementById("remoteLoopBtn");
+        if (loopBtn) {
+          loopBtn.querySelector("#loopText").innerText = isLooping ? "Loop [On]" : "Loop [Off]";
+          if (isLooping) loopBtn.classList.add("is-active-loop");
+          else loopBtn.classList.remove("is-active-loop");
+        }
+      }
+      fetch("/api/transport", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: action, ...extra })
+      }).catch(console.error);
+    }
+
+    function handleSeekTap(e) {
+      if (songDuration <= 0) return;
+      const rect = document.getElementById("seekWrap").getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const targetSec = ratio * songDuration;
+      sendTransport("seek", { seconds: targetSec });
+    }
+
+    // Pitch Stepper
+    function stepPitch(delta) {
+      const target = Math.max(-12, Math.min(12, currentPitch + delta));
+      setPitch(target);
+    }
+
+    function setPitch(val) {
+      currentPitch = val;
+      const sign = currentPitch > 0 ? "+" : "";
+      document.getElementById("remotePitchVal").innerText = `${sign}${currentPitch} st`;
+      sendTransport("pitch_shift", { semitones: val });
+    }
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    }
+
+    // WebSocket Telemetry Connection
+    let ws = null;
+    function connectWS() {
+      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${proto}//${window.location.host}/ws`);
+
+      ws.onopen = () => {
+        document.getElementById("connDot").classList.add("active");
+        document.getElementById("connText").innerText = "Connected";
+      };
+
+      ws.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data);
+          if (msg.type !== "telemetry") return;
+
+          const song = msg.song;
+          const midi = msg.midi;
+
+          // 1. Playback & Track Info
+          if (song) {
+            isPlaying = Boolean(song.is_playing);
+            songDuration = song.duration_seconds || 0;
+            currentPosition = song.current_time_seconds || 0;
+
+            document.getElementById("remotePlayBtn").querySelector("#playIcon").innerText = isPlaying ? "Pause" : "Play";
+            document.getElementById("remoteTimeText").innerText = `${formatTime(currentPosition)} / ${formatTime(songDuration)}`;
+
+            // Track Loop State (Stable, flicker-free)
+            const loopActive = Boolean(song.loop_enabled && song.loop_a !== null && song.loop_b !== null);
+            if (loopActive !== isLooping) {
+              isLooping = loopActive;
+              const loopBtn = document.getElementById("remoteLoopBtn");
+              if (loopBtn) {
+                loopBtn.querySelector("#loopText").innerText = isLooping ? "Loop [On]" : "Loop [Off]";
+                if (isLooping) {
+                  loopBtn.classList.add("is-active-loop");
+                } else {
+                  loopBtn.classList.remove("is-active-loop");
+                }
+              }
+            }
+
+            if (song.has_track && song.filename) {
+              document.getElementById("remoteSongTitle").innerText = song.filename;
+            } else if (!song.has_track) {
+              document.getElementById("remoteSongTitle").innerText = "No Track Loaded";
+            }
+
+            if (songDuration > 0) {
+              const pct = Math.min(100, (currentPosition / songDuration) * 100);
+              document.getElementById("seekFill").style.width = pct + "%";
+            }
+
+            if (song.pitch_shift !== undefined && song.pitch_shift !== currentPitch) {
+              currentPitch = song.pitch_shift;
+              const sign = currentPitch > 0 ? "+" : "";
+              document.getElementById("remotePitchVal").innerText = `${sign}${currentPitch} st`;
+            }
+
+            // 2. Section Markers (Pills)
+            const markersSec = document.getElementById("markersSection");
+            const container = document.getElementById("markersContainer");
+            if (song.markers && song.markers.length > 0) {
+              markersSec.style.display = "flex";
+              container.innerHTML = song.markers.map(m => `
+                <div class="marker-pill" onclick="sendTransport('seek', { seconds: ${m.time} })">
+                  <span>${m.name}</span>
+                  <span style="color: var(--text-faint); font-family: var(--font-mono);">${formatTime(m.time)}</span>
+                </div>
+              `).join("");
+            } else {
+              markersSec.style.display = "none";
+            }
+          }
+
+          // 3. Live MIDI Chord Recognition & Notes Display
+          if (midi) {
+            const activeNotes = midi.active_notes || [];
+            if (activeNotes.length > 0) {
+              const chordName = detectAdvancedChord(activeNotes);
+              document.getElementById("remoteChordText").innerText = chordName;
+              if (midi.active_note_names && midi.active_note_names.length > 0) {
+                document.getElementById("remoteLastNote").innerText = midi.active_note_names.join(" ");
+              }
+            } else {
+              document.getElementById("remoteChordText").innerText = "--";
+              document.getElementById("remoteLastNote").innerText = "READY";
+            }
+          }
+
+          // 4. Bidirectional Mixer Volume Telemetry (From Desktop / Engine to Remote)
+          const audio = msg.audio;
+          const montage = msg.montage;
+          if (audio) {
+            if (audio.track_volume !== undefined) {
+              const pct = (audio.track_volume / 1.0) * 100;
+              const db = audio.track_volume > 0 ? (20 * Math.log10(audio.track_volume)).toFixed(1) : "-inf";
+              document.getElementById("remoteTrackVolText").innerText = `${db} dB`;
+              document.getElementById("sliderFill_track").style.width = pct + "%";
+              document.getElementById("sliderThumb_track").style.left = pct + "%";
+            }
+            if (audio.master_volume !== undefined) {
+              const pct = (audio.master_volume / 1.2) * 100;
+              const db = audio.master_volume > 0 ? (20 * Math.log10(audio.master_volume)).toFixed(1) : "-inf";
+              document.getElementById("remoteMasterVolText").innerText = `${db} dB`;
+              document.getElementById("sliderFill_master").style.width = pct + "%";
+              document.getElementById("sliderThumb_master").style.left = pct + "%";
+            }
+            if (audio.metronome_volume !== undefined) {
+              const mVol = audio.metronome_volume;
+              const pct = (mVol / 2.0) * 100;
+              const pctVal = Math.round(mVol * 100);
+              document.getElementById("remoteMetroVolText").innerText = mVol > 1.0 ? `Boost ${pctVal}%` : `${pctVal}%`;
+              document.getElementById("sliderFill_metro").style.width = pct + "%";
+              document.getElementById("sliderThumb_metro").style.left = pct + "%";
+            }
+          }
+          if (montage) {
+            if (montage.master_volume !== undefined) {
+              const norm = montage.master_volume / 127.0;
+              const pct = norm * 100;
+              const db = norm > 0 ? (20 * Math.log10(norm)).toFixed(1) : "-inf";
+              document.getElementById("remoteSynthVolText").innerText = `${db} dB`;
+              document.getElementById("sliderFill_synth").style.width = pct + "%";
+              document.getElementById("sliderThumb_synth").style.left = pct + "%";
+            }
+            if (montage.part_volumes) {
+              for (let p = 1; p <= 8; p++) {
+                if (montage.part_volumes[p] !== undefined) {
+                  const val = montage.part_volumes[p];
+                  partsState[p - 1].val = val;
+                  const pct = ((val / 127) * 100).toFixed(1);
+                  const fill = document.getElementById(`sliderFill_${p}`);
+                  const thumb = document.getElementById(`sliderThumb_${p}`);
+                  const text = document.getElementById(`partValText_${p}`);
+                  if (fill) fill.style.width = pct + "%";
+                  if (thumb) thumb.style.left = pct + "%";
+                  if (text) text.innerText = `${val} / 127`;
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Telemetry error:", e);
+        }
+      };
+
+      ws.onclose = () => {
+        document.getElementById("connDot").classList.remove("active");
+        document.getElementById("connText").innerText = "Disconnected";
+        setTimeout(connectWS, 2000);
+      };
+    }
+
+    // Mix Fader Bindings (Track, Synth, Master, Metronome)
+    function setupMixerFaders() {
+      ['track', 'synth', 'master', 'metro'].forEach(type => {
+        const wrap = document.getElementById(`sliderWrap_${type}`);
+        if (!wrap) return;
+
+        let isDragging = false;
+        function update(clientX) {
+          const rect = wrap.getBoundingClientRect();
+          let ratio = (clientX - rect.left) / rect.width;
+          ratio = Math.max(0, Math.min(1, ratio));
+          const pct = (ratio * 100).toFixed(1);
+
+          const fill = document.getElementById(`sliderFill_${type}`);
+          const thumb = document.getElementById(`sliderThumb_${type}`);
+          if (fill) fill.style.width = pct + "%";
+          if (thumb) thumb.style.left = pct + "%";
+
+          if (type === 'track') {
+            const vol = ratio * 1.0;
+            const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
+            document.getElementById("remoteTrackVolText").innerText = `${db} dB`;
+            fetch("/api/mixer", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ track_volume: vol })
+            }).catch(console.error);
+          } else if (type === 'synth') {
+            const vol = ratio * 1.0;
+            const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
+            document.getElementById("remoteSynthVolText").innerText = `${db} dB`;
+            const vst127 = Math.round(vol * 127);
+            fetch("/api/montage/volume", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ master_volume: vst127 })
+            }).catch(console.error);
+          } else if (type === 'master') {
+            const vol = ratio * 1.2;
+            const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
+            document.getElementById("remoteMasterVolText").innerText = `${db} dB`;
+            fetch("/api/mixer", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ master_volume: vol })
+            }).catch(console.error);
+          } else if (type === 'metro') {
+            const vol = ratio * 2.0; // 0 to 2.0x boost
+            const pctVal = Math.round(vol * 100);
+            document.getElementById("remoteMetroVolText").innerText = vol > 1.0 ? `Boost ${pctVal}%` : `${pctVal}%`;
+            fetch("/api/mixer", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ metronome_volume: vol })
+            }).catch(console.error);
+          }
+        }
+
+        wrap.addEventListener("touchstart", (e) => { isDragging = true; update(e.touches[0].clientX); }, { passive: true });
+        wrap.addEventListener("touchmove", (e) => { if (isDragging) update(e.touches[0].clientX); }, { passive: true });
+        window.addEventListener("touchend", () => { isDragging = false; });
+
+        wrap.addEventListener("mousedown", (e) => {
+          isDragging = true;
+          update(e.clientX);
+          const onMv = (m) => { if (isDragging) update(m.clientX); };
+          const onUp = () => { isDragging = false; window.removeEventListener("mousemove", onMv); window.removeEventListener("mouseup", onUp); };
+          window.addEventListener("mousemove", onMv);
+          window.addEventListener("mouseup", onUp);
+        });
+      });
+    }
+
+    // Initial Init
+    window.addEventListener("DOMContentLoaded", () => {
+      renderParts();
+      setupMixerFaders();
+      connectWS();
+    });
+  </script>
+</body>
+</html>
