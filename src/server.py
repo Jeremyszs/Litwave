@@ -137,7 +137,9 @@ async def api_mixer(request):
     if "toggle_metronome" in body:
         state.audio.metronome.toggle()
         
-    return JSONResponse(state.audio.get_telemetry())
+    telem = state.audio.get_telemetry()
+    telem["success"] = True
+    return JSONResponse(telem)
 
 async def api_audio_device(request):
     body = await request.json()
@@ -155,6 +157,15 @@ async def api_midi_device(request):
     if "transpose" in body:
         state.midi.transpose_semitones = int(body.get("transpose", 0))
     return JSONResponse({"success": True, "snapshot": state.midi.get_snapshot()})
+
+async def api_midi_transpose(request):
+    try:
+        body = await request.json()
+        tr = int(body.get("transpose", 0))
+        state.midi.transpose_semitones = tr
+        return JSONResponse({"success": True, "transpose": tr})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 async def api_upload_song(request):
     form = await request.form()
@@ -322,6 +333,7 @@ routes = [
     Route("/api/mixer", api_mixer, methods=["POST"]),
     Route("/api/audio/device", api_audio_device, methods=["POST"]),
     Route("/api/midi/device", api_midi_device, methods=["POST"]),
+    Route("/api/midi/transpose", api_midi_transpose, methods=["POST"]),
     Route("/api/upload", api_upload_song, methods=["POST"]),
     Route("/api/playlist", api_playlist, methods=["GET"]),
     Route("/api/playlist/select", api_playlist_select, methods=["POST"]),

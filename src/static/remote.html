@@ -12,21 +12,21 @@
       --bg-base: #090a0c;
       --bg-surface: #111317;
       --bg-panel: #16181e;
-      --bg-elevated: #1e222a;
-      --bg-sunken: #0c0d10;
-      --border-subtle: #242933;
+      --bg-elevated: #1d2128;
+      --bg-sunken: #0c0e12;
       --border-dim: #1e222a;
-      --border-strong: #333a48;
+      --border-subtle: #272c36;
+      --border-strong: #383f4d;
+      --text-main: #f3f4f6;
+      --text-dim: #9ca3af;
+      --text-faint: #525b6a;
       --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.12);
       --accent-muted: rgba(56, 189, 248, 0.15);
-      --text-main: #f1f3f7;
-      --text-dim: #8b949e;
-      --text-faint: #484f58;
       --success: #22c55e;
       --danger: #ef4444;
-      --warning: #eab308;
-      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'Geist Mono', monospace;
     }
 
     * {
@@ -400,8 +400,14 @@
         <span id="remoteTimeText" class="time-display">00:00 / 00:00</span>
       </div>
 
-      <div style="font-size: 11px; font-weight: 500; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="remoteSongTitle">
-        No Track Loaded
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <div style="font-size: 11px; font-weight: 500; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="remoteSongTitle">
+          No Track Loaded
+        </div>
+        <button class="btn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemotePlaylistModal()" title="Select song from library">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Library</span>
+        </button>
       </div>
 
       <div class="seek-bar-wrap" id="seekWrap" onclick="handleSeekTap(event)">
@@ -413,8 +419,11 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
           <span>Stop</span>
         </button>
-        <button class="btn btn-play" id="remotePlayBtn" onclick="togglePlay()">
-          <span id="playIcon">▶ Play</span>
+        <button class="btn btn-play" id="remotePlayBtn" onclick="togglePlay()" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <span id="remotePlayIconSlot" style="display: inline-flex; align-items: center;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </span>
+          <span id="remotePlayText">Play</span>
         </button>
         <button class="btn" id="remoteLoopBtn" onclick="sendTransport('toggle_loop')" title="Toggle A-B loop">
           <span id="loopText">Loop [Off]</span>
@@ -435,6 +444,17 @@
           <span class="stepper-val" id="remotePitchVal">0 st</span>
           <button class="btn-mini" onclick="stepPitch(+1)">+</button>
           <button class="btn-mini" style="font-size: 9px; color: var(--text-dim);" onclick="setPitch(0)">Reset</button>
+        </div>
+      </div>
+
+      <!-- MIDI Keyboard Transpose Stepper -->
+      <div class="util-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-dim);">
+        <span class="util-label">MIDI Transpose</span>
+        <div class="stepper-wrap">
+          <button class="btn-mini" onclick="stepMidiTranspose(-1)">-</button>
+          <span class="stepper-val" id="remoteMidiTransposeVal" style="color: var(--accent);">0 st</span>
+          <button class="btn-mini" onclick="stepMidiTranspose(+1)">+</button>
+          <button class="btn-mini" style="font-size: 9px; color: var(--text-dim);" onclick="setMidiTranspose(0)">Reset</button>
         </div>
       </div>
     </div>
@@ -483,7 +503,7 @@
           </div>
         </div>
 
-        <!-- Metronome Boost Volume -->
+        <!-- Metronome Boost Volume & Click Switch -->
         <div class="part-row">
           <div class="part-info">
             <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Click Level</span>
@@ -492,6 +512,18 @@
           <div class="part-slider-wrap" id="sliderWrap_metro">
             <div class="part-slider-fill" id="sliderFill_metro" style="width: 50%;"></div>
             <div class="part-slider-thumb" id="sliderThumb_metro" style="left: 50%;"></div>
+          </div>
+        </div>
+
+        <!-- Metronome Playback Toggle & BPM Bar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border-dim); gap: 8px;">
+          <button class="btn" id="remoteMetroToggleBtn" onclick="toggleRemoteMetronome()" style="font-size: 11px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+            <span id="remoteMetroStatusText">Click [Off]</span>
+          </button>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button class="btn" style="padding: 5px 9px; font-size: 11px; font-weight: 600;" onclick="handleRemoteTapTempo()">Tap</button>
+            <span style="font-size: 12px; font-family: var(--font-mono); font-weight: 600; color: var(--accent);" id="remoteBpmText">120 BPM</span>
           </div>
         </div>
       </div>
@@ -525,6 +557,21 @@
     </div>
   </div>
 
+  <!-- Mobile Practice Song Library Modal -->
+  <div id="remotePlaylistModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 400px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 13px; font-weight: 600;">Practice Song Library</span>
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemotePlaylistModal()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;" id="remotePlaylistTracksList">
+        <!-- Dynamic tracks list -->
+      </div>
+    </div>
+  </div>
+
   <script>
     // State for Parts 1 to 8 (Standard clean Part 1 - 8 labeling)
     const partsState = [
@@ -541,6 +588,10 @@
     let isPlaying = false;
     let isLooping = false;
     let currentPitch = 0;
+    let currentMidiTranspose = 0;
+    let currentBpm = 120;
+    let metroEnabled = false;
+    let tapTimes = [];
     let songDuration = 0;
     let currentPosition = 0;
 
@@ -639,7 +690,7 @@
         const data = await res.json();
         if (data.success) {
           const orig = btn.innerHTML;
-          btn.innerHTML = `<span style="color: var(--success);">✓ Saved to Scene ${remoteActiveScene}!</span>`;
+          btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to Scene ${remoteActiveScene}!</span>`;
           setTimeout(() => { btn.innerHTML = orig; }, 1500);
         }
       } catch (e) {
@@ -771,6 +822,111 @@
       sendTransport("pitch_shift", { semitones: val });
     }
 
+    // MIDI Keyboard Transposition (+/- 12 semitones)
+    function stepMidiTranspose(delta) {
+      const target = Math.max(-12, Math.min(12, currentMidiTranspose + delta));
+      setMidiTranspose(target);
+    }
+
+    function setMidiTranspose(val) {
+      currentMidiTranspose = val;
+      const sign = currentMidiTranspose > 0 ? "+" : "";
+      document.getElementById("remoteMidiTransposeVal").innerText = `${sign}${currentMidiTranspose} st`;
+      fetch("/api/midi/transpose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transpose: val })
+      }).catch(console.error);
+    }
+
+    // Remote Metronome Controls
+    async function toggleRemoteMetronome() {
+      try {
+        await fetch("/api/mixer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ toggle_metronome: true })
+        });
+      } catch (e) {
+        console.error("Failed to toggle metronome:", e);
+      }
+    }
+
+    function handleRemoteTapTempo() {
+      const now = performance.now();
+      tapTimes.push(now);
+      if (tapTimes.length > 4) tapTimes.shift();
+      if (tapTimes.length >= 2) {
+        let intervals = [];
+        for (let i = 1; i < tapTimes.length; i++) {
+          intervals.push(tapTimes[i] - tapTimes[i - 1]);
+        }
+        const avgMs = intervals.reduce((a, b) => a + b) / intervals.length;
+        if (avgMs > 200 && avgMs < 2000) {
+          const bpm = Math.round(60000.0 / avgMs);
+          currentBpm = bpm;
+          document.getElementById("remoteBpmText").innerText = `${bpm} BPM`;
+          fetch("/api/mixer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ metronome_bpm: bpm })
+          }).catch(console.error);
+        }
+      }
+    }
+
+    // Remote Song Library Modal Handlers
+    function openRemotePlaylistModal() {
+      document.getElementById("remotePlaylistModal").style.display = "flex";
+      loadRemotePlaylist();
+    }
+
+    function closeRemotePlaylistModal() {
+      document.getElementById("remotePlaylistModal").style.display = "none";
+    }
+
+    async function loadRemotePlaylist() {
+      const listEl = document.getElementById("remotePlaylistTracksList");
+      listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Loading tracks...</div>';
+      try {
+        const res = await fetch("/api/playlist");
+        const data = await res.json();
+        if (!data.tracks || data.tracks.length === 0) {
+          listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No audio tracks found.</div>';
+          return;
+        }
+        listEl.innerHTML = data.tracks.map(t => `
+          <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 6px; padding: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="selectRemoteTrack('${t.filename.replace(/'/g, "\\'")}')">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+              <span style="color: ${t.is_current ? 'var(--accent)' : 'var(--text-faint)'}; display: inline-flex; align-items: center;">
+                ${t.is_current 
+                  ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+                  : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
+                }
+              </span>
+              <span style="font-size: 11px; font-weight: ${t.is_current ? '600' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.filename}</span>
+            </div>
+            <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim);">${t.size_mb} MB</span>
+          </div>
+        `).join("");
+      } catch (e) {
+        listEl.innerHTML = `<div style="color: var(--danger); font-size: 11px;">Error: ${e}</div>`;
+      }
+    }
+
+    async function selectRemoteTrack(filename) {
+      try {
+        await fetch("/api/playlist/select", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename })
+        });
+        closeRemotePlaylistModal();
+      } catch (e) {
+        console.error("Failed to select track:", e);
+      }
+    }
+
     function formatTime(s) {
       const m = Math.floor(s / 60);
       const sec = Math.floor(s % 60);
@@ -802,7 +958,17 @@
             songDuration = song.duration_seconds || 0;
             currentPosition = song.current_time_seconds || 0;
 
-            document.getElementById("remotePlayBtn").querySelector("#playIcon").innerText = isPlaying ? "Pause" : "Play";
+            const slot = document.getElementById("remotePlayIconSlot");
+            const txt = document.getElementById("remotePlayText");
+            if (slot && txt) {
+              if (isPlaying) {
+                slot.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+                txt.innerText = "Pause";
+              } else {
+                slot.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+                txt.innerText = "Play";
+              }
+            }
             document.getElementById("remoteTimeText").innerText = `${formatTime(currentPosition)} / ${formatTime(songDuration)}`;
 
             // Track Loop State (Stable, flicker-free)
@@ -855,6 +1021,11 @@
 
           // 3. Live MIDI Chord Recognition & Notes Display
           if (midi) {
+            if (midi.transpose !== undefined && midi.transpose !== currentMidiTranspose) {
+              currentMidiTranspose = midi.transpose;
+              const sign = currentMidiTranspose > 0 ? "+" : "";
+              document.getElementById("remoteMidiTransposeVal").innerText = `${sign}${currentMidiTranspose} st`;
+            }
             const activeNotes = midi.active_notes || [];
             if (activeNotes.length > 0) {
               const chordName = detectAdvancedChord(activeNotes);
@@ -893,6 +1064,19 @@
               document.getElementById("remoteMetroVolText").innerText = mVol > 1.0 ? `Boost ${pctVal}%` : `${pctVal}%`;
               document.getElementById("sliderFill_metro").style.width = pct + "%";
               document.getElementById("sliderThumb_metro").style.left = pct + "%";
+            }
+            if (audio.metronome_enabled !== undefined) {
+              metroEnabled = Boolean(audio.metronome_enabled);
+              const btn = document.getElementById("remoteMetroToggleBtn");
+              const txt = document.getElementById("remoteMetroStatusText");
+              if (btn && txt) {
+                btn.classList.toggle("btn-active", metroEnabled);
+                txt.innerText = metroEnabled ? "Click [On]" : "Click [Off]";
+              }
+            }
+            if (audio.metronome_bpm !== undefined && audio.metronome_bpm !== currentBpm) {
+              currentBpm = audio.metronome_bpm;
+              document.getElementById("remoteBpmText").innerText = `${Math.round(currentBpm)} BPM`;
             }
           }
           if (montage) {
