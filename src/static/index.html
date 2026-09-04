@@ -1013,6 +1013,11 @@
     </div>
 
     <div class="header-actions">
+      <button class="btn-header-action" onclick="openPlaylistModal()" title="View and switch songs in practice playlist">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Playlist
+      </button>
+
       <button class="btn-header-action" onclick="openRemoteModal()" title="Connect Phone via QR Code or URL for MONTAGE M Volume Control">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
         Phone Remote
@@ -1297,10 +1302,40 @@
             </div>
             <input type="range" id="metroVolRange" min="0" max="2.0" step="0.05" value="1.0" style="width: 100%; accent-color: var(--accent); cursor: pointer;" oninput="handleMetroVolChange(this.value)">
           </div>
+
+          <!-- Yamaha MONTAGE M Scene Selector Strip (Scenes 1 - 8) -->
+          <div style="display: flex; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid var(--border-dim);">
+            <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); font-weight: 600; text-transform: uppercase;">
+              <span>MONTAGE M Scene</span>
+              <span id="activeSceneText" style="font-family: var(--font-mono); color: var(--accent);">Scene 1</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;" id="desktopScenesGrid">
+              <!-- Scenes 1 - 8 rendered dynamically -->
+            </div>
+          </div>
         </div>
       </section>
     </div>
   </main>
+
+  <!-- Playlist & Song Library Modal -->
+  <div class="modal-backdrop" id="playlistModal">
+    <div class="modal-window" style="width: 440px; max-height: 80vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title">Practice Song Library</div>
+        <button class="btn" style="padding: 1px 5px;" onclick="closePlaylistModal()">✕</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;">
+          <span>Select any track to load it immediately:</span>
+          <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="document.getElementById('songFileInput').click()">+ Upload New</button>
+        </div>
+        <div id="playlistTracksList" style="display: flex; flex-direction: column; gap: 4px;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Custom In-App Bookmark Modal -->
   <div class="modal-backdrop" id="bookmarkModal">
@@ -1585,6 +1620,54 @@
     function openSettingsModal() { document.getElementById("preferencesModal").style.display = "flex"; }
     function closeSettingsModal() { document.getElementById("preferencesModal").style.display = "none"; }
 
+    // Playlist Modal Handlers
+    async function openPlaylistModal() {
+      const modal = document.getElementById("playlistModal");
+      modal.style.display = "flex";
+      await refreshPlaylistUI();
+    }
+
+    function closePlaylistModal() {
+      document.getElementById("playlistModal").style.display = "none";
+    }
+
+    async function refreshPlaylistUI() {
+      const listEl = document.getElementById("playlistTracksList");
+      listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">Loading library...</div>';
+      try {
+        const res = await fetch("/api/playlist");
+        const data = await res.json();
+        if (!data.tracks || data.tracks.length === 0) {
+          listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">No audio files found in uploads. Click "+ Upload New" to add tracks.</div>';
+          return;
+        }
+        listEl.innerHTML = data.tracks.map(t => `
+          <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 4px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.1s ease;" onclick="loadPlaylistTrack('${t.filename.replace(/'/g, "\\'")}')">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+              <span style="color: ${t.is_current ? 'var(--accent)' : 'var(--text-faint)'}; font-size: 11px;">${t.is_current ? '▶' : '♫'}</span>
+              <span style="font-size: 11px; font-weight: ${t.is_current ? '600' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.filename}</span>
+            </div>
+            <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim); flex-shrink: 0; margin-left: 8px;">${t.size_mb} MB</span>
+          </div>
+        `).join("");
+      } catch (e) {
+        listEl.innerHTML = `<div style="color: var(--danger); font-size: 11px;">Error loading tracks: ${e}</div>`;
+      }
+    }
+
+    async function loadPlaylistTrack(filename) {
+      try {
+        await fetch("/api/playlist/select", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename })
+        });
+        closePlaylistModal();
+      } catch (e) {
+        console.error("Failed to load song:", e);
+      }
+    }
+
     // Phone Remote Modal & QR Code
     let remoteTargetUrl = "";
     async function openRemoteModal() {
@@ -1742,6 +1825,43 @@
     }
     buildPiano();
 
+    // Render Scene Selectors
+    let activeScene = 1;
+    function renderScenesUI() {
+      const grid = document.getElementById("desktopScenesGrid");
+      grid.innerHTML = "";
+      for (let s = 1; s <= 8; s++) {
+        const btn = document.createElement("button");
+        btn.className = `btn ${s === activeScene ? 'btn-active' : ''}`;
+        btn.style.padding = "2px 4px";
+        btn.style.fontSize = "10px";
+        btn.style.fontWeight = "600";
+        btn.innerText = `S${s}`;
+        btn.id = `sceneBtn_${s}`;
+        btn.onclick = () => selectScene(s);
+        grid.appendChild(btn);
+      }
+    }
+
+    async function selectScene(sceneNum) {
+      activeScene = sceneNum;
+      document.getElementById("activeSceneText").innerText = `Scene ${sceneNum}`;
+      for (let s = 1; s <= 8; s++) {
+        const b = document.getElementById(`sceneBtn_${s}`);
+        if (b) b.classList.toggle("btn-active", s === sceneNum);
+      }
+      try {
+        await fetch("/api/montage/scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scene: sceneNum })
+        });
+      } catch (e) {
+        console.error("Failed to set scene:", e);
+      }
+    }
+    renderScenesUI();
+
     function connectWS() {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
@@ -1786,13 +1906,14 @@
         }
       }
 
-      if (!draggingFader && montage && montage.master_volume !== undefined) {
-        const normVst = montage.master_volume / 127.0;
-        if (Math.abs(normVst - valSynth) > 0.02) {
-          valSynth = normVst;
-          const db = valSynth > 0 ? (20 * Math.log10(valSynth)).toFixed(1) : "-inf";
-          document.getElementById("synthVolText").innerText = `${db} dB`;
-          renderCustomFaders();
+      if (montage) {
+        if (montage.current_scene !== undefined && montage.current_scene !== activeScene) {
+          activeScene = montage.current_scene;
+          document.getElementById("activeSceneText").innerText = `Scene ${activeScene}`;
+          for (let s = 1; s <= 8; s++) {
+            const b = document.getElementById(`sceneBtn_${s}`);
+            if (b) b.classList.toggle("btn-active", s === activeScene);
+          }
         }
       }
 

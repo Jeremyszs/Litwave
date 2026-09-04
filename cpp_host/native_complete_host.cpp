@@ -460,6 +460,13 @@ void UdpControlServerThread() {
                         g_controller->setParamNormalized(kCommonPerformanceVolumeID, normVal);
                     }
                     enqueue_param_change(kCommonPerformanceVolumeID, normVal);
+                } else if (cmd == 0x53) { // 'S' Scene Select Command: [ 'S', sceneNumber (1-8), 0, 0 ]
+                    int sceneNum = (int)ch; // 1 to 8
+                    if (sceneNum >= 1 && sceneNum <= 8) {
+                        // MIDI CC#92 (Scene Select): Scene 1 = 0..15 (use 0), Scene 2 = 16..31 (use 16), ..., Scene 8 = 112..127 (use 112)
+                        uint8 ccVal = (uint8)((sceneNum - 1) * 16);
+                        enqueue_midi_note((int16)Event::kLegacyMIDICCOutEvent, 0, 92, (float)ccVal / 127.0f);
+                    }
                 } else if (cmd == 0x90) { // Note On
                     float vel = (float)d2 / 127.0f;
                     enqueue_midi_note(Event::kNoteOnEvent, ch, (int16)d1, vel);

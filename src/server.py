@@ -200,7 +200,8 @@ async def ws_telemetry(websocket: WebSocket):
                 "midi": state.midi.get_snapshot(),
                 "montage": {
                     "master_volume": state.montage.master_vst_volume,
-                    "part_volumes": state.montage.part_volumes
+                    "part_volumes": state.montage.part_volumes,
+                    "current_scene": state.montage.current_scene
                 }
             }
             await websocket.send_text(json.dumps(telemetry))
@@ -267,6 +268,43 @@ async def remote_page(request):
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Remote page not found</h1>", status_code=404)
 
+async def api_montage_scene(request):
+    try:
+        data = await request.json()
+        scene = int(data.get("scene", 1))
+        ok = state.montage.select_scene(scene)
+        return JSONResponse({"success": ok, "scene": scene})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+async def api_playlist(request):
+    """List all audio files present in uploads/ library for instant one-click switching"""
+    upload_dir = os.path.join(STATIC_DIR, "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    files = []
+    for f in os.listdir(upload_dir):
+        if f.lower().endswith(('.mp3', '.wav', '.flac', '.ogg', '.m4a')):
+            fpath = os.path.join(upload_dir, f)
+            files.append({
+                "filename": f,
+                "size_mb": round(os.path.getsize(fpath) / (1024 * 1024), 2),
+                "is_current": (state.audio.song_player.filename == f)
+            })
+    return JSONResponse({"tracks": sorted(files, key=lambda x: x["filename"])})
+
+async def api_playlist_select(request):
+    """Load a song from the library into the active song player"""
+    data = await request.json()
+    filename = data.get("filename")
+    if not filename:
+        return JSONResponse({"error": "No filename"}, status_code=400)
+    upload_dir = os.path.join(STATIC_DIR, "uploads")
+    fpath = os.path.join(upload_dir, filename)
+    if not os.path.exists(fpath):
+        return JSONResponse({"error": "File not found"}, status_code=404)
+    state.audio.song_player.load_song(fpath, filename=filename)
+    return JSONResponse({"success": True, "filename": filename})
+
 routes = [
     Route("/", index),
     Route("/remote", remote_page),
@@ -277,8 +315,11 @@ routes = [
     Route("/api/audio/device", api_audio_device, methods=["POST"]),
     Route("/api/midi/device", api_midi_device, methods=["POST"]),
     Route("/api/upload", api_upload_song, methods=["POST"]),
+    Route("/api/playlist", api_playlist, methods=["GET"]),
+    Route("/api/playlist/select", api_playlist_select, methods=["POST"]),
     Route("/api/montage/editor", api_open_editor, methods=["POST"]),
     Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
+    Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
     Route("/api/montage/license", api_launch_license_manager, methods=["POST"]),
     WebSocketRoute("/ws", ws_telemetry),
     Mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

@@ -497,6 +497,17 @@
       </div>
     </div>
 
+    <!-- Yamaha MONTAGE M Scene Selector (Scenes 1 - 8) -->
+    <div class="card">
+      <div class="card-title">
+        <span>MONTAGE M Scene</span>
+        <span id="remoteActiveSceneText" style="font-size: 10px; color: var(--accent); font-family: var(--font-mono);">Scene 1</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="remoteScenesGrid">
+        <!-- Scenes 1 to 8 rendered dynamically -->
+      </div>
+    </div>
+
     <!-- Yamaha MONTAGE M Part Faders (CC#7 Injection) -->
     <div class="card">
       <div class="card-title">
@@ -574,6 +585,43 @@
       }
 
       return `${NAMES[bassNote]} Poly`;
+    }
+
+    // Render Remote Scene Selectors
+    let remoteActiveScene = 1;
+    function renderRemoteScenes() {
+      const grid = document.getElementById("remoteScenesGrid");
+      if (!grid) return;
+      grid.innerHTML = "";
+      for (let s = 1; s <= 8; s++) {
+        const btn = document.createElement("button");
+        btn.className = `btn ${s === remoteActiveScene ? 'is-active-loop' : ''}`;
+        btn.style.padding = "8px 4px";
+        btn.style.fontSize = "12px";
+        btn.style.fontWeight = "600";
+        btn.innerText = `Scene ${s}`;
+        btn.id = `remoteSceneBtn_${s}`;
+        btn.onclick = () => selectRemoteScene(s);
+        grid.appendChild(btn);
+      }
+    }
+
+    async function selectRemoteScene(sceneNum) {
+      remoteActiveScene = sceneNum;
+      document.getElementById("remoteActiveSceneText").innerText = `Scene ${sceneNum}`;
+      for (let s = 1; s <= 8; s++) {
+        const b = document.getElementById(`remoteSceneBtn_${s}`);
+        if (b) b.classList.toggle("is-active-loop", s === sceneNum);
+      }
+      try {
+        await fetch("/api/montage/scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scene: sceneNum })
+        });
+      } catch (e) {
+        console.error("Failed to select scene:", e);
+      }
     }
 
     // Render Parts
@@ -833,6 +881,14 @@
               document.getElementById("sliderFill_synth").style.width = pct + "%";
               document.getElementById("sliderThumb_synth").style.left = pct + "%";
             }
+            if (montage.current_scene !== undefined && montage.current_scene !== remoteActiveScene) {
+              remoteActiveScene = montage.current_scene;
+              document.getElementById("remoteActiveSceneText").innerText = `Scene ${remoteActiveScene}`;
+              for (let s = 1; s <= 8; s++) {
+                const b = document.getElementById(`remoteSceneBtn_${s}`);
+                if (b) b.classList.toggle("is-active-loop", s === remoteActiveScene);
+              }
+            }
             if (montage.part_volumes) {
               for (let p = 1; p <= 8; p++) {
                 if (montage.part_volumes[p] !== undefined) {
@@ -937,6 +993,7 @@
     // Initial Init
     window.addEventListener("DOMContentLoaded", () => {
       renderParts();
+      renderRemoteScenes();
       setupMixerFaders();
       connectWS();
     });

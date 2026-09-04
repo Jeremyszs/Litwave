@@ -20,6 +20,7 @@ class MontageHost:
         self.editor_process = None
         self.master_vst_volume = 127
         self.part_volumes = {i: 100 for i in range(1, 9)}
+        self.current_scene = 1
 
     def check_installation(self) -> Dict[str, Any]:
         has_vst = os.path.exists(self.vst_path)
@@ -109,4 +110,24 @@ class MontageHost:
             return True
         except Exception as e:
             print(f"Failed to set master VST volume: {e}")
+            return False
+
+    def select_scene(self, scene_number: int) -> bool:
+        """
+        Switches active Scene (1-8) in Yamaha MONTAGE M via MIDI CC#92.
+        scene_number: 1 - 8
+        """
+        if not (1 <= scene_number <= 8):
+            return False
+        import socket
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Command 'S' (0x53): [ 'S', sceneNumber (1-8), 0, 0 ]
+            packet_s = bytes([0x53, scene_number & 0xFF, 0, 0])
+            sock.sendto(packet_s, ("127.0.0.1", 9123))
+            sock.close()
+            self.current_scene = scene_number
+            return True
+        except Exception as e:
+            print(f"Failed to switch Scene: {e}")
             return False
