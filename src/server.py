@@ -271,9 +271,17 @@ async def remote_page(request):
 async def api_montage_scene(request):
     try:
         data = await request.json()
+        action = data.get("action", "select")
         scene = int(data.get("scene", 1))
-        ok = state.montage.select_scene(scene)
-        return JSONResponse({"success": ok, "scene": scene})
+        if action == "save":
+            ok = state.montage.save_scene_snapshot(scene)
+            return JSONResponse({"success": ok, "action": "save", "scene": scene, "snapshot": state.montage.saved_scenes[scene]})
+        elif action == "recall":
+            ok = state.montage.recall_saved_scene(scene)
+            return JSONResponse({"success": ok, "action": "recall", "scene": scene, "snapshot": state.montage.saved_scenes[scene]})
+        else:
+            ok = state.montage.select_scene(scene)
+            return JSONResponse({"success": ok, "action": "select", "scene": scene})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
@@ -302,8 +310,8 @@ async def api_playlist_select(request):
     fpath = os.path.join(upload_dir, filename)
     if not os.path.exists(fpath):
         return JSONResponse({"error": "File not found"}, status_code=404)
-    state.audio.song_player.load_song(fpath, filename=filename)
-    return JSONResponse({"success": True, "filename": filename})
+    ok = state.audio.song_player.load_file(fpath)
+    return JSONResponse({"success": ok, "filename": filename, "song": state.audio.song_player.get_telemetry()})
 
 routes = [
     Route("/", index),

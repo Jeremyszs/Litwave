@@ -21,6 +21,11 @@ class MontageHost:
         self.master_vst_volume = 127
         self.part_volumes = {i: 100 for i in range(1, 9)}
         self.current_scene = 1
+        # Memory storage for Scene snapshots: scene 1-8 -> { "master": 127, "parts": { 1: 100, ... } }
+        self.saved_scenes = {
+            s: {"master": 127, "parts": {p: 100 for p in range(1, 9)}}
+            for s in range(1, 9)
+        }
 
     def check_installation(self) -> Dict[str, Any]:
         has_vst = os.path.exists(self.vst_path)
@@ -131,3 +136,32 @@ class MontageHost:
         except Exception as e:
             print(f"Failed to switch Scene: {e}")
             return False
+
+    def save_scene_snapshot(self, scene_number: int) -> bool:
+        """
+        Saves the current master volume and Part 1-8 volumes into the specified scene slot (1-8).
+        """
+        if not (1 <= scene_number <= 8):
+            return False
+        self.saved_scenes[scene_number] = {
+            "master": self.master_vst_volume,
+            "parts": dict(self.part_volumes)
+        }
+        return True
+
+    def recall_saved_scene(self, scene_number: int) -> bool:
+        """
+        Recalls the saved master volume and Part 1-8 volumes for the scene,
+        sending them to the VST engine and switching to that scene.
+        """
+        if not (1 <= scene_number <= 8):
+            return False
+        self.select_scene(scene_number)
+        snap = self.saved_scenes.get(scene_number)
+        if snap:
+            if "master" in snap:
+                self.set_master_vst_volume(snap["master"])
+            if "parts" in snap:
+                for p, v in snap["parts"].items():
+                    self.set_part_volume(int(p), int(v))
+        return True

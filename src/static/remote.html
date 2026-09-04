@@ -506,6 +506,10 @@
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="remoteScenesGrid">
         <!-- Scenes 1 to 8 rendered dynamically -->
       </div>
+      <button class="btn" id="remoteSaveSceneBtn" style="padding: 8px; font-size: 11px; font-weight: 600; justify-content: center; margin-top: 4px;" onclick="saveRemoteCurrentScene()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save Current Mix to Scene
+      </button>
     </div>
 
     <!-- Yamaha MONTAGE M Part Faders (CC#7 Injection) -->
@@ -617,10 +621,29 @@
         await fetch("/api/montage/scene", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scene: sceneNum })
+          body: JSON.stringify({ action: "recall", scene: sceneNum })
         });
       } catch (e) {
-        console.error("Failed to select scene:", e);
+        console.error("Failed to recall scene:", e);
+      }
+    }
+
+    async function saveRemoteCurrentScene() {
+      const btn = document.getElementById("remoteSaveSceneBtn");
+      try {
+        const res = await fetch("/api/montage/scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "save", scene: remoteActiveScene })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = `<span style="color: var(--success);">✓ Saved to Scene ${remoteActiveScene}!</span>`;
+          setTimeout(() => { btn.innerHTML = orig; }, 1500);
+        }
+      } catch (e) {
+        console.error("Failed to save scene:", e);
       }
     }
 

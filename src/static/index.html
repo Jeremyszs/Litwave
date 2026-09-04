@@ -1305,13 +1305,17 @@
 
           <!-- Yamaha MONTAGE M Scene Selector Strip (Scenes 1 - 8) -->
           <div style="display: flex; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid var(--border-dim);">
-            <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); font-weight: 600; text-transform: uppercase;">
-              <span>MONTAGE M Scene</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: var(--text-dim); font-weight: 600; text-transform: uppercase;">
+              <span>Scene Preset</span>
               <span id="activeSceneText" style="font-family: var(--font-mono); color: var(--accent);">Scene 1</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;" id="desktopScenesGrid">
               <!-- Scenes 1 - 8 rendered dynamically -->
             </div>
+            <button class="btn" id="saveSceneBtn" style="width: 100%; padding: 4px 6px; font-size: 10px; margin-top: 2px; justify-content: center;" onclick="saveCurrentScene()">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Mix to Scene
+            </button>
           </div>
         </div>
       </section>
@@ -1657,11 +1661,19 @@
 
     async function loadPlaylistTrack(filename) {
       try {
-        await fetch("/api/playlist/select", {
+        const res = await fetch("/api/playlist/select", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename })
         });
+        const data = await res.json();
+        if (data.success) {
+          waveformPeaks = [];
+          if (data.song && data.song.waveform_peaks) {
+            waveformPeaks = data.song.waveform_peaks;
+            drawWaveform();
+          }
+        }
         closePlaylistModal();
       } catch (e) {
         console.error("Failed to load song:", e);
@@ -1854,10 +1866,29 @@
         await fetch("/api/montage/scene", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scene: sceneNum })
+          body: JSON.stringify({ action: "recall", scene: sceneNum })
         });
       } catch (e) {
-        console.error("Failed to set scene:", e);
+        console.error("Failed to recall scene:", e);
+      }
+    }
+
+    async function saveCurrentScene() {
+      const btn = document.getElementById("saveSceneBtn");
+      try {
+        const res = await fetch("/api/montage/scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "save", scene: activeScene })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = `<span style="color: var(--success);">✓ Saved to Scene ${activeScene}!</span>`;
+          setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+        }
+      } catch (e) {
+        console.error("Failed to save scene:", e);
       }
     }
     renderScenesUI();
