@@ -524,6 +524,28 @@ static const ParamID kPartReverbParamIDs[8] = {
     338946891   // Part 8 Reverb Send
 };
 
+static const ParamID kPartVariationParamIDs[8] = {
+    568872070,  // Part 1 Variation Send (Chorus / Modulation)
+    1456375751, // Part 2 Variation Send
+    196395784,  // Part 3 Variation Send
+    1083899465, // Part 4 Variation Send
+    1971403146, // Part 5 Variation Send
+    711423179,  // Part 6 Variation Send
+    1598926860, // Part 7 Variation Send
+    338946893   // Part 8 Variation Send
+};
+
+static const ParamID kPartPanParamIDs[8] = {
+    568872066,  // Part 1 Pan
+    1456375747, // Part 2 Pan
+    196395780,  // Part 3 Pan
+    1083899461, // Part 4 Pan
+    1971403142, // Part 5 Pan
+    711423175,  // Part 6 Pan
+    1598926856, // Part 7 Pan
+    338946889   // Part 8 Pan
+};
+
 static const ParamID kPartMuteParamIDs[8] = {
     568871075,  // Part 1 Mute Switch
     1456374756, // Part 2 Mute Switch
@@ -536,6 +558,7 @@ static const ParamID kPartMuteParamIDs[8] = {
 };
 
 static const ParamID kCommonPerformanceVolumeID = 2003600142; // C Performance Volume
+static HWND g_hwnd = NULL;
 
 void UdpControlServerThread() {
     WSADATA wsa;
@@ -644,7 +667,18 @@ void UdpControlServerThread() {
                     int ccVal = (int)d2;
                     if (part >= 1 && part <= 8 && ccNum >= 0 && ccNum <= 127) {
                         uint8 channel = (uint8)(part - 1);
-                        enqueue_midi_note((int16)Event::kLegacyMIDICCOutEvent, channel, (int16)ccNum, (float)ccVal / 127.0f);
+                        float normVal = (float)ccVal / 127.0f;
+                        // Directly update VST3 Parameter if it's Pan (CC#10) or Chorus/Variation Send (CC#93)
+                        if (ccNum == 10) {
+                            ParamID pid = kPartPanParamIDs[part - 1];
+                            if (g_controller) g_controller->setParamNormalized(pid, normVal);
+                            enqueue_param_change(pid, normVal);
+                        } else if (ccNum == 93) {
+                            ParamID pid = kPartVariationParamIDs[part - 1];
+                            if (g_controller) g_controller->setParamNormalized(pid, normVal);
+                            enqueue_param_change(pid, normVal);
+                        }
+                        enqueue_midi_note((int16)Event::kLegacyMIDICCOutEvent, channel, (int16)ccNum, normVal);
                     }
                 } else if (cmd == 0x45) { // 'E' Master Parametric Equalizer Band Update: [ 'E', bandIdx (0-3), type, pad, freq (float), gain (float), q (float) ]
                     if (len >= 16) {
@@ -662,6 +696,18 @@ void UdpControlServerThread() {
                         g_controller->setParamNormalized(kCommonPerformanceVolumeID, normVal);
                     }
                     enqueue_param_change(kCommonPerformanceVolumeID, normVal);
+                } else if (cmd == 0x57) { // 'W' Window Visibility Toggle: [ 'W', showCmd (0=Hide, 1=Show, 2=Minimize), 0, 0 ]
+                    int action = (int)ch;
+                    if (g_hwnd) {
+                        if (action == 0) {
+                            ShowWindow(g_hwnd, SW_HIDE);
+                        } else if (action == 1) {
+                            ShowWindow(g_hwnd, SW_SHOW);
+                            SetForegroundWindow(g_hwnd);
+                        } else if (action == 2) {
+                            ShowWindow(g_hwnd, SW_MINIMIZE);
+                        }
+                    }
                 } else if (cmd == 0x53) { // 'S' Scene Select Command: [ 'S', sceneNumber (1-8), 0, 0 ]
                     int sceneNum = (int)ch; // 1 to 8
                     if (sceneNum >= 1 && sceneNum <= 8) {
@@ -848,6 +894,7 @@ int main() {
         width + 16, height + 39,
         NULL, NULL, GetModuleHandle(NULL), NULL
     );
+    g_hwnd = hwnd;
 
     if (view) view->attached((void*)hwnd, kPlatformTypeHWND);
     std::cout << "[OK] Native GUI attached and displayed." << std::endl;

@@ -154,6 +154,25 @@ class MontageHost:
             "status": "ready" if (has_vst and has_data) else "missing_components"
         }
 
+    def toggle_vst_window(self, action: str = "toggle") -> bool:
+        """
+        Controls native Yamaha MONTAGE M VST3 window visibility:
+        'show' (1), 'hide' (0), 'minimize' (2)
+        """
+        import socket
+        cmd_map = {"hide": 0, "show": 1, "minimize": 2, "toggle": 1}
+        act_code = cmd_map.get(action, 1)
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Command 'W' (0x57): [ 'W', action (0=Hide, 1=Show, 2=Minimize), 0, 0 ]
+            packet = bytes([0x57, act_code & 0xFF, 0, 0])
+            sock.sendto(packet, ("127.0.0.1", 9123))
+            sock.close()
+            return True
+        except Exception as e:
+            print(f"Failed to send VST window action: {e}")
+            return False
+
     def open_vst_editor(self) -> bool:
         """Launch the exact native Yamaha MONTAGE M GUI window directly"""
         if os.path.exists(MONTAGE_ENGINE_EXE):

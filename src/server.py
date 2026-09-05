@@ -287,6 +287,14 @@ async def ws_telemetry(websocket: WebSocket):
             state.ws_clients.remove(websocket)
 
 async def api_open_editor(request):
+    try:
+        data = await request.json() if request.method == "POST" else {}
+        action = data.get("action")
+        if action in ("hide", "show", "minimize"):
+            ok = state.montage.toggle_vst_window(action)
+            return JSONResponse({"success": ok, "action": action})
+    except Exception:
+        pass
     ok = state.montage.open_vst_editor()
     return JSONResponse({"success": ok})
 

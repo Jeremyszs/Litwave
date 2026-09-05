@@ -4240,8 +4240,25 @@
       });
     }
 
+    let vstWindowVisible = true;
     async function openSynthEditor() {
-      await fetch("/api/montage/editor", { method: "POST" });
+      if (vstWindowVisible) {
+        await fetch("/api/montage/editor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "hide" })
+        });
+        vstWindowVisible = false;
+        showAppToast("Yamaha VST window hidden (running in background)");
+      } else {
+        await fetch("/api/montage/editor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "show" })
+        });
+        vstWindowVisible = true;
+        showAppToast("Yamaha VST window restored");
+      }
     }
 
     function formatTime(sec) {
