@@ -68,12 +68,13 @@ def fetch_synced_lyrics(query: str, duration: Optional[float] = None) -> Optiona
                 return None
                 
             # Pick best match based on duration if provided
+            # Note: A single album can have studio (00:11.12 start) vs acoustic live (00:27.09 start)
             best_match = synced_results[0]
             if duration and duration > 0:
                 best_diff = 99999.0
                 for r in synced_results:
                     d = r.get("duration", 0)
-                    if d > 0:
+                    if d and d > 30: # ignore placeholder durations like 6.0s
                         diff = abs(d - duration)
                         if diff < best_diff:
                             best_diff = diff
