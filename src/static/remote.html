@@ -367,8 +367,8 @@
       left: 0;
       bottom: 0;
       width: 78%;
-      background: linear-gradient(90deg, rgba(56, 189, 248, 0.2), rgba(56, 189, 248, 0.45));
-      border-right: 2px solid var(--accent);
+      background: linear-gradient(90deg, rgba(30, 64, 175, 0.4) 0%, rgba(56, 189, 248, 0.6) 100%);
+      border-right: 2px solid #38bdf8;
       pointer-events: none;
     }
 
@@ -974,8 +974,8 @@
           <div style="display: flex; align-items: center; gap: 8px; width: 100%; padding-left: 2px;">
             <span style="font-size: 9px; font-weight: 600; color: var(--text-faint); font-family: var(--font-mono); width: 24px;">REV</span>
             <div class="part-slider-wrap" id="reverbWrap_${p.part}" style="height: 12px; flex: 1; background: var(--bg-sunken);">
-              <div class="part-slider-fill" id="reverbFill_${p.part}" style="width: ${pctRev}%; background: var(--accent-secondary);"></div>
-              <div class="part-slider-thumb" id="reverbThumb_${p.part}" style="left: ${pctRev}%; width: 10px; height: 10px; top: -1px; background: var(--accent-secondary);"></div>
+              <div class="part-slider-fill" id="reverbFill_${p.part}" style="width: ${pctRev}%; background: linear-gradient(90deg, rgba(30, 58, 138, 0.4), rgba(96, 165, 250, 0.65)); border-right: 2px solid #60a5fa;"></div>
+              <div class="part-slider-thumb" id="reverbThumb_${p.part}" style="left: ${pctRev}%; width: 10px; height: 10px; top: -1px; background: #ffffff;"></div>
             </div>
           </div>
         `;
