@@ -1926,16 +1926,16 @@
         lineDiv.style.transition = "all 0.15s ease";
         lineDiv.onclick = () => seekToSongTime(row.time);
 
-        // Chords header over text
+        // Chords positioned directly floating above the text line with authentic lead-sheet spacing
         const chordsHtml = (row.chords && row.chords.length > 0) 
-          ? `<div style="display: flex; gap: 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 2px;">
-              ${row.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${c}</span>`).join("")}
+          ? `<div style="display: flex; gap: 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 3px;">
+              ${row.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.2); padding: 1px 6px; border-radius: 3px; border: 1px solid rgba(56, 189, 248, 0.4);">${c}</span>`).join("")}
              </div>`
-          : `<div style="height: 14px;"></div>`;
+          : `<div style="height: 16px;"></div>`;
 
         lineDiv.innerHTML = `
           ${chordsHtml}
-          <div class="lyric-text" style="font-size: 13px; font-weight: 500; color: var(--text-dim); transition: color 0.15s ease;">
+          <div class="lyric-text" style="font-size: 13px; font-weight: 500; color: var(--text-dim); transition: color 0.15s ease; line-height: 1.35;">
             ${row.text}
           </div>
         `;
@@ -1947,21 +1947,26 @@
       if (!activeLyricsSheet || activeLyricsSheet.length === 0) return;
 
       let currentIndex = -1;
+      // Stricter temporal window matching so the follow scroll doesn't rush ahead
       for (let i = 0; i < activeLyricsSheet.length; i++) {
-        if (activeLyricsSheet[i].time <= currentSeconds + 0.2) {
+        const nextTime = (i + 1 < activeLyricsSheet.length) ? activeLyricsSheet[i + 1].time : 999999.0;
+        if (currentSeconds >= (activeLyricsSheet[i].time - 0.05) && currentSeconds < nextTime) {
           currentIndex = i;
-        } else {
           break;
         }
       }
 
-      if (currentIndex !== activeLyricIndex) {
+      if (currentIndex !== activeLyricIndex && currentIndex !== -1) {
         if (activeLyricIndex >= 0) {
           const prevEl = document.getElementById(`lyricLine_${activeLyricIndex}`);
           if (prevEl) {
             prevEl.style.background = "transparent";
+            prevEl.style.borderLeft = "none";
             const textEl = prevEl.querySelector(".lyric-text");
-            if (textEl) textEl.style.color = "var(--text-dim)";
+            if (textEl) {
+              textEl.style.color = "var(--text-dim)";
+              textEl.style.fontWeight = "500";
+            }
           }
         }
 
@@ -1971,13 +1976,18 @@
           const curEl = document.getElementById(`lyricLine_${activeLyricIndex}`);
           if (curEl) {
             curEl.style.background = "rgba(56, 189, 248, 0.12)";
+            curEl.style.borderLeft = "3px solid var(--accent)";
             const textEl = curEl.querySelector(".lyric-text");
             if (textEl) {
               textEl.style.color = "#ffffff";
               textEl.style.fontWeight = "700";
             }
-            // Auto scroll active lyric into view smoothly
-            curEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Auto scroll container smoothly to keep musician focused
+            const container = document.getElementById("lyricsContainer");
+            if (container) {
+              const topPos = curEl.offsetTop - container.offsetTop - 50;
+              container.scrollTo({ top: Math.max(0, topPos), behavior: "smooth" });
+            }
           }
         }
       }

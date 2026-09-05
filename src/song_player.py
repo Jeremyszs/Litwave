@@ -97,6 +97,13 @@ class SongPlayer:
                 
                 # Precompute 800-point visual waveform overview
                 self._compute_waveform_peaks(800)
+                
+                # Auto-load persisted chord chart, analysis, and lyrics sheet
+                self.markers = []
+                self.chord_chart = []
+                self.analysis_data = None
+                self.lyrics_sheet = []
+                self._load_persisted_chart()
                 return True
             except Exception as e:
                 print(f"Error loading audio file {filepath}: {e}")
@@ -184,7 +191,8 @@ class SongPlayer:
             self.waveform_peaks = []
             self.markers = []
             self.chord_chart = []
-            self._load_persisted_chart()
+            self.analysis_data = None
+            self.lyrics_sheet = []
 
     def _get_chart_file(self) -> Optional[str]:
         if not self.filepath:

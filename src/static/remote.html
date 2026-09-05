@@ -413,34 +413,34 @@
     </div>
 
     <!-- Live Synced Musician Lead Sheet (3-Line View on Phone) -->
-    <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; max-height: 180px; overflow: hidden;">
+    <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; min-height: 180px; box-sizing: border-box; overflow: visible;">
       <div style="display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 6px;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
           <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Musician Lead Sheet</span>
         </div>
-        <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);" id="remoteLyricsIndicator">Auto-synced</span>
+        <span style="font-size: 9px; font-family: var(--font-mono); color: var(--accent);" id="remoteLyricsIndicator">Auto-synced</span>
       </div>
       
       <!-- 3-Line Lead Sheet Container: Previous, Active, Next -->
-      <div id="remoteLeadSheetContainer" style="display: flex; flex-direction: column; gap: 6px; min-height: 110px;">
-        <div id="rLinePrev" style="opacity: 0.35; font-size: 12px; display: flex; flex-direction: column; gap: 2px;">
-          <div class="r-chord-header" style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--accent);">&nbsp;</div>
-          <div class="r-lyric-text" style="color: var(--text-dim);">&nbsp;</div>
+      <div id="remoteLeadSheetContainer" style="display: flex; flex-direction: column; gap: 8px;">
+        <div id="rLinePrev" style="opacity: 0.35; font-size: 12px; display: flex; flex-direction: column; gap: 3px; min-height: 38px;">
+          <div class="r-chord-header" style="display: flex; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); min-height: 15px;">&nbsp;</div>
+          <div class="r-lyric-text" style="color: var(--text-dim); white-space: normal; line-height: 1.3;">&nbsp;</div>
         </div>
 
-        <div id="rLineActive" style="background: rgba(56, 189, 248, 0.12); padding: 4px 8px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; border-left: 2px solid var(--accent);">
-          <div class="r-chord-header" style="display: flex; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent);">
-            <span style="background: rgba(56, 189, 248, 0.2); padding: 1px 4px; border-radius: 2px;">--</span>
+        <div id="rLineActive" style="background: rgba(56, 189, 248, 0.12); padding: 6px 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--accent); min-height: 48px;">
+          <div class="r-chord-header" style="display: flex; gap: 8px; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent); min-height: 16px;">
+            <span style="background: rgba(56, 189, 248, 0.2); padding: 1px 5px; border-radius: 3px;">--</span>
           </div>
-          <div class="r-lyric-text" style="font-size: 13px; font-weight: 700; color: #ffffff;">
+          <div class="r-lyric-text" style="font-size: 14px; font-weight: 700; color: #ffffff; white-space: normal; line-height: 1.35;">
             Tap Analyze to load song lead sheet...
           </div>
         </div>
 
-        <div id="rLineNext" style="opacity: 0.55; font-size: 12px; display: flex; flex-direction: column; gap: 2px;">
-          <div class="r-chord-header" style="font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--accent);">&nbsp;</div>
-          <div class="r-lyric-text" style="color: var(--text-dim);">&nbsp;</div>
+        <div id="rLineNext" style="opacity: 0.55; font-size: 12px; display: flex; flex-direction: column; gap: 3px; min-height: 38px;">
+          <div class="r-chord-header" style="display: flex; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); min-height: 15px;">&nbsp;</div>
+          <div class="r-lyric-text" style="color: var(--text-dim); white-space: normal; line-height: 1.3;">&nbsp;</div>
         </div>
       </div>
     </div>
@@ -1381,9 +1381,9 @@
             if (song.lyrics_sheet && song.lyrics_sheet.length > 0) {
               let activeIdx = -1;
               for (let i = 0; i < song.lyrics_sheet.length; i++) {
-                if (song.lyrics_sheet[i].time <= currentPosition + 0.2) {
+                const nextTime = (i + 1 < song.lyrics_sheet.length) ? song.lyrics_sheet[i + 1].time : 999999.0;
+                if (currentPosition >= (song.lyrics_sheet[i].time - 0.05) && currentPosition < nextTime) {
                   activeIdx = i;
-                } else {
                   break;
                 }
               }
@@ -1393,19 +1393,19 @@
                 const next = activeIdx + 1 < song.lyrics_sheet.length ? song.lyrics_sheet[activeIdx + 1] : null;
 
                 // Render Prev Line
-                const pChords = (prev && prev.chords && prev.chords.length > 0) ? prev.chords.map(c => `<span>${c}</span>`).join(" ") : "&nbsp;";
+                const pChords = (prev && prev.chords && prev.chords.length > 0) ? prev.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${c}</span>`).join(" ") : "&nbsp;";
                 document.querySelector("#rLinePrev .r-chord-header").innerHTML = pChords;
                 document.querySelector("#rLinePrev .r-lyric-text").innerText = prev ? prev.text : "";
 
                 // Render Active Line
                 const cChords = (curr.chords && curr.chords.length > 0) 
-                  ? curr.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.2); padding: 1px 4px; border-radius: 2px;">${c}</span>`).join(" ")
+                  ? curr.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.25); padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(56, 189, 248, 0.5);">${c}</span>`).join(" ")
                   : `<span style="background: rgba(56, 189, 248, 0.2); padding: 1px 4px; border-radius: 2px;">--</span>`;
                 document.querySelector("#rLineActive .r-chord-header").innerHTML = cChords;
                 document.querySelector("#rLineActive .r-lyric-text").innerText = curr.text;
 
                 // Render Next Line
-                const nChords = (next && next.chords && next.chords.length > 0) ? next.chords.map(c => `<span>${c}</span>`).join(" ") : "&nbsp;";
+                const nChords = (next && next.chords && next.chords.length > 0) ? next.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${c}</span>`).join(" ") : "&nbsp;";
                 document.querySelector("#rLineNext .r-chord-header").innerHTML = nChords;
                 document.querySelector("#rLineNext .r-lyric-text").innerText = next ? next.text : "";
               }
