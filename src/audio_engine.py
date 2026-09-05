@@ -138,21 +138,10 @@ class AudioEngine:
 
     def _audio_callback(self, outdata: np.ndarray, frames: int, time_info, status):
         """Ultra-low-latency real-time mixing callback"""
-        # Phase-align metronome to playing backing track if active
-        if self.song_player.is_playing and self.metronome.enabled:
-            # Check if song has analyzed downbeat offset
-            downbeat = 0.0
-            if self.song_player.analysis_data:
-                downbeat = float(self.song_player.analysis_data.get("first_downbeat_seconds", 0.0))
-            cur_sec = self.song_player.current_frame / float(self.samplerate)
-            # Sync only on beat phase edges to avoid audio clicks
-            if self.metronome.frame_counter < frames:
-                self.metronome.sync_to_playhead(cur_sec, downbeat)
-
         # 1. Backing track
         track_buf = self.song_player.get_audio_block(frames) * self.track_volume
         
-        # 2. Metronome
+        # 2. Metronome (Clean uninterrupted steady clock)
         metro_buf = self.metronome.get_audio_block(frames) * self.metronome_volume
 
         # Master mix

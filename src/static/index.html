@@ -2065,10 +2065,10 @@
       if (!activeLyricsSheet || activeLyricsSheet.length === 0) return;
 
       let currentIndex = -1;
-      // Stricter temporal window matching so the follow scroll doesn't rush ahead
+      // Delay transition so highlight follows sung vocal rather than rushing ahead (+0.8s vocal onset delay)
       for (let i = 0; i < activeLyricsSheet.length; i++) {
         const nextTime = (i + 1 < activeLyricsSheet.length) ? activeLyricsSheet[i + 1].time : 999999.0;
-        if (currentSeconds >= (activeLyricsSheet[i].time - 0.05) && currentSeconds < nextTime) {
+        if (currentSeconds >= (activeLyricsSheet[i].time + 0.8) && currentSeconds < (nextTime + 0.8)) {
           currentIndex = i;
           break;
         }

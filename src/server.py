@@ -79,15 +79,30 @@ async def api_transport(request):
     
     if action == "play":
         sp.play()
+        # Align metronome phase ONCE at play/seek trigger
+        if state.audio.metronome.enabled:
+            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            cur_sec = sp.current_frame / float(state.audio.samplerate)
+            state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
     elif action == "pause":
         sp.pause()
     elif action == "stop":
         sp.stop()
+        if state.audio.metronome.enabled:
+            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            state.audio.metronome.sync_to_playhead(0.0, downbeat)
     elif action == "toggle":
         sp.toggle_play()
+        if sp.is_playing and state.audio.metronome.enabled:
+            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            cur_sec = sp.current_frame / float(state.audio.samplerate)
+            state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
     elif action == "seek":
         sec = float(body.get("seconds", 0.0))
         sp.seek_seconds(sec)
+        if state.audio.metronome.enabled:
+            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            state.audio.metronome.sync_to_playhead(sec, downbeat)
     elif action == "loop_a":
         sec = body.get("seconds")
         sp.set_loop_a(float(sec) if sec is not None else None)
