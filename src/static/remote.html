@@ -412,36 +412,38 @@
       </div>
     </div>
 
-    <!-- Live Synced Musician Lead Sheet (3-Line View on Phone) -->
-    <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; min-height: 180px; box-sizing: border-box; overflow: visible;">
+    <!-- Live Song Chord Tracker Card (Current & Next Chord) -->
+    <div class="card" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px;">
       <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Musician Lead Sheet</span>
-        </div>
-        <span style="font-size: 9px; font-family: var(--font-mono); color: var(--accent);" id="remoteLyricsIndicator">Auto-synced</span>
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Song Chords</span>
+        <span id="remoteCurrentChordTime" style="font-size: 10px; font-family: var(--font-mono); color: var(--text-faint);">00:00.0</span>
       </div>
-      
-      <!-- 3-Line Lead Sheet Container: Previous, Active, Next -->
-      <div id="remoteLeadSheetContainer" style="display: flex; flex-direction: column; gap: 8px;">
-        <div id="rLinePrev" style="opacity: 0.35; font-size: 12px; display: flex; flex-direction: column; gap: 3px; min-height: 38px;">
-          <div class="r-chord-header" style="display: flex; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); min-height: 15px;">&nbsp;</div>
-          <div class="r-lyric-text" style="color: var(--text-dim); white-space: normal; line-height: 1.3;">&nbsp;</div>
-        </div>
 
-        <div id="rLineActive" style="background: rgba(56, 189, 248, 0.12); padding: 6px 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--accent); min-height: 48px;">
-          <div class="r-chord-header" style="display: flex; gap: 8px; font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent); min-height: 16px;">
-            <span style="background: rgba(56, 189, 248, 0.2); padding: 1px 5px; border-radius: 3px;">--</span>
-          </div>
-          <div class="r-lyric-text" style="font-size: 14px; font-weight: 700; color: #ffffff; white-space: normal; line-height: 1.35;">
-            Tap Analyze to load song lead sheet...
-          </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <!-- Current Chord -->
+        <div style="background: var(--bg-sunken); padding: 8px; border-radius: 6px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 9px; font-weight: 700; color: var(--text-faint); font-family: var(--font-mono);">CURRENT</span>
+          <div id="rLiveCurrentChord" style="font-size: 26px; font-weight: 800; color: #ffffff; font-family: var(--font-mono); line-height: 1.1;">--</div>
         </div>
+        <!-- Next Chord -->
+        <div style="background: rgba(56, 189, 248, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.35); display: flex; flex-direction: column; gap: 2px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 9px; font-weight: 700; color: var(--accent); font-family: var(--font-mono);">NEXT</span>
+            <span id="rLiveNextCount" style="font-size: 10px; font-family: var(--font-mono); font-weight: 700; color: var(--accent-secondary);">--</span>
+          </div>
+          <div id="rLiveNextChord" style="font-size: 20px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); line-height: 1.1;">--</div>
+        </div>
+      </div>
+    </div>
 
-        <div id="rLineNext" style="opacity: 0.55; font-size: 12px; display: flex; flex-direction: column; gap: 3px; min-height: 38px;">
-          <div class="r-chord-header" style="display: flex; gap: 6px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); min-height: 15px;">&nbsp;</div>
-          <div class="r-lyric-text" style="color: var(--text-dim); white-space: normal; line-height: 1.3;">&nbsp;</div>
-        </div>
+    <!-- Static Song Lyrics View (Mobile) -->
+    <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; max-height: 160px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Song Lyrics</span>
+        <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">Static Reference</span>
+      </div>
+      <div id="remoteStaticLyricsContainer" style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-dim); max-height: 120px;">
+        Tap Analyze to load song lyrics...
       </div>
     </div>
 
@@ -1377,37 +1379,36 @@
             }
             document.getElementById("remoteTimeText").innerText = `${formatTime(currentPosition)} / ${formatTime(songDuration)}`;
 
-            // Update mobile 3-line lead sheet (Previous, Active, Next)
-            if (song.lyrics_sheet && song.lyrics_sheet.length > 0) {
-              let activeIdx = -1;
-              for (let i = 0; i < song.lyrics_sheet.length; i++) {
-                const nextTime = (i + 1 < song.lyrics_sheet.length) ? song.lyrics_sheet[i + 1].time : 999999.0;
-                if (currentPosition >= (song.lyrics_sheet[i].time - 0.05) && currentPosition < nextTime) {
-                  activeIdx = i;
-                  break;
-                }
+            // Update mobile Live Song Chord Tracker (Current & Next Chord)
+            if (song.chord_chart && song.chord_chart.length > 0) {
+              const curChord = song.chord_chart.find((c, i) => {
+                const nextT = (i + 1 < song.chord_chart.length) ? song.chord_chart[i + 1].time : 999999.0;
+                return currentPosition >= c.time && currentPosition < nextT;
+              });
+              const nextChord = song.chord_chart.find(c => c.time > (currentPosition + 0.1));
+
+              const curEl = document.getElementById("rLiveCurrentChord");
+              const timeEl = document.getElementById("remoteCurrentChordTime");
+              if (curEl) curEl.innerText = curChord ? curChord.chord : "--";
+              if (timeEl) timeEl.innerText = curChord ? formatTime(curChord.time) : formatTime(currentPosition);
+
+              const nextEl = document.getElementById("rLiveNextChord");
+              const nextCd = document.getElementById("rLiveNextCount");
+              if (nextChord) {
+                const diff = (nextChord.time - currentPosition).toFixed(1);
+                if (nextEl) nextEl.innerText = nextChord.chord;
+                if (nextCd) nextCd.innerText = `in ${diff}s`;
+              } else {
+                if (nextEl) nextEl.innerText = "--";
+                if (nextCd) nextCd.innerText = "--";
               }
-              if (activeIdx >= 0) {
-                const prev = activeIdx > 0 ? song.lyrics_sheet[activeIdx - 1] : null;
-                const curr = song.lyrics_sheet[activeIdx];
-                const next = activeIdx + 1 < song.lyrics_sheet.length ? song.lyrics_sheet[activeIdx + 1] : null;
+            }
 
-                // Render Prev Line
-                const pChords = (prev && prev.chords && prev.chords.length > 0) ? prev.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${c}</span>`).join(" ") : "&nbsp;";
-                document.querySelector("#rLinePrev .r-chord-header").innerHTML = pChords;
-                document.querySelector("#rLinePrev .r-lyric-text").innerText = prev ? prev.text : "";
-
-                // Render Active Line
-                const cChords = (curr.chords && curr.chords.length > 0) 
-                  ? curr.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.25); padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(56, 189, 248, 0.5);">${c}</span>`).join(" ")
-                  : `<span style="background: rgba(56, 189, 248, 0.2); padding: 1px 4px; border-radius: 2px;">--</span>`;
-                document.querySelector("#rLineActive .r-chord-header").innerHTML = cChords;
-                document.querySelector("#rLineActive .r-lyric-text").innerText = curr.text;
-
-                // Render Next Line
-                const nChords = (next && next.chords && next.chords.length > 0) ? next.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${c}</span>`).join(" ") : "&nbsp;";
-                document.querySelector("#rLineNext .r-chord-header").innerHTML = nChords;
-                document.querySelector("#rLineNext .r-lyric-text").innerText = next ? next.text : "";
+            // Update mobile Static Lyrics Container
+            if (song.lyrics_sheet && song.lyrics_sheet.length > 0) {
+              const staticL = document.getElementById("remoteStaticLyricsContainer");
+              if (staticL && staticL.children.length !== song.lyrics_sheet.length) {
+                staticL.innerHTML = song.lyrics_sheet.map(l => `<div>${l.text}</div>`).join("");
               }
             }
 
