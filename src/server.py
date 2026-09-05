@@ -19,6 +19,7 @@ from src.montage_host import MontageHost
 from src.ear_training import EarTrainingManager
 from src.analyzer import analyze_track
 from src.lyrics import fetch_synced_lyrics
+from src.async_worker import run_in_executor
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -403,8 +404,9 @@ async def api_analyze_song(request):
         if not os.path.exists(fpath):
             return JSONResponse({"error": "File not found"}, status_code=404)
 
-        # Run analysis (optimized 22kHz CQT + BTC Transformer)
-        res = analyze_track(fpath)
+        # Run deep MIR & BTC analysis in a dedicated background worker thread
+        # This keeps the FastAPI/Starlette async loop and WebSocket telemetry at 25fps with zero UI stutter
+        res = await run_in_executor(analyze_track, fpath)
         if "error" not in res:
             # Auto-populate song player chord progression & analysis data
             sp = state.audio.song_player

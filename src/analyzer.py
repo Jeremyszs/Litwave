@@ -151,8 +151,11 @@ def calculate_nashville(chord: str, root_key: str) -> str:
     return num_str
 
 
-def estimate_key(chroma_mean: np.ndarray) -> str:
-    """Krumhansl-Schmuckler Key Profile Correlation"""
+def estimate_key(chroma_mean: np.ndarray, detected_chords: Optional[List[Dict[str, Any]]] = None) -> str:
+    """
+    Krumhansl-Schmuckler Key Profile Correlation with Harmonic Center Grounding.
+    Resolves relative minor vs major ambiguity (e.g. C#m vs E Major in Kisah Romantis).
+    """
     if chroma_mean.shape[0] != 12:
         return "C"
         
@@ -163,21 +166,42 @@ def estimate_key(chroma_mean: np.ndarray) -> str:
     best_corr = -1.0
     best_key = "C"
     
+    # Calculate correlation for all 24 keys
+    candidate_scores = {}
     for i in range(12):
         # Major correlation
         rot_maj = np.roll(k_maj, i)
         corr_maj = float(np.dot(norm_chroma, rot_maj))
-        if corr_maj > best_corr:
-            best_corr = corr_maj
-            best_key = NOTE_NAMES[i]
+        candidate_scores[NOTE_NAMES[i]] = corr_maj
             
         # Minor correlation
         rot_min = np.roll(k_min, i)
         corr_min = float(np.dot(norm_chroma, rot_min))
-        if corr_min > best_corr:
-            best_corr = corr_min
-            best_key = f"{NOTE_NAMES[i]}m"
+        candidate_scores[f"{NOTE_NAMES[i]}m"] = corr_min
+
+    # Harmonic weight from actual detected chords
+    if detected_chords and len(detected_chords) > 0:
+        chord_durations = {}
+        for c in detected_chords:
+            ch = c.get("chord", "N")
+            dur = c.get("duration", 2.0)
+            chord_durations[ch] = chord_durations.get(ch, 0.0) + dur
             
+        # If relative major triad duration substantially exceeds relative minor (e.g. E > C#m in Kisah Romantis)
+        for i in range(12):
+            maj_note = NOTE_NAMES[i]
+            rel_minor_note = f"{NOTE_NAMES[(i + 9) % 12]}m"
+            
+            maj_dur = chord_durations.get(maj_note, 0.0) + chord_durations.get(f"{maj_note}Maj7", 0.0)
+            min_dur = chord_durations.get(rel_minor_note, 0.0) + chord_durations.get(f"{rel_minor_note}7", 0.0)
+            
+            # Boost score based on actual tonic chord duration
+            if maj_dur > 0 and maj_dur > min_dur * 1.3:
+                candidate_scores[maj_note] = candidate_scores.get(maj_note, 0.0) + 0.015
+            elif min_dur > 0 and min_dur > maj_dur * 1.3:
+                candidate_scores[rel_minor_note] = candidate_scores.get(rel_minor_note, 0.0) + 0.015
+
+    best_key = max(candidate_scores.items(), key=lambda x: x[1])[0]
     return best_key
 
 
@@ -223,9 +247,9 @@ def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict
     first_downbeat = float(beat_times[0]) if len(beat_times) > 0 else 0.0
 
     # 2. Key Estimation
+    # 2. Extract Chroma
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
     chroma_mean = np.mean(chroma, axis=1)
-    root_key = estimate_key(chroma_mean)
     time_sig = "4/4"
 
     # 3. BTC Deep Transformer Chord Recognition
@@ -248,8 +272,11 @@ def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict
 
     # Fallback to beat-synchronous chroma if BTC fails or unavailable
     if not raw_chords:
-        logger.warning("BTC unavailable, falling back to beat-synchronous chroma...")
-        raw_chords = [{"start": 0.0, "end": round(duration, 2), "chord": root_key}]
+        logger.warning("BTC unavailable, falling back to basic C major...")
+        raw_chords = [{"start": 0.0, "end": round(duration, 2), "chord": "C"}]
+
+    # Ground root key detection using actual detected chord energy
+    root_key = estimate_key(chroma_mean, raw_chords)
 
     # 4. Quantize and filter chords to musical measure boundaries
     # Avoid rapid single-beat flickers: enforce minimum duration (~1.2s or 2 beats)
