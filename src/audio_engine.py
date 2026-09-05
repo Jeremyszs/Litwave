@@ -195,15 +195,26 @@ class AudioEngine:
         # Transfer to local output
         outdata[:] = mix
         
-        # Compute real-time peak telemetry
+        # Compute real-time peak telemetry from local mix (Track + Metronome)
         peak_l = float(np.max(np.abs(outdata[:, 0]))) if frames > 0 else 0.0
         peak_r = float(np.max(np.abs(outdata[:, 1]))) if frames > 0 else 0.0
         track_peak = float(np.max(np.abs(track_buf))) if frames > 0 else 0.0
         
-        self.peak_left_db = 20.0 * np.log10(max(1e-4, peak_l))
-        self.peak_right_db = 20.0 * np.log10(max(1e-4, peak_r))
-        self.peak_track_db = 20.0 * np.log10(max(1e-4, track_peak))
-        self.is_clipping = (peak_l >= 0.99 or peak_r >= 0.99)
+        local_track_db = 20.0 * np.log10(max(1e-4, track_peak))
+        local_left_db = 20.0 * np.log10(max(1e-4, peak_l))
+        local_right_db = 20.0 * np.log10(max(1e-4, peak_r))
+
+        if self.peak_track_db <= -59.0 and track_peak > 0:
+            self.peak_track_db = local_track_db
+
+        # Combine local and C++ host peaks so master meter reflects whichever is active (synth, track, or both)
+        synth_lin = 10.0 ** (self.peak_synth_db / 20.0) if self.peak_synth_db > -59.0 else 0.0
+        mix_lin_l = max(peak_l, synth_lin) * self.master_volume
+        mix_lin_r = max(peak_r, synth_lin) * self.master_volume
+
+        self.peak_left_db = 20.0 * np.log10(max(1e-4, mix_lin_l))
+        self.peak_right_db = 20.0 * np.log10(max(1e-4, mix_lin_r))
+        self.is_clipping = (mix_lin_l >= 0.99 or mix_lin_r >= 0.99)
 
     def get_telemetry(self) -> Dict[str, Any]:
         return {

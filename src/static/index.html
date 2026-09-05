@@ -1531,7 +1531,6 @@
         <div class="mixer-eq-section" style="padding: 6px 8px 8px 8px; border-top: 1px solid var(--border-dim); display: flex; flex-direction: column; gap: 5px; transition: all 0.2s ease;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 4px;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
               <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.5px;">Master Parametric EQ</span>
             </div>
             <span style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">±18 dB</span>
@@ -3609,7 +3608,7 @@
       }
 
       // VU meters
-      const dbToPercent = (db) => Math.max(0, Math.min(100, ((db + 60) / 60) * 85));
+      const dbToPercent = (db) => Math.max(0, Math.min(100, ((db + 55) / 55) * 100));
       const trkDb = audio.vu_track !== undefined ? audio.vu_track : -60.0;
       const synDb = audio.vu_synth !== undefined ? audio.vu_synth : -60.0;
       const mstLDb = audio.vu_master_l !== undefined ? audio.vu_master_l : -60.0;
