@@ -251,6 +251,19 @@ async def index(request):
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Montage Practice DAW is starting...</h1>")
 
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        import numpy as np
+        if isinstance(obj, (np.bool_, np.bool)):
+            return bool(obj)
+        if isinstance(obj, (np.integer, np.int64, np.int32)):
+            return int(obj)
+        if isinstance(obj, (np.floating, np.float32, np.float64)):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
 async def ws_telemetry(websocket: WebSocket):
     await websocket.accept()
     state.ws_clients.append(websocket)
@@ -279,7 +292,7 @@ async def ws_telemetry(websocket: WebSocket):
                     "current_scene": state.montage.current_scene
                 }
             }
-            await websocket.send_text(json.dumps(telemetry))
+            await websocket.send_text(json.dumps(telemetry, cls=CustomJSONEncoder))
             await asyncio.sleep(0.04) # 25fps refresh
     except (WebSocketDisconnect, asyncio.CancelledError, RuntimeError):
         pass

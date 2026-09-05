@@ -217,7 +217,7 @@ class AudioEngine:
 
         self.peak_left_db = 20.0 * np.log10(max(1e-4, mix_lin_l))
         self.peak_right_db = 20.0 * np.log10(max(1e-4, mix_lin_r))
-        self.is_clipping = (mix_lin_l >= 0.99 or mix_lin_r >= 0.99)
+        self.is_clipping = bool(mix_lin_l >= 0.99 or mix_lin_r >= 0.99)
 
     def query_vst_meters(self):
         """Polls peak levels from C++ host independently of playback"""
