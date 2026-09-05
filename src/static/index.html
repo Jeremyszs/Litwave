@@ -23,15 +23,41 @@
       --text-dim: #9ca3af;
       --text-faint: #525b6a;
 
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.12);
-      --accent-secondary: #60a5fa;
-      --accent-secondary-soft: rgba(96, 165, 250, 0.12);
+      /* Restrained Matte Hardware Palette (Pastel White / Studio Silver with Subtle Ocean Blue Accents) */
+      --accent: #e2e8f0;            /* Clean studio silver / pastel white */
+      --accent-soft: rgba(255, 255, 255, 0.08);
+      --accent-secondary: #cbd5e1;  /* Secondary pastel silver */
+      --accent-secondary-soft: rgba(255, 255, 255, 0.05);
+      --studio-blue: #38bdf8;       /* Precision studio cyan reserved for active indicators */
       --danger: #ef4444;
       --success: #22c55e;
 
       --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       --font-mono: 'Geist Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-base: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-panel: #f1f5f9;
+      --bg-elevated: #e2e8f0;
+      --bg-sunken: #e2e8f0;
+      
+      --border-dim: #e2e8f0;
+      --border-subtle: #cbd5e1;
+      --border-strong: #94a3b8;
+
+      --text-main: #0f172a;
+      --text-dim: #475569;
+      --text-faint: #94a3b8;
+
+      --accent: #0f172a;            /* Crisp black/slate in light mode */
+      --accent-soft: rgba(15, 23, 42, 0.06);
+      --accent-secondary: #334155;
+      --accent-secondary-soft: rgba(15, 23, 42, 0.04);
+      --studio-blue: #0284c7;
+      --danger: #dc2626;
+      --success: #16a34a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,7 +170,7 @@
 
     .fader-track-fill {
       width: 100%;
-      background: rgba(56, 189, 248, 0.25);
+      background: rgba(255, 255, 255, 0.18);
       pointer-events: none;
     }
 
@@ -152,9 +178,11 @@
       position: absolute;
       width: 100%;
       height: 6px;
-      background: var(--accent);
-      border-top: 1px solid #7dd3fc;
-      border-bottom: 1px solid #0284c7;
+      background: #ffffff;
+      border-top: 1px solid #ffffff;
+      border-bottom: 1px solid #cbd5e1;
+      border-radius: 1px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.6);
       pointer-events: none;
     }
 
@@ -1117,6 +1145,12 @@
       <button class="btn-header-action" onclick="openSettingsModal()" title="Audio driver, buffer and preferences">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Preferences
+      </button>
+
+      <!-- Light / Dark Mode Toggle Button -->
+      <button class="btn-header-action" id="themeToggleBtn" onclick="toggleStudioTheme()" title="Toggle Studio Light / Dark Mode">
+        <svg id="themeIcon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span id="themeText">Theme</span>
       </button>
     </div>
   </header>
@@ -2577,6 +2611,23 @@
         }
         grid.innerHTML = html;
       }
+    }
+
+    let currentTheme = localStorage.getItem("litwave_theme") || "dark";
+    if (currentTheme === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+
+    function toggleStudioTheme() {
+      currentTheme = currentTheme === "dark" ? "light" : "dark";
+      if (currentTheme === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+      localStorage.setItem("litwave_theme", currentTheme);
+      drawWaveform();
+      drawEqSpline();
     }
 
     let lyricsFollowEnabled = false;
