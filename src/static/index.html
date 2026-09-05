@@ -3732,19 +3732,19 @@
         document.getElementById("volumeVal").innerText = `${volPct}%`;
         document.getElementById("volPedalBar").style.width = `${volPct}%`;
 
-                if (midi.active_notes && midi.active_notes.length > 0) {
-                  document.getElementById("lastNoteDisplay").innerText = `NOTE ${midi.active_note_names[midi.active_note_names.length - 1]}`;
-                }
-                const activeNotes = midi.active_notes || [];
-                const keysContainer = document.getElementById("pianoRollKeys");
-                if (keysContainer) {
-                  const currentActives = keysContainer.querySelectorAll(".piano-key.active");
-                  currentActives.forEach(el => el.classList.remove("active"));
-                  activeNotes.forEach(note => {
-                    const el = document.getElementById(`key-${note}`);
-                    if (el) el.classList.add("active");
-                  });
-                }
+        if (midi.active_notes && midi.active_notes.length > 0) {
+          document.getElementById("lastNoteDisplay").innerText = `NOTE ${midi.active_note_names[midi.active_note_names.length - 1]}`;
+        }
+        const activeNotes = midi.active_notes || [];
+        const container = document.getElementById("pianoWrapper");
+        if (container) {
+          const currentActives = container.querySelectorAll(".active");
+          currentActives.forEach(el => el.classList.remove("active"));
+          activeNotes.forEach(note => {
+            const el = document.getElementById(`key-${note}`);
+            if (el) el.classList.add("active");
+          });
+        }
 
         if (midi.active_note_names && midi.active_note_names.length > 0) {
           document.getElementById("chordNotesDisplay").innerText = midi.active_note_names.join(" ");
