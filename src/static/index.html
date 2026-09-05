@@ -1091,10 +1091,6 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn-header-action" onclick="openEqModal()" title="Master 4-Band Spline Equalizer">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-        <span>Master EQ</span>
-      </button>
       <button class="btn-header-action" onclick="openEarModal()" title="Ear Training & Chord Progression Practice">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
         <span>Ear Training</span>
@@ -1404,21 +1400,30 @@
               </div>
               <div id="harmonicMeasureGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 2px;">
                 <!-- 4 Interactive Bars dynamically rendered -->
-                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
-                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 1</div>
-                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
+              </div>
+            </div>
+
+            <!-- Live Voicing Recommendation & Hand Inversion Guide -->
+            <div style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-sunken); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); margin-top: 2px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono); letter-spacing: 0.5px;">VOICING & EXTENSION RECOMMENDATIONS</span>
+                <span id="voicingFormulaText" style="font-size: 9px; font-family: var(--font-mono); color: var(--accent);">Root Position [1 - 3 - 5]</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 180px; gap: 8px; align-items: center;">
+                <!-- 3 Extension Preset Buttons -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <div style="display: flex; gap: 4px;" id="voicingExtensionBtnGroup">
+                    <button class="btn btn-active" id="extBtn_root" onclick="selectVoicingExtension('root')" style="flex: 1; padding: 3px 6px; font-size: 10px; font-family: var(--font-mono);">Root</button>
+                    <button class="btn" id="extBtn_ext1" onclick="selectVoicingExtension('ext1')" style="flex: 1; padding: 3px 6px; font-size: 10px; font-family: var(--font-mono);">7th</button>
+                    <button class="btn" id="extBtn_ext2" onclick="selectVoicingExtension('ext2')" style="flex: 1; padding: 3px 6px; font-size: 10px; font-family: var(--font-mono);">9th / Add9</button>
+                  </div>
+                  <div style="font-size: 9px; color: var(--text-dim); font-family: var(--font-mono); line-height: 1.3;" id="voicingBreakdownDesc">
+                    Notes: <span id="voicingNotesList" style="color: var(--accent); font-weight: 700;">--</span>
+                  </div>
                 </div>
-                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
-                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 2</div>
-                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
-                </div>
-                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
-                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 3</div>
-                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
-                </div>
-                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
-                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 4</div>
-                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
+                <!-- 2-Octave Mini Piano Key Visualizer for Current Voicing -->
+                <div style="height: 48px; background: #000000; border: 1px solid var(--border-dim); border-radius: 4px; padding: 2px; position: relative; overflow: hidden;" id="miniVoicingPianoWrap">
+                  <svg id="miniVoicingPianoSvg" width="100%" height="100%" viewBox="0 0 168 44" preserveAspectRatio="none" style="display: block;"></svg>
                 </div>
               </div>
             </div>
@@ -1511,6 +1516,33 @@
         </div>
       </section>
 
+      <!-- Dedicated Master 4-Band Spline Equalizer Module in Sidebar -->
+      <section class="studio-panel eq-deck" id="eqDeck">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+            <span class="panel-title-text">Master EQ</span>
+          </div>
+          <div class="panel-header-actions">
+            <button class="btn" style="padding: 1px 5px; font-size: 9px;" onclick="resetEqFlat()">Flat</button>
+            <button class="panel-collapse-btn" id="eqCollapseBtn" onclick="toggleAccordion('eqDeck')" title="Minimize / Expand Master EQ">▾</button>
+          </div>
+        </div>
+
+        <div class="side-controls-body" style="padding: 6px 8px; display: flex; flex-direction: column; gap: 6px;">
+          <!-- Embedded Live Interactive Spline Canvas -->
+          <div style="position: relative; width: 100%; height: 110px; background: #08090c; border: 1px solid var(--border-dim); border-radius: 4px; overflow: hidden; cursor: crosshair;" id="eqCanvasWrap">
+            <canvas id="eqCanvas" width="250" height="110" style="display: block; width: 100%; height: 100%;"></canvas>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+            <span>B1: Low Shelf</span>
+            <span>B2: 500Hz</span>
+            <span>B3: 2.5kHz</span>
+            <span>B4: High Shelf</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Others / Practice Tools Module (Dedicated Metronome & Practice Utility Tab) -->
       <section class="studio-panel others-deck" id="othersDeck">
         <div class="panel-header">
@@ -1585,39 +1617,6 @@
       </section>
     </div>
   </main>
-
-  <!-- Master 4-Band Spline Equalizer Modal -->
-  <div class="modal-backdrop" id="eqModal">
-    <div class="modal-window" style="width: 580px; max-height: 85vh; display: flex; flex-direction: column;">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <div class="modal-title">Master Parametric EQ</div>
-          <span style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">4-Band Precision Curve</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="resetEqFlat()">Flat</button>
-          <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEqModal()" title="Close">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
-        <!-- Interactive Spline Canvas with Grid Lines -->
-        <div style="position: relative; width: 100%; height: 200px; background: #08090c; border: 1px solid var(--border-dim); border-radius: 6px; overflow: hidden; cursor: crosshair;" id="eqCanvasWrap">
-          <canvas id="eqCanvas" width="530" height="200" style="display: block;"></canvas>
-        </div>
-
-        <!-- Dynamic Band Inspector Readout -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="eqBandInspectors">
-          <!-- 4 Band parameter readout tiles rendered dynamically -->
-        </div>
-
-        <div style="font-size: 10px; color: var(--text-faint); text-align: center; font-family: var(--font-mono);">
-          Drag dots horizontally for Freq (Hz), vertically for Gain (dB). Mousewheel scales Bandwidth (Q).
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Ear Training Studio Modal -->
   <div class="modal-backdrop" id="earModal">
@@ -2385,6 +2384,105 @@
       return `Step ${fromChord} → ${toChord}`;
     }
 
+    let selectedVoicingExt = "root"; // "root", "ext1", "ext2"
+    let currentVoicingChord = "";
+
+    function selectVoicingExtension(extType) {
+      selectedVoicingExt = extType;
+      ['root', 'ext1', 'ext2'].forEach(k => {
+        const b = document.getElementById(`extBtn_${k}`);
+        if (b) b.classList.toggle("btn-active", k === extType);
+      });
+      refreshVoicingVisualizer();
+    }
+
+    function getExtendedVoicing(chordName, extType) {
+      if (!chordName || chordName === "--") return { name: "--", notes: [], formula: "None" };
+      const root = chordName.length > 1 && (chordName[1] === "#" || chordName[1] === "b") ? chordName.slice(0, 2) : chordName.slice(0, 1);
+      const isMinor = chordName.includes("m") && !chordName.includes("maj") && !chordName.includes("Maj");
+
+      if (extType === "root") {
+        const notes = getChordNotes(chordName);
+        return {
+          name: chordName,
+          notes: notes,
+          formula: isMinor ? `Minor Triad [1 - b3 - 5]` : `Major Triad [1 - 3 - 5]`
+        };
+      } else if (extType === "ext1") {
+        // 7th extension
+        const chord7 = isMinor ? `${root}m7` : `${root}Maj7`;
+        const notes = getChordNotes(chord7);
+        return {
+          name: chord7,
+          notes: notes.length > 0 ? notes : getChordNotes(chordName),
+          formula: isMinor ? `Minor 7th [1 - b3 - 5 - b7]` : `Major 7th [1 - 3 - 5 - 7]`
+        };
+      } else {
+        // 9th or Add9 extension
+        const chord9 = isMinor ? `${root}m9` : `${root}add9`;
+        let notes = isMinor ? getChordNotes(`${root}m7`) : getChordNotes(root);
+        // Compute 9th pitch (2 semitones above root)
+        const noteScale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const normRoot = root.replace("Db", "C#").replace("Eb", "D#").replace("Gb", "F#").replace("Ab", "G#").replace("Bb", "A#");
+        const rIdx = noteScale.indexOf(normRoot);
+        const nineth = rIdx >= 0 ? noteScale[(rIdx + 2) % 12] : "D";
+        const combined = [...new Set([...notes, nineth])];
+        return {
+          name: chord9,
+          notes: combined,
+          formula: isMinor ? `Minor 9th [1 - b3 - 5 - b7 - 9]` : `Add9 Voicing [1 - 3 - 5 - 9]`
+        };
+      }
+    }
+
+    function renderMiniVoicingPiano(notes) {
+      const svg = document.getElementById("miniVoicingPianoSvg");
+      if (!svg) return;
+      
+      const whiteKeys = ["C", "D", "E", "F", "G", "A", "B", "C", "D", "E", "F", "G", "A", "B"];
+      const blackKeys = [
+        { note: "C#", pos: 0.7 }, { note: "D#", pos: 1.7 },
+        { note: "F#", pos: 3.7 }, { note: "G#", pos: 4.7 }, { note: "A#", pos: 5.7 },
+        { note: "C#", pos: 7.7 }, { note: "D#", pos: 8.7 },
+        { note: "F#", pos: 10.7 }, { note: "G#", pos: 11.7 }, { note: "A#", pos: 12.7 }
+      ];
+
+      const normNotes = (notes || []).map(n => n.replace("Db", "C#").replace("Eb", "D#").replace("Gb", "F#").replace("Ab", "G#").replace("Bb", "A#"));
+      const keyWidth = 12;
+
+      let html = "";
+      // Render White keys (14 keys = 2 octaves)
+      whiteKeys.forEach((wk, i) => {
+        const isHeld = normNotes.includes(wk);
+        const fill = isHeld ? "var(--accent)" : "#1e222a";
+        const stroke = "#090a0c";
+        html += `<rect x="${i * keyWidth}" y="0" width="${keyWidth - 1}" height="44" fill="${fill}" stroke="${stroke}" stroke-width="1" rx="1" />`;
+      });
+
+      // Render Black keys
+      blackKeys.forEach(bk => {
+        const isHeld = normNotes.includes(bk.note);
+        const fill = isHeld ? "#ffffff" : "#090a0c";
+        const stroke = isHeld ? "var(--accent)" : "#1c2028";
+        html += `<rect x="${bk.pos * keyWidth}" y="0" width="7" height="26" fill="${fill}" stroke="${stroke}" stroke-width="1" rx="1" />`;
+      });
+
+      svg.innerHTML = html;
+    }
+
+    function refreshVoicingVisualizer() {
+      if (!currentVoicingChord || currentVoicingChord === "--") {
+        document.getElementById("voicingFormulaText").innerText = "Root Position [1 - 3 - 5]";
+        document.getElementById("voicingNotesList").innerText = "--";
+        renderMiniVoicingPiano([]);
+        return;
+      }
+      const v = getExtendedVoicing(currentVoicingChord, selectedVoicingExt);
+      document.getElementById("voicingFormulaText").innerText = `${v.name}: ${v.formula}`;
+      document.getElementById("voicingNotesList").innerText = v.notes.join(" - ");
+      renderMiniVoicingPiano(v.notes);
+    }
+
     function updateSongChordTracker(currentSeconds) {
       if (!activeChordChart || activeChordChart.length === 0) return;
 
@@ -2407,6 +2505,10 @@
       const curTimeEl = document.getElementById("currentChordTimecode");
       const curNotesEl = document.getElementById("currentVoicingNotes");
       if (curChord) {
+        if (curChord.chord !== currentVoicingChord) {
+          currentVoicingChord = curChord.chord;
+          refreshVoicingVisualizer();
+        }
         if (curNameEl) curNameEl.innerText = curChord.chord;
         if (curNashEl) curNashEl.innerText = curChord.nashville ? `[${curChord.nashville}]` : '';
         if (curTimeEl) curTimeEl.innerText = formatTime(curChord.time);
@@ -2415,6 +2517,10 @@
           curNotesEl.innerHTML = notes.map(n => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${n}</span>`).join("");
         }
       } else {
+        if (currentVoicingChord !== "") {
+          currentVoicingChord = "";
+          refreshVoicingVisualizer();
+        }
         if (curNameEl) curNameEl.innerText = "--";
         if (curNashEl) curNashEl.innerText = "";
         if (curTimeEl) curTimeEl.innerText = formatTime(currentSeconds);
@@ -3857,9 +3963,11 @@
 
     window.addEventListener("resize", () => {
       if (waveformPeaks.length > 0) drawWaveform();
+      drawEqSpline();
     });
 
     loadDevices();
+    setTimeout(initEqCanvas, 100);
   </script>
 </body>
 </html>
