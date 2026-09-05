@@ -1447,7 +1447,9 @@
           <div class="panel-title">Key Shift</div>
           <div class="panel-header-actions">
             <button class="btn" style="padding: 1px 5px; font-size: 9px;" onclick="setTrackPitch(0)">Reset</button>
-            <button class="panel-collapse-btn" id="pitchCollapseBtn" onclick="toggleAccordion('pitchDeck')" title="Minimize / Expand Key Shift">▾</button>
+            <button class="panel-collapse-btn" id="pitchCollapseBtn" onclick="toggleAccordion('pitchDeck')" title="Minimize / Expand Key Shift">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           </div>
         </div>
 
@@ -1469,7 +1471,9 @@
           <div class="panel-title">Output Mixer</div>
           <div class="panel-header-actions">
             <button class="btn" style="padding: 1px 5px; font-size: 9px;" onclick="resetEqFlat()" title="Reset Master EQ to Flat response">EQ Flat</button>
-            <button class="panel-collapse-btn" id="mixerCollapseBtn" onclick="toggleAccordion('mixerDeck')" title="Minimize / Expand Output Mixer">▾</button>
+            <button class="panel-collapse-btn" id="mixerCollapseBtn" onclick="toggleAccordion('mixerDeck')" title="Minimize / Expand Output Mixer">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           </div>
         </div>
 
@@ -1552,7 +1556,9 @@
         <div class="panel-header">
           <div class="panel-title">Others</div>
           <div class="panel-header-actions">
-            <button class="panel-collapse-btn" id="othersCollapseBtn" onclick="toggleAccordion('othersDeck')" title="Minimize / Expand Others">▾</button>
+            <button class="panel-collapse-btn" id="othersCollapseBtn" onclick="toggleAccordion('othersDeck')" title="Minimize / Expand Others">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           </div>
         </div>
 
@@ -1664,7 +1670,10 @@
         </div>
 
         <button class="btn btn-primary" onclick="nextEarExercise()" style="padding: 8px; font-weight: 600; justify-content: center; margin-top: 4px;">
-          Next Question →
+          <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+            <span>Next Question</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
         </button>
       </div>
     </div>
@@ -2020,7 +2029,12 @@
       const btn = id === "pitchDeck" 
         ? document.getElementById("pitchCollapseBtn") 
         : (id === "mixerDeck" ? document.getElementById("mixerCollapseBtn") : document.getElementById("othersCollapseBtn"));
-      if (btn) btn.innerText = panel.classList.contains("is-minimized") ? "▸" : "▾";
+      if (btn) {
+        const isMin = panel.classList.contains("is-minimized");
+        btn.innerHTML = isMin 
+          ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+          : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+      }
     }
 
     // Tap Tempo State
@@ -2449,7 +2463,7 @@
       if (common.length > 0) {
         return `Hold [${common.join(", ")}]`;
       }
-      return `Step ${fromChord} → ${toChord}`;
+      return `Step ${fromChord} to ${toChord}`;
     }
 
     let selectedVoicingExt = "root"; // "root", "ext1", "ext2"
@@ -2782,8 +2796,9 @@
             `).join("");
           } else if (currentEarModule === "melodic_response") {
             grid.innerHTML = `
-              <div style="grid-column: span 2; text-align: center; padding: 12px; font-size: 11px; color: var(--accent);">
-                ▶ Listen to the lick, then play it on your CASIO keyboard keys!
+              <div style="grid-column: span 2; text-align: center; padding: 12px; font-size: 11px; color: var(--accent); display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Listen to the lick, then play it on your CASIO keyboard keys!</span>
               </div>
             `;
           }
@@ -2813,10 +2828,10 @@
         const data = await res.json();
         const fb = document.getElementById("earFeedbackText");
         if (data.is_correct) {
-          fb.innerHTML = `<span style="color: var(--success); font-weight: 600;">✓ Correct! Excellent ear.</span>`;
-        } else {
-          fb.innerHTML = `<span style="color: var(--danger); font-weight: 600;">✕ Not quite. Correct answer: ${data.correct_answer}</span>`;
-        }
+          fb.innerHTML = `<span style="color: var(--success); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Correct! Excellent ear.</span>`;
+          } else {
+          fb.innerHTML = `<span style="color: var(--danger); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Not quite. Correct answer: ${data.correct_answer}</span>`;
+          }
         updateEarScore(data.score);
       } catch (e) {
         console.error("Failed to check answer:", e);
@@ -3426,7 +3441,7 @@
         const data = await res.json();
         if (data.success) {
           const sName = desktopSceneNames[activeScene] || `Scene ${activeScene}`;
-          showAppToast(`✓ Saved mix to ${sName}`);
+          showAppToast(`Saved mix to ${sName}`);
           const originalText = btn.innerHTML;
           btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to ${sName}!</span>`;
           setTimeout(() => { btn.innerHTML = originalText; }, 1500);
@@ -4068,7 +4083,7 @@
         if (data.success && data.result) {
           const r = data.result;
           displayTrackIntelligence(r);
-          btn.innerHTML = `<span style="color: var(--success);">✓ Done</span>`;
+          btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>`;
           setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
         } else {
           btn.innerHTML = `<span style="color: var(--danger);">Error</span>`;

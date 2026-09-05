@@ -828,7 +828,10 @@
           <div id="rEarFbText" style="font-size: 10px; min-height: 14px; font-weight: 600;"></div>
         </div>
         <div id="rEarChoicesGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;"></div>
-        <button class="btn btn-primary" onclick="loadRemoteEarExercise()" style="padding: 8px; font-size: 11px; font-weight: 600; justify-content: center;">Next →</button>
+        <button class="btn btn-primary" onclick="loadRemoteEarExercise()" style="padding: 8px; font-size: 11px; font-weight: 600; justify-content: center; display: inline-flex; align-items: center; gap: 4px;">
+          <span>Next</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -1104,7 +1107,7 @@
       closeRemoteRenamePartModal();
       partsState[renamingPartTarget - 1].name = newName;
       renderParts();
-      showRemoteToast(`✓ Renamed Part ${renamingPartTarget} to ${newName}`);
+      showRemoteToast(`Renamed Part ${renamingPartTarget} to ${newName}`);
       await fetch("/api/montage/names", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1133,7 +1136,7 @@
       const scVal = document.getElementById("remoteMarkerSceneSelect").value;
       const scene = scVal ? parseInt(scVal) : null;
       closeRemoteMarkerModal();
-      showRemoteToast(`✓ Added section ${name}`);
+      showRemoteToast(`Added section ${name}`);
       await sendTransport("add_marker", { name, scene, time: currentPosition });
     }
 
@@ -1149,7 +1152,7 @@
         const res = await fetch("/api/analyze", { method: "POST" });
         const data = await res.json();
         if (data.success) {
-          showRemoteToast(`✓ Analysis complete: ${data.analysis.estimated_key || ''} (${data.analysis.bpm || ''} BPM)`);
+          showRemoteToast(`Analysis complete: ${data.analysis.estimated_key || ''} (${data.analysis.bpm || ''} BPM)`);
           txt.innerText = "Analyzed";
         } else {
           showRemoteToast(data.message || "Analysis queued in background");
@@ -1211,7 +1214,7 @@
         if (fill) fill.style.width = "50%";
         if (thumb) thumb.style.left = "50%";
       }
-      showRemoteToast("✓ Master EQ reset to Flat");
+      showRemoteToast("Master EQ reset to Flat");
       try {
         await fetch("/api/mixer", {
           method: "POST",
@@ -1287,7 +1290,7 @@
         const data = await res.json();
         if (data.success) {
           const sName = remoteSceneNames[remoteActiveScene] || `Scene ${remoteActiveScene}`;
-          showRemoteToast(`✓ Saved mix to ${sName}`);
+          showRemoteToast(`Saved mix to ${sName}`);
           const orig = btn.innerHTML;
           btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to ${sName}!</span>`;
           setTimeout(() => { btn.innerHTML = orig; }, 1500);
@@ -1315,7 +1318,10 @@
         row.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <span class="part-num" style="font-size: 13px; font-weight: 700; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans); cursor: pointer;" onclick="openRemoteRenamePartModal(${p.part})" title="Tap to rename part">${p.name} ✎</span>
+              <span class="part-num" style="font-size: 13px; font-weight: 700; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemoteRenamePartModal(${p.part})" title="Tap to rename part">
+                <span>${p.name}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+              </span>
               <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleRemoteMute(${p.part})">M</button>
               <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleRemoteSolo(${p.part})">S</button>
             </div>
@@ -1785,9 +1791,9 @@
         const data = await res.json();
         const fb = document.getElementById("rEarFbText");
         if (data.is_correct) {
-          fb.innerHTML = `<span style="color: var(--success);">✓ Correct!</span>`;
+          fb.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Correct!</span>`;
         } else {
-          fb.innerHTML = `<span style="color: var(--danger);">✕ Correct: ${data.correct_answer}</span>`;
+          fb.innerHTML = `<span style="color: var(--danger); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Correct: ${data.correct_answer}</span>`;
         }
         if (data.score) {
           document.getElementById("remoteEarScore").innerText = `${data.score.correct}/${data.score.total}`;
