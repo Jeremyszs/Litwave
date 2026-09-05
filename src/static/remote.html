@@ -49,6 +49,23 @@
       overflow: hidden;
     }
 
+    /* Custom Dark Scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090a0c;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232730;
+      border-radius: 2px;
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #232730 #090a0c;
+    }
+
     header {
       background-color: var(--bg-surface);
       border-bottom: 1px solid var(--border-dim);

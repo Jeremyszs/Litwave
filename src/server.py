@@ -18,7 +18,7 @@ from src.midi_manager import MidiManager
 from src.montage_host import MontageHost
 from src.ear_training import EarTrainingManager
 from src.analyzer import analyze_track
-from src.lyrics import fetch_synced_lyrics, merge_chords_with_lyrics
+from src.lyrics import fetch_synced_lyrics
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
@@ -398,13 +398,12 @@ async def api_analyze_song(request):
             # Auto-fill chord progression with BTC clean progression
             sp.chord_chart = res["chords"]
             
-            # Fetch synced lyrics from LRCLIB and build musician chord sheet
+            # Fetch synced lyrics with duration matching and Whisper AI audio fallback
             try:
                 dur = sp.total_frames / float(sp.target_samplerate) if sp.target_samplerate > 0 else None
-                lyrics_res = fetch_synced_lyrics(filename, duration=dur)
+                lyrics_res = fetch_synced_lyrics(filename, duration=dur, audio_path=fpath)
                 if lyrics_res and lyrics_res.get("lines"):
-                    merged_sheet = merge_chords_with_lyrics(lyrics_res["lines"], sp.chord_chart)
-                    sp.lyrics_sheet = merged_sheet
+                    sp.lyrics_sheet = lyrics_res["lines"]
             except Exception as le:
                 print(f"[Server] Failed to fetch lyrics: {le}")
                 

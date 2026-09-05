@@ -84,6 +84,26 @@
       overflow: hidden;
       box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
     }
+
+    /* Studio Dark Scrollbars (Eliminates blinding white browser scrollbars) */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090a0c;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #232730;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #232730 #090a0c;
+    }
     .slider-rect-fill {
       position: absolute;
       top: 0;
@@ -230,8 +250,8 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      min-height: 0;
-      overflow: hidden;
+      min-height: min-content;
+      overflow: visible;
     }
 
     /* Studio Window Panels */
@@ -688,9 +708,9 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      max-height: 180px;
+      max-height: 260px;
       transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .mixer-body {
