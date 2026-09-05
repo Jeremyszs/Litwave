@@ -1722,7 +1722,21 @@
           <label class="pref-label">Section Name</label>
           <input type="text" id="customMarkerNameInput" class="modal-input" placeholder="e.g. Verse, Chorus, Solo" maxlength="24">
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
+        <div class="pref-group" style="margin-top: 8px;">
+          <label class="pref-label">Auto-Trigger Scene on Jump/Playback</label>
+          <select id="customMarkerSceneSelect" class="custom-select-dark" style="width: 100%; height: 26px; padding: 2px 6px;">
+            <option value="">None (Keep current scene)</option>
+            <option value="1">Scene 1</option>
+            <option value="2">Scene 2</option>
+            <option value="3">Scene 3</option>
+            <option value="4">Scene 4</option>
+            <option value="5">Scene 5</option>
+            <option value="6">Scene 6</option>
+            <option value="7">Scene 7</option>
+            <option value="8">Scene 8</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px;">
           <button class="btn" onclick="closeMarkerModal()">Cancel</button>
           <button class="btn btn-primary" onclick="confirmAddMarker()">Save</button>
         </div>
@@ -1948,8 +1962,10 @@
 
     async function confirmAddMarker() {
       const name = document.getElementById("customMarkerNameInput").value.trim() || `Section ${cachedMarkers.length + 1}`;
+      const sceneVal = document.getElementById("customMarkerSceneSelect").value;
+      const scene = sceneVal ? parseInt(sceneVal) : null;
       closeMarkerModal();
-      await transportAction("add_marker", { name });
+      await transportAction("add_marker", { name, scene });
     }
 
     document.getElementById("customMarkerNameInput").addEventListener("keydown", (e) => {
@@ -2818,7 +2834,7 @@
         row.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 12px; font-weight: 600; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'};">${p.name}</span>
+              <input type="text" value="${p.name}" class="modal-input" style="padding: 2px 6px; font-size: 11px; font-weight: 600; width: 110px; height: 22px; background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; color: var(--text-main);" onchange="renamePart(${p.part}, this.value)" title="Click to rename part">
               <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleDesktopMute(${p.part})">M</button>
               <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleDesktopSolo(${p.part})">S</button>
             </div>
@@ -2841,6 +2857,69 @@
             <div class="slider-rect-wrap" id="dtRevWrap_${p.part}" style="flex: 1; height: 16px;" onmousedown="startDesktopPartFaderDrag(${p.part}, 'rev', event)">
               <div class="slider-rect-fill secondary" id="dtRevFill_${p.part}" style="width: ${pctRev}%;"></div>
               <div class="slider-rect-thumb" id="dtRevThumb_${p.part}" style="left: ${pctRev}%;"></div>
+            </div>
+          </div>
+
+          <!-- Extended Sound Sculpting Controls (Point 2, 3, 4: Pan, Filter Cutoff/Resonance, Envelope Attack/Release, Chorus) -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 4px; border-top: 1px dashed var(--border-dim);">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+                <span>PAN</span><span id="dtPanVal_${p.part}">${p.pan !== undefined ? p.pan : 64}</span>
+              </div>
+              <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'pan', event)">
+                <div class="slider-rect-fill" id="dtPanFill_${p.part}" style="width: ${(((p.pan !== undefined ? p.pan : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="slider-rect-thumb" id="dtPanThumb_${p.part}" style="left: ${(((p.pan !== undefined ? p.pan : 64) / 127) * 100).toFixed(1)}%;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+                <span>CUTOFF</span><span id="dtCutVal_${p.part}">${p.cutoff !== undefined ? p.cutoff : 64}</span>
+              </div>
+              <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'cutoff', event)">
+                <div class="slider-rect-fill" id="dtCutFill_${p.part}" style="width: ${(((p.cutoff !== undefined ? p.cutoff : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="slider-rect-thumb" id="dtCutThumb_${p.part}" style="left: ${(((p.cutoff !== undefined ? p.cutoff : 64) / 127) * 100).toFixed(1)}%;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+                <span>RESON</span><span id="dtResVal_${p.part}">${p.resonance !== undefined ? p.resonance : 64}</span>
+              </div>
+              <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'resonance', event)">
+                <div class="slider-rect-fill" id="dtResFill_${p.part}" style="width: ${(((p.resonance !== undefined ? p.resonance : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="slider-rect-thumb" id="dtResThumb_${p.part}" style="left: ${(((p.resonance !== undefined ? p.resonance : 64) / 127) * 100).toFixed(1)}%;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+                <span>ATTACK</span><span id="dtAttVal_${p.part}">${p.attack !== undefined ? p.attack : 64}</span>
+              </div>
+              <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'attack', event)">
+                <div class="slider-rect-fill" id="dtAttFill_${p.part}" style="width: ${(((p.attack !== undefined ? p.attack : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="slider-rect-thumb" id="dtAttThumb_${p.part}" style="left: ${(((p.attack !== undefined ? p.attack : 64) / 127) * 100).toFixed(1)}%;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+                <span>RELEASE</span><span id="dtRelVal_${p.part}">${p.release !== undefined ? p.release : 64}</span>
+              </div>
+              <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'release', event)">
+                <div class="slider-rect-fill" id="dtRelFill_${p.part}" style="width: ${(((p.release !== undefined ? p.release : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="slider-rect-thumb" id="dtRelThumb_${p.part}" style="left: ${(((p.release !== undefined ? p.release : 64) / 127) * 100).toFixed(1)}%;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+                <span>CHORUS</span><span id="dtChoVal_${p.part}">${p.chorus !== undefined ? p.chorus : 0}</span>
+              </div>
+              <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'chorus', event)">
+                <div class="slider-rect-fill secondary" id="dtChoFill_${p.part}" style="width: ${(((p.chorus !== undefined ? p.chorus : 0) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="slider-rect-thumb" id="dtChoThumb_${p.part}" style="left: ${(((p.chorus !== undefined ? p.chorus : 0) / 127) * 100).toFixed(1)}%;"></div>
+              </div>
             </div>
           </div>
         `;
@@ -2878,6 +2957,54 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ part: partNum, reverb: parseInt(val) })
       });
+    }
+
+    async function renamePart(partNum, newName) {
+      newName = (newName || `Part ${partNum}`).trim();
+      desktopPartsState[partNum - 1].name = newName;
+      await fetch("/api/montage/names", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parts: { [partNum]: newName } })
+      });
+    }
+
+    async function onDesktopParamChange(partNum, paramType, val) {
+      val = Math.max(0, Math.min(127, parseInt(val)));
+      desktopPartsState[partNum - 1][paramType] = val;
+      const text = document.getElementById(`dt${paramType.charAt(0).toUpperCase() + paramType.slice(1, 3)}Val_${partNum}`);
+      if (text) text.innerText = val;
+      const pct = (val / 127) * 100;
+      const fill = document.getElementById(`dt${paramType.charAt(0).toUpperCase() + paramType.slice(1, 3)}Fill_${partNum}`);
+      const thumb = document.getElementById(`dt${paramType.charAt(0).toUpperCase() + paramType.slice(1, 3)}Thumb_${partNum}`);
+      if (fill) fill.style.width = `${pct}%`;
+      if (thumb) thumb.style.left = `${pct}%`;
+
+      await fetch("/api/montage/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ part: partNum, [paramType]: val })
+      });
+    }
+
+    function startDesktopParamDrag(partNum, paramType, e) {
+      const pId = paramType.charAt(0).toUpperCase() + paramType.slice(1, 3);
+      const wrap = e.currentTarget;
+      if (!wrap) return;
+      const onMove = (ev) => {
+        const rect = wrap.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        const val = Math.round(ratio * 127);
+        onDesktopParamChange(partNum, paramType, val);
+      };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      onMove(e);
+      e.preventDefault();
     }
 
     function startDesktopPartFaderDrag(partNum, type, e) {
@@ -3173,27 +3300,56 @@
     }
     buildPiano();
 
-    // Render Scene Selectors
+    // Render Scene Selectors & Renameable Labels
     let activeScene = 1;
+    let desktopSceneNames = { 1: "Scene 1", 2: "Scene 2", 3: "Scene 3", 4: "Scene 4", 5: "Scene 5", 6: "Scene 6", 7: "Scene 7", 8: "Scene 8" };
+
     function renderScenesUI() {
       const grid = document.getElementById("desktopScenesGrid");
       grid.innerHTML = "";
       for (let s = 1; s <= 8; s++) {
+        const name = desktopSceneNames[s] || `Scene ${s}`;
         const btn = document.createElement("button");
         btn.className = `btn ${s === activeScene ? 'btn-active' : ''}`;
         btn.style.padding = "2px 4px";
-        btn.style.fontSize = "10px";
+        btn.style.fontSize = "9px";
         btn.style.fontWeight = "600";
+        btn.style.overflow = "hidden";
+        btn.style.textOverflow = "ellipsis";
+        btn.style.whiteSpace = "nowrap";
         btn.innerText = `S${s}`;
+        btn.title = `${name} (Right-click or hold to rename)`;
         btn.id = `sceneBtn_${s}`;
         btn.onclick = () => selectScene(s);
+        btn.oncontextmenu = (e) => {
+          e.preventDefault();
+          promptRenameScene(s);
+        };
         grid.appendChild(btn);
+      }
+    }
+
+    async function promptRenameScene(sceneNum) {
+      const cur = desktopSceneNames[sceneNum] || `Scene ${sceneNum}`;
+      const newName = prompt(`Rename Scene ${sceneNum} (e.g. Intro, Verse, Solo, Pad Build):`, cur);
+      if (newName && newName.trim()) {
+        desktopSceneNames[sceneNum] = newName.trim().slice(0, 24);
+        renderScenesUI();
+        if (activeScene === sceneNum) {
+          document.getElementById("activeSceneText").innerText = desktopSceneNames[sceneNum];
+        }
+        await fetch("/api/montage/names", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scenes: { [sceneNum]: newName.trim() } })
+        });
       }
     }
 
     async function selectScene(sceneNum) {
       activeScene = sceneNum;
-      document.getElementById("activeSceneText").innerText = `Scene ${sceneNum}`;
+      const sName = desktopSceneNames[sceneNum] || `Scene ${sceneNum}`;
+      document.getElementById("activeSceneText").innerText = sName;
       for (let s = 1; s <= 8; s++) {
         const b = document.getElementById(`sceneBtn_${s}`);
         if (b) b.classList.toggle("btn-active", s === sceneNum);
@@ -3313,6 +3469,44 @@
             if (b) b.classList.toggle("btn-active", s === activeScene);
           }
         }
+        if (montage.part_names) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_names[p]) desktopPartsState[p - 1].name = montage.part_names[p];
+          }
+        }
+        if (montage.scene_names) {
+          desktopSceneNames = { ...desktopSceneNames, ...montage.scene_names };
+        }
+        if (montage.part_pans) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_pans[p] !== undefined) desktopPartsState[p - 1].pan = montage.part_pans[p];
+          }
+        }
+        if (montage.part_cutoffs) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_cutoffs[p] !== undefined) desktopPartsState[p - 1].cutoff = montage.part_cutoffs[p];
+          }
+        }
+        if (montage.part_resonances) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_resonances[p] !== undefined) desktopPartsState[p - 1].resonance = montage.part_resonances[p];
+          }
+        }
+        if (montage.part_attacks) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_attacks[p] !== undefined) desktopPartsState[p - 1].attack = montage.part_attacks[p];
+          }
+        }
+        if (montage.part_releases) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_releases[p] !== undefined) desktopPartsState[p - 1].release = montage.part_releases[p];
+          }
+        }
+        if (montage.part_chorus) {
+          for (let p = 1; p <= 8; p++) {
+            if (montage.part_chorus[p] !== undefined) desktopPartsState[p - 1].chorus = montage.part_chorus[p];
+          }
+        }
         if (montage.part_volumes) {
           for (let p = 1; p <= 8; p++) {
             if (montage.part_volumes[p] !== undefined) {
@@ -3424,6 +3618,10 @@
           cachedMarkers = song.markers;
           renderMarkersUI(song.markers, durSec);
         }
+        // Auto-Trigger Scene assigned to section bookmark during playback
+        if (song.is_playing) {
+          checkMarkerAutoSceneTrigger(curSec, song.markers);
+        }
       } else {
         hasLoadedTrack = false;
         currentSongDuration = 0;
@@ -3491,6 +3689,25 @@
       }
     }
 
+    let lastTriggeredMarkerId = null;
+
+    function checkMarkerAutoSceneTrigger(curSec, markers) {
+      if (!markers || markers.length === 0) return;
+      // Find the most recent marker that playback has entered
+      let activeM = null;
+      for (let i = 0; i < markers.length; i++) {
+        if (curSec >= markers[i].time - 0.05) {
+          activeM = markers[i];
+        } else {
+          break;
+        }
+      }
+      if (activeM && activeM.scene && activeM.id !== lastTriggeredMarkerId) {
+        lastTriggeredMarkerId = activeM.id;
+        selectScene(activeM.scene);
+      }
+    }
+
     function renderMarkersUI(markers, duration) {
       const ribbon = document.getElementById("markersRibbon");
       const overlay = document.getElementById("markerFlagsOverlay");
@@ -3505,8 +3722,9 @@
       markers.forEach((m, idx) => {
         const pill = document.createElement("div");
         pill.className = "marker-pill";
-        pill.innerHTML = `<span>${m.name} (${formatTime(m.time)})</span><span class="del-btn" style="display: inline-flex; align-items: center;" onclick="event.stopPropagation(); deleteMarker(${m.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
-        pill.onclick = () => jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null);
+        const sceneBadge = m.scene ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${m.scene}</span>` : '';
+        pill.innerHTML = `<span>${m.name}${sceneBadge} (${formatTime(m.time)})</span><span class="del-btn" style="display: inline-flex; align-items: center;" onclick="event.stopPropagation(); deleteMarker(${m.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
+        pill.onclick = () => jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null, m.scene);
         ribbon.appendChild(pill);
 
         if (duration > 0) {
@@ -3520,9 +3738,9 @@
           tag.className = "section-marker-label";
           tag.id = `tag-${m.id}`;
           tag.style.left = `${pct}%`;
-          tag.innerText = m.name;
+          tag.innerText = m.scene ? `${m.name} [S${m.scene}]` : m.name;
           tag.onmousedown = (e) => startMarkerDrag(m.id, e);
-          tag.onclick = (e) => { e.stopPropagation(); jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null); };
+          tag.onclick = (e) => { e.stopPropagation(); jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null, m.scene); };
 
           overlay.appendChild(flag);
           overlay.appendChild(tag);
@@ -3532,7 +3750,10 @@
 
     async function deleteMarker(id) { await transportAction("remove_marker", { id }); }
 
-    async function jumpToMarker(startSec, nextSec) {
+    async function jumpToMarker(startSec, nextSec, sceneNum) {
+      if (sceneNum) {
+        selectScene(sceneNum);
+      }
       await transportAction("seek", { seconds: startSec });
       if (nextSec && nextSec > startSec) {
         await transportAction("loop_a", { seconds: startSec });

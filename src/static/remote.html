@@ -882,17 +882,23 @@
 
     // Render Remote Scene Selectors
     let remoteActiveScene = 1;
+    let remoteSceneNames = { 1: "Scene 1", 2: "Scene 2", 3: "Scene 3", 4: "Scene 4", 5: "Scene 5", 6: "Scene 6", 7: "Scene 7", 8: "Scene 8" };
+
     function renderRemoteScenes() {
       const grid = document.getElementById("remoteScenesGrid");
       if (!grid) return;
       grid.innerHTML = "";
       for (let s = 1; s <= 8; s++) {
+        const name = remoteSceneNames[s] || `Scene ${s}`;
         const btn = document.createElement("button");
         btn.className = `btn ${s === remoteActiveScene ? 'is-active-loop' : ''}`;
         btn.style.padding = "8px 4px";
-        btn.style.fontSize = "12px";
+        btn.style.fontSize = "11px";
         btn.style.fontWeight = "600";
-        btn.innerText = `Scene ${s}`;
+        btn.style.overflow = "hidden";
+        btn.style.textOverflow = "ellipsis";
+        btn.style.whiteSpace = "nowrap";
+        btn.innerText = name;
         btn.id = `remoteSceneBtn_${s}`;
         btn.onclick = () => selectRemoteScene(s);
         grid.appendChild(btn);
@@ -901,7 +907,8 @@
 
     async function selectRemoteScene(sceneNum) {
       remoteActiveScene = sceneNum;
-      document.getElementById("remoteActiveSceneText").innerText = `Scene ${sceneNum}`;
+      const sName = remoteSceneNames[sceneNum] || `Scene ${sceneNum}`;
+      document.getElementById("remoteActiveSceneText").innerText = sName;
       for (let s = 1; s <= 8; s++) {
         const b = document.getElementById(`remoteSceneBtn_${s}`);
         if (b) b.classList.toggle("is-active-loop", s === sceneNum);
@@ -1560,6 +1567,14 @@
             }
           }
           if (montage) {
+            if (montage.part_names) {
+              for (let p = 1; p <= 8; p++) {
+                if (montage.part_names[p]) partsState[p - 1].name = montage.part_names[p];
+              }
+            }
+            if (montage.scene_names) {
+              remoteSceneNames = { ...remoteSceneNames, ...montage.scene_names };
+            }
             if (montage.master_volume !== undefined) {
               const norm = montage.master_volume / 127.0;
               const pct = norm * 100;

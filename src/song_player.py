@@ -252,27 +252,35 @@ class SongPlayer:
             self.chord_chart = []
             self._persist_chart()
 
-    def add_marker(self, name: Optional[str] = None, sec: Optional[float] = None) -> Dict[str, Any]:
+    def add_marker(self, name: Optional[str] = None, sec: Optional[float] = None, scene: Optional[int] = None) -> Dict[str, Any]:
         with self.lock:
             if sec is None:
                 sec = self.current_frame / float(self.target_samplerate) if self.target_samplerate > 0 else 0.0
             sec = round(float(sec), 2)
             idx = len(self.markers) + 1
             marker_name = name or f"Section {idx}"
-            marker = {"id": idx, "name": marker_name, "time": sec}
+            marker = {"id": idx, "name": marker_name, "time": sec, "scene": int(scene) if scene and 1 <= int(scene) <= 8 else None}
             self.markers.append(marker)
             self.markers.sort(key=lambda m: m["time"])
             self._persist_chart()
             return marker
 
-    def update_marker_time(self, marker_id: int, new_sec: float):
+    def update_marker(self, marker_id: int, new_sec: Optional[float] = None, name: Optional[str] = None, scene: Optional[int] = None):
         with self.lock:
             for m in self.markers:
                 if m["id"] == marker_id:
-                    m["time"] = round(float(new_sec), 2)
+                    if new_sec is not None:
+                        m["time"] = round(float(new_sec), 2)
+                    if name is not None:
+                        m["name"] = str(name)[:32]
+                    if scene is not None:
+                        m["scene"] = int(scene) if 1 <= int(scene) <= 8 else None
                     break
             self.markers.sort(key=lambda m: m["time"])
             self._persist_chart()
+
+    def update_marker_time(self, marker_id: int, new_sec: float):
+        self.update_marker(marker_id, new_sec=new_sec)
 
     def remove_marker(self, marker_id: int):
         with self.lock:

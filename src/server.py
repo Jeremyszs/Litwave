@@ -119,14 +119,17 @@ async def api_transport(request):
     elif action == "add_marker":
         name = body.get("name")
         sec = body.get("time")
-        sp.add_marker(name, sec)
+        scene = body.get("scene")
+        sp.add_marker(name, sec, scene)
     elif action == "remove_marker":
         m_id = int(body.get("id", 0))
         sp.remove_marker(m_id)
     elif action == "update_marker":
         m_id = int(body.get("id", 0))
-        new_time = float(body.get("time", 0.0))
-        sp.update_marker_time(m_id, new_time)
+        new_time = float(body["time"]) if "time" in body else None
+        name = body.get("name")
+        scene = body.get("scene")
+        sp.update_marker(m_id, new_sec=new_time, name=name, scene=scene)
     elif action == "clear_markers":
         sp.clear_markers()
     elif action == "record_chord":
@@ -264,6 +267,14 @@ async def ws_telemetry(websocket: WebSocket):
                     "part_reverbs": state.montage.part_reverbs,
                     "part_mutes": state.montage.part_mutes,
                     "part_solos": state.montage.part_solos,
+                    "part_names": state.montage.part_names,
+                    "scene_names": state.montage.scene_names,
+                    "part_pans": state.montage.part_pans,
+                    "part_cutoffs": state.montage.part_cutoffs,
+                    "part_resonances": state.montage.part_resonances,
+                    "part_attacks": state.montage.part_attacks,
+                    "part_releases": state.montage.part_releases,
+                    "part_chorus": state.montage.part_chorus,
                     "current_scene": state.montage.current_scene
                 }
             }
@@ -298,6 +309,36 @@ async def api_montage_volume(request):
         if "solo" in data:
             ok = state.montage.toggle_part_solo(part)
             return JSONResponse({"success": ok, "part": part, "solos": state.montage.part_solos, "mutes": state.montage.part_mutes})
+        if "pan" in data:
+            pan = int(data["pan"])
+            state.montage.part_pans[part] = pan
+            ok = state.montage.send_part_cc(part, 10, pan) # CC#10 Pan
+            return JSONResponse({"success": ok, "part": part, "pan": pan})
+        if "cutoff" in data:
+            cut = int(data["cutoff"])
+            state.montage.part_cutoffs[part] = cut
+            ok = state.montage.send_part_cc(part, 74, cut) # CC#74 Brightness / Cutoff
+            return JSONResponse({"success": ok, "part": part, "cutoff": cut})
+        if "resonance" in data:
+            res = int(data["resonance"])
+            state.montage.part_resonances[part] = res
+            ok = state.montage.send_part_cc(part, 71, res) # CC#71 Harmonic / Resonance
+            return JSONResponse({"success": ok, "part": part, "resonance": res})
+        if "attack" in data:
+            att = int(data["attack"])
+            state.montage.part_attacks[part] = att
+            ok = state.montage.send_part_cc(part, 73, att) # CC#73 Attack Time
+            return JSONResponse({"success": ok, "part": part, "attack": att})
+        if "release" in data:
+            rel = int(data["release"])
+            state.montage.part_releases[part] = rel
+            ok = state.montage.send_part_cc(part, 72, rel) # CC#72 Release Time
+            return JSONResponse({"success": ok, "part": part, "release": rel})
+        if "chorus" in data:
+            cho = int(data["chorus"])
+            state.montage.part_chorus[part] = cho
+            ok = state.montage.send_part_cc(part, 93, cho) # CC#93 Chorus Send
+            return JSONResponse({"success": ok, "part": part, "chorus": cho})
         volume = int(data.get("volume", 100)) # 0 - 127
         ok = state.montage.set_part_volume(part, volume)
         return JSONResponse({"success": ok, "part": part, "volume": volume})
@@ -356,6 +397,20 @@ async def api_montage_scene(request):
         else:
             ok = state.montage.select_scene(scene)
             return JSONResponse({"success": ok, "action": "select", "scene": scene})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+async def api_custom_names(request):
+    """Saves and retrieves custom user labels for MONTAGE M Parts 1-8 and Scenes 1-8"""
+    try:
+        if request.method == "POST":
+            data = await request.json()
+            parts = data.get("parts")
+            scenes = data.get("scenes")
+            ok = state.montage.save_custom_names(parts, scenes)
+            return JSONResponse({"success": ok, "parts": state.montage.part_names, "scenes": state.montage.scene_names})
+        else:
+            return JSONResponse({"parts": state.montage.part_names, "scenes": state.montage.scene_names})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
@@ -478,6 +533,7 @@ routes = [
     Route("/api/montage/editor", api_open_editor, methods=["POST"]),
     Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
     Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
+    Route("/api/montage/names", api_custom_names, methods=["GET", "POST"]),
     Route("/api/ear-training", api_ear_exercise, methods=["GET", "POST"]),
     Route("/api/montage/license", api_launch_license_manager, methods=["POST"]),
     WebSocketRoute("/ws", ws_telemetry),

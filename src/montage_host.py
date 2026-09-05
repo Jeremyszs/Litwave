@@ -6,7 +6,7 @@ Manages discovery, verification, license state, and native editor launching
 import os
 import json
 import subprocess
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 VST3_DIR = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin for MONTAGE M.vst3"
 VST3_BIN = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin for MONTAGE M.vst3\Contents\x86_64-win\Expanded Softsynth Plugin for MONTAGE M.vst3"
@@ -26,8 +26,77 @@ class MontageHost:
         self.part_solos = {i: False for i in range(1, 9)}
         self.current_scene = 1
         self.presets_file = os.path.join(os.path.dirname(__file__), "scene_presets.json")
+        self.names_file = os.path.join(os.path.dirname(__file__), "custom_names.json")
+        self.part_names = {i: f"Part {i}" for i in range(1, 9)}
+        self.scene_names = {i: f"Scene {i}" for i in range(1, 9)}
+        self.part_pans = {i: 64 for i in range(1, 9)}
+        self.part_cutoffs = {i: 64 for i in range(1, 9)}
+        self.part_resonances = {i: 64 for i in range(1, 9)}
+        self.part_attacks = {i: 64 for i in range(1, 9)}
+        self.part_releases = {i: 64 for i in range(1, 9)}
+        self.part_chorus = {i: 0 for i in range(1, 9)}
+        self._load_custom_names()
         # Persistent storage for Scene snapshots: scene 1-8 -> { "master": 127, "parts": { 1: 100, ... } }
         self.saved_scenes = self._load_saved_scenes()
+
+    def _load_custom_names(self):
+        if os.path.exists(self.names_file):
+            try:
+                with open(self.names_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    p_names = data.get("parts", {})
+                    s_names = data.get("scenes", {})
+                    for p in range(1, 9):
+                        if str(p) in p_names:
+                            self.part_names[p] = str(p_names[str(p)])
+                    for s in range(1, 9):
+                        if str(s) in s_names:
+                            self.scene_names[s] = str(s_names[str(s)])
+            except Exception as e:
+                print(f"[WARN] Failed to load custom names: {e}")
+
+    def save_custom_names(self, parts: Optional[Dict[str, str]] = None, scenes: Optional[Dict[str, str]] = None):
+        if parts:
+            for k, v in parts.items():
+                p = int(k)
+                if 1 <= p <= 8:
+                    self.part_names[p] = str(v)[:24]
+        if scenes:
+            for k, v in scenes.items():
+                s = int(k)
+                if 1 <= s <= 8:
+                    self.scene_names[s] = str(v)[:24]
+        try:
+            with open(self.names_file, "w", encoding="utf-8") as f:
+                json.dump({
+                    "parts": {str(k): v for k, v in self.part_names.items()},
+                    "scenes": {str(k): v for k, v in self.scene_names.items()}
+                }, f, indent=2)
+            return True
+        except Exception as e:
+            print(f"[ERROR] Failed to save custom names: {e}")
+            return False
+
+    def send_part_cc(self, part_num: int, cc_num: int, value: int) -> bool:
+        """
+        Sends standard MIDI CC (e.g. Pan CC#10, Cutoff CC#74, Resonance CC#71, Attack CC#73, Release CC#72, Chorus CC#93)
+        to the native montage_live_engine C++ host over UDP command 0x43 ('C').
+        """
+        if not (1 <= part_num <= 8):
+            return False
+        value = max(0, min(127, int(value)))
+        cc_num = max(0, min(127, int(cc_num)))
+        import socket
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Command 'C' (0x43): [ 'C', partNum (1-8), ccNum (0-127), value (0-127) ]
+            packet = bytes([0x43, part_num & 0xFF, cc_num & 0xFF, value & 0xFF])
+            sock.sendto(packet, ("127.0.0.1", 9123))
+            sock.close()
+            return True
+        except Exception as e:
+            print(f"Failed to send Part CC {cc_num}: {e}")
+            return False
 
     def _load_saved_scenes(self) -> Dict[int, Any]:
         default_scenes = {

@@ -638,6 +638,14 @@ void UdpControlServerThread() {
                         }
                         enqueue_param_change(pid, normVal);
                     }
+                } else if (cmd == 0x43) { // 'C' Part MIDI CC Control: [ 'C', partNum (1-8), ccNum (0-127), value (0-127) ]
+                    int part = (int)ch;
+                    int ccNum = (int)d1;
+                    int ccVal = (int)d2;
+                    if (part >= 1 && part <= 8 && ccNum >= 0 && ccNum <= 127) {
+                        uint8 channel = (uint8)(part - 1);
+                        enqueue_midi_note((int16)Event::kLegacyMIDICCOutEvent, channel, (int16)ccNum, (float)ccVal / 127.0f);
+                    }
                 } else if (cmd == 0x45) { // 'E' Master Parametric Equalizer Band Update: [ 'E', bandIdx (0-3), type, pad, freq (float), gain (float), q (float) ]
                     if (len >= 16) {
                         int bandIdx = (int)ch;
