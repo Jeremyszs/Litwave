@@ -484,6 +484,10 @@
           No Track Loaded
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">
+          <button class="btn" id="remoteAnalyzeBtn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="triggerRemoteAnalyze()" title="AI Chord, Key & Lyrics Analysis">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+            <span id="remoteAnalyzeText">Analyze</span>
+          </button>
           <button class="btn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemoteEarModal()" title="Ear training practice">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
             <span>Ear</span>
@@ -516,8 +520,11 @@
       </div>
 
       <!-- Practice Section Bookmarks -->
-      <div id="markersSection" style="display: none; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid var(--border-dim);">
-        <div class="util-label">Jump to Section</div>
+      <div id="markersSection" style="display: none; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-dim);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="util-label" style="margin-bottom: 0;">Jump to Section</span>
+          <button class="btn" style="padding: 2px 7px; font-size: 10px; font-weight: 600;" onclick="openRemoteMarkerModal()">+ Bookmark</button>
+        </div>
         <div class="markers-pill-container" id="markersContainer"></div>
       </div>
 
@@ -533,11 +540,14 @@
       </div>
     </div>
 
-    <!-- Output Mixer: Backing Track, Synth, and Master Volumes -->
+    <!-- Output Mixer: Backing Track, Synth, and Master Volumes & Master EQ -->
     <div class="card">
       <div class="card-title">
-        <span>Output Levels</span>
-        <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">Mixer</span>
+        <span>Output Levels & Master EQ</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="btn" style="padding: 2px 6px; font-size: 9px; font-weight: 700;" onclick="resetRemoteEqFlat()">EQ Flat</button>
+          <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">Mixer</span>
+        </div>
       </div>
 
       <div class="parts-grid">
@@ -613,6 +623,60 @@
             <span style="font-size: 11px; font-family: var(--font-mono); font-weight: 600; color: var(--accent);" id="remoteBpmText">120 BPM</span>
           </div>
         </div>
+
+        <!-- 4-Band Master Parametric Equalizer Strip on Remote -->
+        <div style="padding-top: 8px; margin-top: 6px; border-top: 1px solid var(--border-dim); display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 10px; font-weight: 700; color: var(--text-main); font-family: var(--font-mono);">4-BAND MASTER EQ</span>
+            <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">±18 dB</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+            <!-- Band 1: Low Shelf (100Hz) -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                <span>LOW</span><span id="remoteEqB1Val" style="color: var(--accent);">0.0</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteEqB1Wrap" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteEqB1Fill" style="width: 50%;"></div>
+                <div class="part-slider-thumb" id="remoteEqB1Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <!-- Band 2: Low Mid (500Hz) -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                <span>L-MID</span><span id="remoteEqB2Val" style="color: var(--accent);">0.0</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteEqB2Wrap" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteEqB2Fill" style="width: 50%;"></div>
+                <div class="part-slider-thumb" id="remoteEqB2Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <!-- Band 3: High Mid (2.5kHz) -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                <span>H-MID</span><span id="remoteEqB3Val" style="color: var(--accent);">0.0</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteEqB3Wrap" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteEqB3Fill" style="width: 50%;"></div>
+                <div class="part-slider-thumb" id="remoteEqB3Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <!-- Band 4: High Shelf (8kHz) -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                <span>HIGH</span><span id="remoteEqB4Val" style="color: var(--accent);">0.0</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteEqB4Wrap" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteEqB4Fill" style="width: 50%;"></div>
+                <div class="part-slider-thumb" id="remoteEqB4Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -643,6 +707,62 @@
 
       <div class="parts-grid" id="partsGrid">
         <!-- Render 8 parts dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Custom Bookmark Modal -->
+  <div id="remoteBookmarkModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 320px; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 13px; font-weight: 600;">Add Section Bookmark</span>
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteMarkerModal()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-dim);">Section Name</label>
+          <input type="text" id="remoteMarkerNameInput" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 10px; color: var(--text-main); font-size: 13px; outline: none;" placeholder="e.g. Verse, Chorus, Solo" maxlength="24">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 11px; font-weight: 600; color: var(--text-dim);">Auto-Trigger Scene</label>
+          <select id="remoteMarkerSceneSelect" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; padding: 6px 8px; color: var(--text-main); font-size: 12px; outline: none;">
+            <option value="">None (Keep current scene)</option>
+            <option value="1">Scene 1</option>
+            <option value="2">Scene 2</option>
+            <option value="3">Scene 3</option>
+            <option value="4">Scene 4</option>
+            <option value="5">Scene 5</option>
+            <option value="6">Scene 6</option>
+            <option value="7">Scene 7</option>
+            <option value="8">Scene 8</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+          <button class="btn" onclick="closeRemoteMarkerModal()">Cancel</button>
+          <button class="btn is-active-loop" onclick="confirmRemoteAddMarker()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Custom Rename Part Modal -->
+  <div id="remoteRenamePartModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 320px; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 13px; font-weight: 600;" id="remoteRenamePartTitle">Rename Part</span>
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteRenamePartModal()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <label style="font-size: 11px; font-weight: 600; color: var(--text-dim);">Part Label</label>
+        <input type="text" id="remoteRenamePartInput" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 10px; color: var(--text-main); font-size: 13px; outline: none;" placeholder="e.g. CFX Piano, Strings" maxlength="24">
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+          <button class="btn" onclick="closeRemoteRenamePartModal()">Cancel</button>
+          <button class="btn is-active-loop" onclick="confirmRemoteRenamePart()">Save</button>
+        </div>
       </div>
     </div>
   </div>
@@ -962,6 +1082,173 @@
       }
     }
 
+    // Mobile Rename Part Handlers
+    let renamingPartTarget = 1;
+    function openRemoteRenamePartModal(partNum) {
+      renamingPartTarget = partNum;
+      const cur = partsState[partNum - 1].name || `Part ${partNum}`;
+      document.getElementById("remoteRenamePartTitle").innerText = `Rename Part ${partNum}`;
+      const inp = document.getElementById("remoteRenamePartInput");
+      inp.value = cur;
+      document.getElementById("remoteRenamePartModal").style.display = "flex";
+      setTimeout(() => inp.focus(), 50);
+    }
+
+    function closeRemoteRenamePartModal() {
+      document.getElementById("remoteRenamePartModal").style.display = "none";
+    }
+
+    async function confirmRemoteRenamePart() {
+      const inp = document.getElementById("remoteRenamePartInput");
+      const newName = (inp.value.trim() || `Part ${renamingPartTarget}`).slice(0, 24);
+      closeRemoteRenamePartModal();
+      partsState[renamingPartTarget - 1].name = newName;
+      renderParts();
+      showRemoteToast(`✓ Renamed Part ${renamingPartTarget} to ${newName}`);
+      await fetch("/api/montage/names", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parts: { [renamingPartTarget]: newName } })
+      });
+    }
+
+    // Mobile Section Bookmark Handlers
+    function openRemoteMarkerModal() {
+      if (!songDuration || songDuration <= 0) {
+        showRemoteToast("Load a song first to add bookmarks");
+        return;
+      }
+      document.getElementById("remoteMarkerNameInput").value = `Section ${(cachedRemoteMarkers ? cachedRemoteMarkers.length : 0) + 1}`;
+      document.getElementById("remoteMarkerSceneSelect").value = "";
+      document.getElementById("remoteBookmarkModal").style.display = "flex";
+      setTimeout(() => document.getElementById("remoteMarkerNameInput").focus(), 50);
+    }
+
+    function closeRemoteMarkerModal() {
+      document.getElementById("remoteBookmarkModal").style.display = "none";
+    }
+
+    async function confirmRemoteAddMarker() {
+      const name = document.getElementById("remoteMarkerNameInput").value.trim() || "Section";
+      const scVal = document.getElementById("remoteMarkerSceneSelect").value;
+      const scene = scVal ? parseInt(scVal) : null;
+      closeRemoteMarkerModal();
+      showRemoteToast(`✓ Added section ${name}`);
+      await sendTransport("add_marker", { name, scene, time: currentPosition });
+    }
+
+    // Mobile AI Song Intelligence Analysis Handler
+    async function triggerRemoteAnalyze() {
+      const btn = document.getElementById("remoteAnalyzeBtn");
+      const txt = document.getElementById("remoteAnalyzeText");
+      if (btn.disabled) return;
+      btn.disabled = true;
+      txt.innerText = "Analyzing...";
+      showRemoteToast("Starting AI song intelligence analysis...");
+      try {
+        const res = await fetch("/api/analyze", { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          showRemoteToast(`✓ Analysis complete: ${data.analysis.estimated_key || ''} (${data.analysis.bpm || ''} BPM)`);
+          txt.innerText = "Analyzed";
+        } else {
+          showRemoteToast(data.message || "Analysis queued in background");
+          txt.innerText = "Analyze";
+        }
+      } catch (e) {
+        showRemoteToast("Analysis request sent");
+        txt.innerText = "Analyze";
+      } finally {
+        setTimeout(() => { btn.disabled = false; }, 3000);
+      }
+    }
+
+    // Remote 4-Band Master Parametric Equalizer Handlers
+    const remoteEqBands = [
+      { id: 0, freq: 100.0, gain: 0.0, q: 0.707 },
+      { id: 1, freq: 500.0, gain: 0.0, q: 1.0 },
+      { id: 2, freq: 2500.0, gain: 0.0, q: 1.0 },
+      { id: 3, freq: 8000.0, gain: 0.0, q: 0.707 }
+    ];
+
+    async function onRemoteEqChange(bandIdx, gainVal) {
+      gainVal = Math.max(-18, Math.min(18, parseFloat(gainVal)));
+      remoteEqBands[bandIdx].gain = gainVal;
+      const bNum = bandIdx + 1;
+      const sign = gainVal > 0 ? "+" : "";
+      const text = document.getElementById(`remoteEqB${bNum}Val`);
+      if (text) text.innerText = `${sign}${gainVal.toFixed(1)}`;
+      const pct = ((gainVal + 18) / 36) * 100;
+      const fill = document.getElementById(`remoteEqB${bNum}Fill`);
+      const thumb = document.getElementById(`remoteEqB${bNum}Thumb`);
+      if (fill) fill.style.width = `${pct}%`;
+      if (thumb) thumb.style.left = `${pct}%`;
+
+      try {
+        await fetch("/api/mixer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            equalizer_band: {
+              index: bandIdx,
+              gain: gainVal,
+              freq: remoteEqBands[bandIdx].freq,
+              q: remoteEqBands[bandIdx].q
+            }
+          })
+        });
+      } catch (e) {}
+    }
+
+    async function resetRemoteEqFlat() {
+      for (let i = 0; i < 4; i++) {
+        remoteEqBands[i].gain = 0.0;
+        const bNum = i + 1;
+        const text = document.getElementById(`remoteEqB${bNum}Val`);
+        if (text) text.innerText = "0.0";
+        const fill = document.getElementById(`remoteEqB${bNum}Fill`);
+        const thumb = document.getElementById(`remoteEqB${bNum}Thumb`);
+        if (fill) fill.style.width = "50%";
+        if (thumb) thumb.style.left = "50%";
+      }
+      showRemoteToast("✓ Master EQ reset to Flat");
+      try {
+        await fetch("/api/mixer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reset_equalizer_flat: true })
+        });
+      } catch (e) {}
+    }
+
+    function initRemoteEqSliders() {
+      for (let i = 0; i < 4; i++) {
+        const bNum = i + 1;
+        const wrap = document.getElementById(`remoteEqB${bNum}Wrap`);
+        if (!wrap) continue;
+        const bandIdx = i;
+        const handleX = (clientX) => {
+          const rect = wrap.getBoundingClientRect();
+          let ratio = (clientX - rect.left) / rect.width;
+          ratio = Math.max(0, Math.min(1, ratio));
+          const gain = (ratio * 36) - 18;
+          onRemoteEqChange(bandIdx, gain);
+        };
+        wrap.addEventListener("touchstart", (e) => handleX(e.touches[0].clientX), { passive: true });
+        wrap.addEventListener("touchmove", (e) => handleX(e.touches[0].clientX), { passive: true });
+        wrap.addEventListener("mousedown", (e) => {
+          handleX(e.clientX);
+          const onMove = (ev) => handleX(ev.clientX);
+          const onUp = () => {
+            window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("mouseup", onUp);
+          };
+          window.addEventListener("mousemove", onMove);
+          window.addEventListener("mouseup", onUp);
+        });
+      }
+    }
+
     function openRemoteRenameSceneModal() {
       const cur = remoteSceneNames[remoteActiveScene] || `Scene ${remoteActiveScene}`;
       document.getElementById("remoteRenameSceneTitle").innerText = `Rename Scene ${remoteActiveScene}`;
@@ -1027,8 +1314,8 @@
 
         row.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="part-num" style="font-size: 13px; font-weight: 700; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans);">${p.name}</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="part-num" style="font-size: 13px; font-weight: 700; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans); cursor: pointer;" onclick="openRemoteRenamePartModal(${p.part})" title="Tap to rename part">${p.name} ✎</span>
               <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleRemoteMute(${p.part})">M</button>
               <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleRemoteSolo(${p.part})">S</button>
             </div>
@@ -1911,6 +2198,7 @@
       renderParts();
       renderRemoteScenes();
       setupMixerFaders();
+      initRemoteEqSliders();
       connectWS();
     });
   </script>
