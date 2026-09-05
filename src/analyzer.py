@@ -1,24 +1,6 @@
-"""
-Litwave Deep Audio & Musical Intelligence Engine
-=================================================
-Utilizes BTC (Bi-directional Transformer for Chord Recognition) - the same state-of-the-art
-deep learning architecture powering ChordMini / ISMIR 2019.
-
-Features:
-1. Downbeat & Beat Tracking:
-   - Identifies exact quarter notes and bar boundaries (downbeats).
-   - Eliminates tempo octave errors (e.g. 76 BPM ballads detected as 152 BPM).
-2. BTC Transformer Chord Recognition:
-   - Evaluates Log-CQT frames via 8-layer Bidirectional Transformer.
-   - 170-chord vocabulary.
-   - Eliminates 1-beat jitter and transient clutter (kicks/snares/vocal slides).
-   - Merges identical consecutive chords and quantizes boundaries to musical beats.
-3. Krumhansl-Schmuckler Key & Tonality Detection.
-4. Auto-calculated Nashville Number System notation.
-"""
+"""Offline BTC chord, tempo, beat-phase, and key analysis for Litwave."""
 
 import os
-import json
 import logging
 from typing import Dict, Any, List, Optional
 import numpy as np
@@ -26,22 +8,29 @@ import librosa
 
 logger = logging.getLogger("LitwaveAnalyzer")
 
-# Global cached BTC model instance
+BTC_MODEL_ID = "puar-playground/btc-chord"
+BTC_MODEL_REVISION = "d436f2f664f5107cd987774279b8ce171846e376"
 _BTC_MODEL = None
 
+
 def get_btc_model():
-    """Lazily load and cache the BTC model in memory."""
+    """Lazily load and cache the pinned BTC model; failures remain retryable."""
     global _BTC_MODEL
     if _BTC_MODEL is None:
         try:
             from transformers import AutoModel
-            logger.info("Loading BTC Transformer chord recognition model (puar-playground/btc-chord)...")
-            _BTC_MODEL = AutoModel.from_pretrained("puar-playground/btc-chord", trust_remote_code=True, large_voca=True)
+            logger.info("Loading pinned BTC Transformer chord recognition model...")
+            _BTC_MODEL = AutoModel.from_pretrained(
+                BTC_MODEL_ID,
+                revision=BTC_MODEL_REVISION,
+                trust_remote_code=True,
+                large_voca=True,
+            )
             logger.info("BTC model loaded successfully!")
-        except Exception as e:
-            logger.error(f"Failed to load BTC model: {e}")
-            _BTC_MODEL = False
-    return _BTC_MODEL if _BTC_MODEL is not False else None
+        except Exception as error:
+            logger.error(f"Failed to load BTC model: {error}")
+            return None
+    return _BTC_MODEL
 
 
 # Musical Interval Maps for Nashville Numbers
@@ -62,8 +51,10 @@ KRUMHANSL_MINOR = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98
 
 def clean_chord_name(raw_chord: str) -> str:
     """Format Harte chord notation from BTC model into standard studio practice notation."""
-    if not raw_chord or raw_chord in ["N", "X", "None"]:
+    if not raw_chord or raw_chord == "None":
         return "N"
+    if raw_chord in ["N", "X"]:
+        return raw_chord
     
     # Harte format e.g. "C:maj", "A:min", "G:7", "D:min7", "F:maj7", "Bb:(1,3,5)"
     parts = raw_chord.split(":")
@@ -74,44 +65,20 @@ def clean_chord_name(raw_chord: str) -> str:
         
     qual = parts[1]
     
-    # Base conversions
-    if qual == "maj":
-        return root
-    elif qual == "min":
-        return f"{root}m"
-    elif qual == "7":
-        return f"{root}7"
-    elif qual == "maj7":
-        return f"{root}Maj7"
-    elif qual == "min7":
-        return f"{root}m7"
-    elif qual == "dim":
-        return f"{root}dim"
-    elif qual == "dim7":
-        return f"{root}dim7"
-    elif qual == "hdim7":
-        return f"{root}m7b5"
-    elif qual == "aug":
-        return f"{root}aug"
-    elif qual == "sus4":
-        return f"{root}sus4"
-    elif qual == "sus2":
-        return f"{root}sus2"
-    elif qual == "9":
-        return f"{root}9"
-    elif qual == "maj9":
-        return f"{root}Maj9"
-    elif qual == "min9":
-        return f"{root}m9"
-    else:
-        # Strip complex Harte extensions e.g. (b7,9) -> 9
-        clean_q = qual.replace("(", "").replace(")", "").replace("/", "")
-        return f"{root}{clean_q}"
+    suffixes = {
+        "maj": "", "min": "m", "dim": "dim", "aug": "aug",
+        "min6": "m6", "maj6": "6", "min7": "m7", "minmaj7": "mMaj7",
+        "maj7": "Maj7", "7": "7", "dim7": "dim7", "hdim7": "m7b5",
+        "sus2": "sus2", "sus4": "sus4",
+    }
+    if qual in suffixes:
+        return root + suffixes[qual]
+    return raw_chord
 
 
-def calculate_nashville(chord: str, root_key: str) -> str:
-    """Convert chord to Nashville Number System (e.g. Dm in Key C -> 2m, G/B in C -> 5/7)"""
-    if not chord or chord == "N":
+def calculate_nashville(chord: str, root_key: Optional[str]) -> str:
+    """Convert a recognized chord to Nashville notation when key is known."""
+    if not chord or chord in ("N", "X") or not root_key:
         return "-"
     
     # Check slash chord
@@ -151,20 +118,60 @@ def calculate_nashville(chord: str, root_key: str) -> str:
     return num_str
 
 
-def estimate_key(chroma_mean: np.ndarray, detected_chords: Optional[List[Dict[str, Any]]] = None) -> str:
-    """
-    Krumhansl-Schmuckler Key Profile Correlation with Harmonic Center Grounding.
-    Resolves relative minor vs major ambiguity (e.g. C#m vs E Major in Kisah Romantis).
-    """
-    if chroma_mean.shape[0] != 12:
-        return "C"
-        
-    norm_chroma = chroma_mean / (np.linalg.norm(chroma_mean) + 1e-6)
+def postprocess_chords(raw_chords: List[Dict[str, Any]], track_duration: float) -> List[Dict[str, Any]]:
+    """Validate a raw chord timeline and merge only touching identical labels."""
+    if not np.isfinite(track_duration) or track_duration < 0:
+        raise ValueError("Invalid track duration")
+
+    processed: List[Dict[str, Any]] = []
+    previous_end = 0.0
+    for index, raw in enumerate(raw_chords):
+        start = float(raw["start"])
+        end = float(raw["end"])
+        chord = str(raw["chord"])
+        if not np.isfinite(start) or not np.isfinite(end) or start < 0 or end <= start:
+            raise ValueError(f"Invalid chord interval: {raw}")
+        is_last = index == len(raw_chords) - 1
+        if (start < previous_end - 0.001 or start >= track_duration
+                or end > track_duration + 0.25 or (end > track_duration and not is_last)):
+            raise ValueError(f"Chord interval outside ordered track bounds: {raw}")
+
+        segment = {"start": start, "end": min(end, track_duration), "chord": chord}
+        if (processed and processed[-1]["chord"] == chord
+                and abs(processed[-1]["end"] - start) <= 0.001):
+            processed[-1]["end"] = segment["end"]
+        else:
+            processed.append(segment)
+        previous_end = end
+    return processed
+
+
+def chord_duration_totals(detected_chords: List[Dict[str, Any]]) -> Dict[str, float]:
+    """Sum actual segment durations using enharmonic-normalized chord roots."""
+    totals: Dict[str, float] = {}
+    for segment in detected_chords:
+        chord = str(segment.get("chord", "N"))
+        if chord in ("N", "X"):
+            continue
+        root_len = 2 if len(chord) > 1 and chord[1] in ("#", "b") else 1
+        chord = ENHARMONIC.get(chord[:root_len], chord[:root_len]) + chord[root_len:]
+        duration = float(segment["end"]) - float(segment["start"])
+        if duration > 0:
+            totals[chord] = totals.get(chord, 0.0) + duration
+    return totals
+
+
+def estimate_key(chroma_mean: np.ndarray, detected_chords: Optional[List[Dict[str, Any]]] = None) -> Optional[str]:
+    """Estimate key from chroma and real chord durations, or return unknown."""
+    if chroma_mean.shape != (12,) or not np.all(np.isfinite(chroma_mean)):
+        return None
+    chroma_norm = float(np.linalg.norm(chroma_mean))
+    if chroma_norm <= 1e-6:
+        return None
+
+    norm_chroma = chroma_mean / chroma_norm
     k_maj = KRUMHANSL_MAJOR / np.linalg.norm(KRUMHANSL_MAJOR)
     k_min = KRUMHANSL_MINOR / np.linalg.norm(KRUMHANSL_MINOR)
-    
-    best_corr = -1.0
-    best_key = "C"
     
     # Calculate correlation for all 24 keys
     candidate_scores = {}
@@ -179,14 +186,10 @@ def estimate_key(chroma_mean: np.ndarray, detected_chords: Optional[List[Dict[st
         corr_min = float(np.dot(norm_chroma, rot_min))
         candidate_scores[f"{NOTE_NAMES[i]}m"] = corr_min
 
-    # Harmonic weight from actual detected chords
-    if detected_chords and len(detected_chords) > 0:
-        chord_durations = {}
-        for c in detected_chords:
-            ch = c.get("chord", "N")
-            dur = c.get("duration", 2.0)
-            chord_durations[ch] = chord_durations.get(ch, 0.0) + dur
-            
+    # Harmonic weight from actual detected chord durations
+    if detected_chords:
+        chord_durations = chord_duration_totals(detected_chords)
+
         # If relative major triad duration substantially exceeds relative minor (e.g. E > C#m in Kisah Romantis)
         for i in range(12):
             maj_note = NOTE_NAMES[i]
@@ -206,13 +209,7 @@ def estimate_key(chroma_mean: np.ndarray, detected_chords: Optional[List[Dict[st
 
 
 def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict[str, Any]:
-    """
-    Perform high-precision MIR and BTC Chord Recognition.
-    Matches ChordMini's architecture:
-    1. Beat & Downbeat tracking to prevent tempo octave errors.
-    2. BTC Bi-directional Transformer for stable, musically grouped chords.
-    3. Metronome phase-lock timestamps.
-    """
+    """Analyze tempo, beat phase, key, and a raw BTC chord timeline."""
     if not os.path.exists(audio_path):
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
 
@@ -221,96 +218,53 @@ def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict
     y, _ = librosa.load(audio_path, sr=sr, duration=max_duration)
     duration = float(librosa.get_duration(y=y, sr=sr))
 
-    # 1. Rhythmic & Beat Tracking
     logger.info("Extracting beat onsets and tempo grid...")
     onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-    
-    # Use tempo prior around 80-120 BPM to avoid double-time tempo octave errors (e.g. 152 vs 76)
     tempo_arr, beats = librosa.beat.beat_track(
         onset_envelope=onset_env,
         sr=sr,
         start_bpm=90.0,
-        tightness=100
+        tightness=100,
     )
-    
     tempo = float(tempo_arr[0] if isinstance(tempo_arr, (np.ndarray, list)) else tempo_arr)
-    
-    # Octave check: if tempo > 140, check if half tempo is more natural for ballads
-    if tempo > 140.0:
-        half_tempo = tempo / 2.0
-        # If below 100, normalize tempo for human practice
-        tempo = round(half_tempo, 1)
-    else:
-        tempo = round(tempo, 1)
-
+    tempo = round(tempo, 1) if np.isfinite(tempo) and tempo > 0 else 0.0
     beat_times = [round(float(t), 3) for t in librosa.frames_to_time(beats, sr=sr).tolist()]
-    first_downbeat = float(beat_times[0]) if len(beat_times) > 0 else 0.0
+    first_beat = float(beat_times[0]) if beat_times else None
 
-    # 2. Key Estimation
-    # 2. Extract Chroma
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
     chroma_mean = np.mean(chroma, axis=1)
-    time_sig = "4/4"
 
-    # 3. BTC Deep Transformer Chord Recognition
     model = get_btc_model()
-    raw_chords = []
-    
-    if model is not None:
-        try:
-            logger.info("Running BTC Transformer inference...")
-            preds = model.predict(y)
-            for p in preds:
-                c_name = clean_chord_name(p["chord"])
-                raw_chords.append({
-                    "start": round(float(p["start"]), 2),
-                    "end": round(float(p["end"]), 2),
-                    "chord": c_name
-                })
-        except Exception as e:
-            logger.error(f"Error during BTC inference: {e}")
+    if model is None:
+        raise RuntimeError("BTC chord model is unavailable; existing chart was preserved")
 
-    # Fallback to beat-synchronous chroma if BTC fails or unavailable
-    if not raw_chords:
-        logger.warning("BTC unavailable, falling back to basic C major...")
-        raw_chords = [{"start": 0.0, "end": round(duration, 2), "chord": "C"}]
+    try:
+        logger.info("Running BTC Transformer inference...")
+        preds = model.predict(y)
+    except Exception as error:
+        raise RuntimeError(f"BTC chord inference failed: {error}") from error
+    if not preds:
+        raise RuntimeError("BTC chord inference returned no predictions; existing chart was preserved")
 
-    # Ground root key detection using actual detected chord energy
-    root_key = estimate_key(chroma_mean, raw_chords)
+    raw_chords = [
+        {
+            "start": round(float(prediction["start"]), 3),
+            "end": round(float(prediction["end"]), 3),
+            "chord": clean_chord_name(prediction["chord"]),
+        }
+        for prediction in preds
+    ]
+    filtered_chords = postprocess_chords(raw_chords, duration)
+    root_key = estimate_key(chroma_mean, filtered_chords)
 
-    # 4. Quantize and filter chords to musical measure boundaries
-    # Avoid rapid single-beat flickers: enforce minimum duration (~1.2s or 2 beats)
-    min_chord_duration = max(1.0, 60.0 / tempo)
-    
-    filtered_chords: List[Dict[str, Any]] = []
-    for c in raw_chords:
-        c_name = c["chord"]
-        if c_name == "N":
-            continue
-            
-        dur = c["end"] - c["start"]
-        if not filtered_chords:
-            filtered_chords.append(c)
-        else:
-            last = filtered_chords[-1]
-            if last["chord"] == c_name:
-                # Merge consecutive identical chords
-                last["end"] = c["end"]
-            elif dur < min_chord_duration:
-                # Absorb short transient jitter into previous chord
-                last["end"] = c["end"]
-            else:
-                filtered_chords.append(c)
-
-    # Convert to standard Litwave practice chart
     chord_chart: List[Dict[str, Any]] = []
-    for c in filtered_chords:
-        nash = calculate_nashville(c["chord"], root_key)
+    for chord in filtered_chords:
         chord_chart.append({
-            "time": c["start"],
-            "chord": c["chord"],
-            "nashville": nash,
-            "duration": round(c["end"] - c["start"], 2)
+            "time": chord["start"],
+            "end": chord["end"],
+            "chord": chord["chord"],
+            "nashville": calculate_nashville(chord["chord"], root_key),
+            "duration": round(chord["end"] - chord["start"], 3),
         })
 
     logger.info(f"Analysis complete: {tempo} BPM, Key: {root_key}, {len(chord_chart)} distinct chords.")
@@ -318,9 +272,11 @@ def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict
     return {
         "bpm": tempo,
         "key": root_key,
-        "time_sig": time_sig,
-        "first_downbeat_seconds": round(first_downbeat, 3),
+        "time_sig": None,
+        "first_beat_seconds": round(first_beat, 3) if first_beat is not None else None,
         "beat_times": beat_times,
         "total_chords": len(chord_chart),
-        "chords": chord_chart
+        "model": {"id": BTC_MODEL_ID, "revision": BTC_MODEL_REVISION, "vocabulary": "large"},
+        "pipeline_version": 2,
+        "chords": chord_chart,
     }

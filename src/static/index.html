@@ -1086,6 +1086,63 @@
     }
 
     #songFileInput { display: none; }
+
+    .engine-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-main);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      margin-left: 10px;
+      transition: all 0.1s ease;
+    }
+    .engine-pill-btn:hover {
+      background: var(--bg-panel);
+      border-color: var(--border-dim);
+      color: var(--text-main);
+    }
+    .engine-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+    }
+    .engine-dot.warning { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.6); }
+    .engine-dot.overloaded { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.7); }
+    .panic-btn {
+      border-color: rgba(239, 68, 68, 0.35) !important;
+      color: #fca5a5 !important;
+    }
+    .panic-btn:hover {
+      background: rgba(239, 68, 68, 0.12) !important;
+      border-color: #ef4444 !important;
+      color: #ffffff !important;
+    }
+    .engine-popover {
+      position: fixed;
+      top: 44px;
+      left: 160px;
+      width: 290px;
+      background: #0d1016;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
   </style>
 </head>
 <body>
@@ -1095,9 +1152,17 @@
     <div class="brand-section">
       <span class="app-title">Litwave</span>
       <span class="app-subtitle">Practice Workstation</span>
+      <button class="engine-pill-btn" id="engineStatusBtn" onclick="toggleEnginePopover(event)" title="Click for audio engine details">
+        <span class="engine-dot" id="engineStatusDot"></span>
+        <span id="engineStatusSummary">Audio Status</span>
+      </button>
     </div>
 
     <div class="header-actions">
+      <button class="btn-header-action panic-btn" id="panicBtn" onclick="triggerMidiPanic()" title="Panic: kill stuck notes, reset controllers (F12)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Panic</span>
+      </button>
       <button class="btn-header-action" onclick="openEarModal()" title="Ear Training & Chord Progression Practice">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
         <span>Ear Training</span>
@@ -1334,10 +1399,10 @@
             </div>
             <div class="window-controls">
               <!-- Font Size Stepper -->
-              <div style="display: flex; align-items: center; gap: 2px; background: var(--bg-sunken); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border-dim); margin-right: 4px;">
-                <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeLyricsFontSize(-1)" title="Smaller font">-</button>
-                <span id="lyricsFontSizeText" style="font-family: var(--font-mono); font-size: 10px; min-width: 26px; text-align: center; color: var(--accent);">13px</span>
-                <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeLyricsFontSize(1)" title="Larger font">+</button>
+              <div style="display: inline-flex; align-items: center; background: var(--bg-sunken); border-radius: 4px; border: 1px solid var(--border-dim); margin-right: 4px; height: 20px; overflow: hidden; box-sizing: border-box;">
+                <button type="button" style="border: none; background: transparent; color: var(--text-main); width: 20px; height: 100%; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;" onclick="changeLyricsFontSize(-1)" title="Smaller font">-</button>
+                <span id="lyricsFontSizeText" style="font-family: var(--font-mono); font-size: 10px; min-width: 26px; text-align: center; color: var(--accent); user-select: none;">13px</span>
+                <button type="button" style="border: none; background: transparent; color: var(--text-main); width: 20px; height: 100%; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;" onclick="changeLyricsFontSize(1)" title="Larger font">+</button>
               </div>
               <button class="btn" id="toggleLyricsFollowBtn" style="padding: 2px 6px; font-size: 10px;" onclick="toggleLyricsFollow()">Follow: Off</button>
             </div>
@@ -1362,11 +1427,11 @@
             </div>
           </div>
 
-          <div style="flex: 1; padding: 10px 12px; background: var(--bg-surface); display: flex; flex-direction: column; justify-content: space-between; gap: 8px; overflow-y: auto;">
-            <!-- Side-by-Side: Current Chord (Left) & Next Chord (Right) -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div style="flex: 1; padding: 8px 10px; background: var(--bg-surface); display: flex; flex-direction: column; gap: 8px; overflow-y: auto; height: 100%; box-sizing: border-box;">
+            <!-- Side-by-Side: Current Chord (Left) & Next Chord (Right) ~30% height -->
+            <div style="flex: 1 1 28%; min-height: 75px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <!-- Current Active Chord & Piano Voicing Notes -->
-              <div style="display: flex; flex-direction: column; gap: 4px; background: var(--bg-sunken); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);">
+              <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 4px; background: var(--bg-sunken); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono); letter-spacing: 0.5px;">CURRENT CHORD</span>
                   <span id="currentChordTimecode" style="font-size: 9px; font-family: var(--font-mono); color: var(--text-dim);">00:00.0</span>
@@ -1383,7 +1448,7 @@
               </div>
 
               <!-- Next Upcoming Chord Attention & Voice Leading Cue -->
-              <div style="display: flex; flex-direction: column; gap: 4px; background: rgba(56, 189, 248, 0.08); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.35);">
+              <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 4px; background: rgba(56, 189, 248, 0.08); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.35);">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--accent); font-family: var(--font-mono); letter-spacing: 0.5px;">NEXT CHORD</span>
                   <span id="liveSongNextCountdown" style="font-size: 10px; font-family: var(--font-mono); font-weight: 700; color: var(--accent-secondary);">--</span>
@@ -1399,37 +1464,45 @@
               </div>
             </div>
 
-            <!-- Full 4-Bar Harmonic Measure Grid -->
-            <div style="display: flex; flex-direction: column; gap: 4px; background: #0c0e12; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-dim);">
+            <!-- Full 4-Bar Harmonic Measure Grid ~32% height -->
+            <div style="flex: 1 1 32%; min-height: 80px; display: flex; flex-direction: column; justify-content: center; gap: 4px; background: #0c0e12; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-dim);">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono); letter-spacing: 0.5px;">HARMONIC MEASURE GRID (4 BARS)</span>
                 <span style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">1 · 2 · 3 · 4</span>
               </div>
-              <div id="harmonicMeasureGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 2px;">
+              <div id="harmonicMeasureGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 2px; flex: 1;">
                 <!-- 4 Interactive Bars dynamically rendered -->
               </div>
             </div>
 
-            <!-- Live Voicing Recommendation & Hand Inversion Guide -->
-            <div style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-sunken); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); margin-top: 2px;">
+            <!-- Live Voicing Recommendation & Hand Inversion Guide ~40% height -->
+            <div style="flex: 1.4 1 40%; min-height: 95px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; background: var(--bg-sunken); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); margin-top: 2px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono); letter-spacing: 0.5px;">VOICING & EXTENSION RECOMMENDATIONS</span>
-                <span id="voicingFormulaText" style="font-size: 9px; font-family: var(--font-mono); color: var(--accent);">Root Position [1 - 3 - 5]</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="voicingFormulaText" style="font-size: 9px; font-family: var(--font-mono); color: var(--accent);">Root Position [1 - 3 - 5]</span>
+                  <button class="btn" id="auditionVoicingBtn" onclick="auditionCurrentVoicing()" style="padding: 1px 6px; font-size: 9px; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 3px;" title="Audition this voicing on Yamaha MONTAGE M">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span>Audition</span>
+                  </button>
+                </div>
               </div>
-              <div style="display: grid; grid-template-columns: 1fr 180px; gap: 8px; align-items: center;">
-                <!-- 3 Extension Preset Buttons -->
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                  <div style="display: flex; gap: 4px;" id="voicingExtensionBtnGroup">
-                    <button class="btn btn-active" id="extBtn_root" onclick="selectVoicingExtension('root')" style="flex: 1; padding: 3px 6px; font-size: 10px; font-family: var(--font-mono);">Root</button>
-                    <button class="btn" id="extBtn_ext1" onclick="selectVoicingExtension('ext1')" style="flex: 1; padding: 3px 6px; font-size: 10px; font-family: var(--font-mono);">7th</button>
-                    <button class="btn" id="extBtn_ext2" onclick="selectVoicingExtension('ext2')" style="flex: 1; padding: 3px 6px; font-size: 10px; font-family: var(--font-mono);">9th / Add9</button>
+              <div style="display: grid; grid-template-columns: 1fr 180px; gap: 8px; align-items: center; flex: 1;">
+                <!-- Voicing Preset Buttons: Extensions & Inversions -->
+                <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+                  <div style="display: flex; gap: 3px;" id="voicingExtensionBtnGroup">
+                    <button class="btn btn-active" id="extBtn_root" onclick="selectVoicingExtension('root')" style="flex: 1; padding: 2px 4px; font-size: 9px; font-family: var(--font-mono);">Root</button>
+                    <button class="btn" id="extBtn_inv1" onclick="selectVoicingExtension('inv1')" style="flex: 1; padding: 2px 4px; font-size: 9px; font-family: var(--font-mono);">1st Inv</button>
+                    <button class="btn" id="extBtn_inv2" onclick="selectVoicingExtension('inv2')" style="flex: 1; padding: 2px 4px; font-size: 9px; font-family: var(--font-mono);">2nd Inv</button>
+                    <button class="btn" id="extBtn_ext1" onclick="selectVoicingExtension('ext1')" style="flex: 1; padding: 2px 4px; font-size: 9px; font-family: var(--font-mono);">7th</button>
+                    <button class="btn" id="extBtn_ext2" onclick="selectVoicingExtension('ext2')" style="flex: 1; padding: 2px 4px; font-size: 9px; font-family: var(--font-mono);">Add9</button>
                   </div>
                   <div style="font-size: 9px; color: var(--text-dim); font-family: var(--font-mono); line-height: 1.3;" id="voicingBreakdownDesc">
                     Notes: <span id="voicingNotesList" style="color: var(--accent); font-weight: 700;">--</span>
                   </div>
                 </div>
                 <!-- 2-Octave Mini Piano Key Visualizer for Current Voicing -->
-                <div style="height: 48px; background: #000000; border: 1px solid var(--border-dim); border-radius: 4px; padding: 2px; position: relative; overflow: hidden;" id="miniVoicingPianoWrap">
+                <div style="height: 100%; min-height: 48px; max-height: 64px; background: #000000; border: 1px solid var(--border-dim); border-radius: 4px; padding: 2px; position: relative; overflow: hidden;" id="miniVoicingPianoWrap">
                   <svg id="miniVoicingPianoSvg" width="100%" height="100%" viewBox="0 0 168 44" preserveAspectRatio="none" style="display: block;"></svg>
                 </div>
               </div>
@@ -1529,11 +1602,12 @@
 
         <!-- Integrated Master 4-Band Spline Equalizer inside Output Mixer -->
         <div class="mixer-eq-section" style="padding: 6px 8px 8px 8px; border-top: 1px solid var(--border-dim); display: flex; flex-direction: column; gap: 5px; transition: all 0.2s ease;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.5px;">Master Parametric EQ</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.5px;">Master EQ</span>
+              <button class="btn btn-active" id="analyzerToggleBtn" onclick="toggleSpectrumAnalyzer()" style="padding: 1px 5px; font-size: 8px; font-family: var(--font-mono);" title="Toggle live real-time FFT spectrum analyzer overlay">Spectrum (FFT)</button>
             </div>
-            <span style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">±18 dB</span>
+            <span style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint); white-space: nowrap;">±18 dB · 20Hz-20k</span>
           </div>
 
           <!-- Embedded Dynamic Canvas with true 1:1 pixel matching -->
@@ -1542,10 +1616,60 @@
           </div>
 
           <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
+            <span>20</span>
+            <span>50</span>
+            <span>100</span>
+            <span>200</span>
+            <span>500</span>
+            <span>1k</span>
+            <span>2k</span>
+            <span>5k</span>
+            <span>10k</span>
+            <span>20k</span>
+          </div>
+
+          <!-- Master EQ Band Legend -->
+          <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint); margin-top: 1px;">
             <span>B1: Low Shelf</span>
             <span>B2: 500Hz</span>
             <span>B3: 2.5kHz</span>
             <span>B4: High Shelf</span>
+          </div>
+        </div>
+
+        <!-- Stage Warmth Strip: Analog Soft-Saturation for In-Ear & Stage Rig -->
+        <div class="stage-warmth-strip" id="stageWarmthSection" style="padding: 6px 8px 8px 8px; border-top: 1px solid var(--border-dim); background: var(--bg-sunken); display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; width: 100%; overflow: hidden;">
+          <!-- Header & Readouts -->
+          <div style="display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); font-family: var(--font-mono); letter-spacing: 0.5px;">Stage Warmth</span>
+              <button class="btn btn-active" id="warmthToggleBtn" onclick="toggleStageWarmth()" style="padding: 1px 5px; font-size: 8px; font-family: var(--font-mono);">On</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; font-size: 8px; font-family: var(--font-mono);">
+              <span style="color: var(--text-faint);">Drive <span id="warmthDriveText" style="color: var(--text-main); font-weight: 700;">1.20x</span></span>
+              <span style="color: var(--text-faint);">· Mode <span id="warmthModeText" style="color: var(--accent); font-weight: 700;">Tape</span></span>
+            </div>
+          </div>
+
+          <!-- Controls: Drive Slider + Mode Pills -->
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 6px; align-items: center; box-sizing: border-box; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 3px; border: 1px solid var(--border-subtle); min-width: 0; box-sizing: border-box;">
+              <span style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint); flex-shrink: 0;">Drive</span>
+              <input type="range" id="warmthDriveRange" min="1.0" max="2.5" step="0.05" value="1.2" oninput="onWarmthDriveInput(this.value)" style="flex: 1; min-width: 0; width: 100%; accent-color: var(--accent); height: 14px; cursor: pointer;" />
+            </div>
+            <div style="display: flex; gap: 3px; background: rgba(0,0,0,0.3); padding: 2px; border-radius: 3px; border: 1px solid var(--border-subtle); box-sizing: border-box;">
+              <button class="btn btn-active" id="warmthModeTape" onclick="setWarmthMode(0)" style="flex: 1; padding: 1px 4px; font-size: 8px; font-family: var(--font-mono); justify-content: center;">Tape</button>
+              <button class="btn" id="warmthModeCrisp" onclick="setWarmthMode(1)" style="flex: 1; padding: 1px 4px; font-size: 8px; font-family: var(--font-mono); justify-content: center;">Crisp</button>
+            </div>
+          </div>
+
+          <!-- Live Saturation Activity Bar -->
+          <div style="display: flex; align-items: center; gap: 6px; box-sizing: border-box; width: 100%;">
+            <span style="font-size: 7px; font-weight: 700; font-family: var(--font-mono); color: var(--text-faint); text-transform: uppercase;">SAT</span>
+            <div style="flex: 1; height: 5px; background: #0b0d12; border: 1px solid var(--border-dim); border-radius: 2px; overflow: hidden; position: relative;" title="Analog Soft Saturation Harmonic Meter">
+              <div id="warmthSatBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, rgba(56, 189, 248, 0.3), #38bdf8); transition: width 0.08s ease;"></div>
+            </div>
+            <span style="font-size: 7px; font-family: var(--font-mono); color: var(--text-faint);">IEM Safe</span>
           </div>
         </div>
       </section>
@@ -1866,6 +1990,22 @@
     Notification
   </div>
 
+  <!-- Audio Engine Detailed Popover -->
+  <div class="engine-popover" id="enginePopover">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-dim); padding-bottom: 4px;">
+      <span style="font-weight: 700; color: var(--text-main);">AUDIO ENGINE STATUS</span>
+      <span id="enginePopoverStatusText" style="color: var(--accent);">Stable</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; color: var(--text-dim);"><span>Driver / Host</span><span id="enginePopDriver" style="color: var(--text-main);">--</span></div>
+    <div style="display: flex; justify-content: space-between; color: var(--text-dim);"><span>Device</span><span id="enginePopDevice" style="color: var(--text-main); max-width: 170px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">--</span></div>
+    <div style="display: flex; justify-content: space-between; color: var(--text-dim);"><span>Sample Rate</span><span id="enginePopSr" style="color: var(--text-main);">--</span></div>
+    <div style="display: flex; justify-content: space-between; color: var(--text-dim);"><span>Buffer Size</span><span id="enginePopBuffer" style="color: var(--text-main);">--</span></div>
+    <div style="display: flex; justify-content: space-between; color: var(--text-dim);"><span>Buffer / Out Latency</span><span id="enginePopLatency" style="color: var(--text-main);">--</span></div>
+    <div style="display: flex; justify-content: space-between; color: var(--text-dim);"><span>DSP Load / Peak</span><span id="enginePopDsp" style="color: var(--text-main);">--</span></div>
+    <div style="display: flex; justify-content: space-between; color: var(--text-dim);"><span>Dropouts / XRUNs</span><span id="enginePopXruns" style="color: var(--text-main);">0</span></div>
+  </div>
+
+  <script src="/static/chord_timeline.js"></script>
   <script>
     function showAppToast(msg, durationMs = 2500) {
       const toast = document.getElementById("appToastNotice");
@@ -1885,6 +2025,14 @@
     let cachedMarkers = [];
     let currentSongDuration = 0;
     let hasLoadedTrack = false;
+
+    // Real-time Master DSP & Monitoring state
+    let nativeEngineData = null;
+    let lastKnownAudioTelemetry = {};
+    let masterSpectrumBins = [];
+    let analyzerEnabled = true;
+    let stageWarmthSettings = { enabled: true, drive: 1.2, mode: 0 };
+    let lastStatusUiUpdate = 0;
 
     // Fader values
     let valTrack = 0.8;
@@ -2000,6 +2148,14 @@
     function openMarkerModal() {
       if (!hasLoadedTrack) return;
       document.getElementById("customMarkerNameInput").value = `Section ${cachedMarkers.length + 1}`;
+      const sel = document.getElementById("customMarkerSceneSelect");
+      if (sel) {
+        sel.innerHTML = '<option value="">None (Keep current scene)</option>';
+        for (let s = 1; s <= 8; s++) {
+          const sName = desktopSceneNames[s] || `Scene ${s}`;
+          sel.innerHTML += `<option value="${s}">${sName !== `Scene ${s}` ? `Scene ${s} (${sName})` : sName}</option>`;
+        }
+      }
       document.getElementById("bookmarkModal").style.display = "flex";
       setTimeout(() => document.getElementById("customMarkerNameInput").focus(), 50);
     }
@@ -2034,11 +2190,193 @@
           ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
           : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
       }
+      if (id === "mixerDeck") {
+        const isMin = panel.classList.contains("is-minimized");
+        fetch("/api/master/dsp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ analyzer_visible: !isMin && analyzerEnabled })
+        }).catch(() => {});
+        if (!isMin) setTimeout(drawEqSpline, 50);
+      }
     }
 
     // Tap Tempo State
-    let tapTimes = [];
+    function toggleEnginePopover(e) {
+      if (e) e.stopPropagation();
+      const pop = document.getElementById("enginePopover");
+      if (!pop) return;
+      const isShown = pop.style.display === "flex";
+      pop.style.display = isShown ? "none" : "flex";
+      if (!isShown) updateEngineStatusUi(true);
+    }
 
+    document.addEventListener("click", (e) => {
+      const pop = document.getElementById("enginePopover");
+      const btn = document.getElementById("engineStatusBtn");
+      if (pop && pop.style.display === "flex" && !pop.contains(e.target) && !btn.contains(e.target)) {
+        pop.style.display = "none";
+      }
+    });
+
+    async function triggerMidiPanic() {
+      const btn = document.getElementById("panicBtn");
+      if (btn) {
+        btn.classList.add("btn-active");
+        setTimeout(() => btn.classList.remove("btn-active"), 400);
+      }
+      activeNotes = [];
+      const currentActives = document.querySelectorAll(".piano-key.active, .piano-white-key.active, .piano-black-key.active");
+      currentActives.forEach(el => el.classList.remove("active"));
+      try {
+        const res = await fetch("/api/midi/panic", { method: "POST" });
+        const data = await res.json();
+        showAppToast(`Panic sent: All notes off & controllers reset (${data.released_notes || 0} notes)`);
+      } catch (e) {
+        showAppToast("Panic request failed");
+      }
+    }
+
+    let lastWarmthUserInteraction = 0;
+
+    async function toggleStageWarmth() {
+      lastWarmthUserInteraction = performance.now();
+      stageWarmthSettings.enabled = !stageWarmthSettings.enabled;
+      applyWarmthDomState();
+      await fetch("/api/master/dsp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ warmth: stageWarmthSettings })
+      });
+    }
+
+    function onWarmthDriveInput(val) {
+      lastWarmthUserInteraction = performance.now();
+      stageWarmthSettings.drive = parseFloat(val);
+      const drvTxt = document.getElementById("warmthDriveText");
+      if (drvTxt) drvTxt.innerText = `${stageWarmthSettings.drive.toFixed(2)}x`;
+      debouncePostWarmthSettings();
+    }
+
+    async function setWarmthMode(mode) {
+      lastWarmthUserInteraction = performance.now();
+      stageWarmthSettings.mode = parseInt(mode, 10);
+      applyWarmthDomState();
+      await fetch("/api/master/dsp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ warmth: stageWarmthSettings })
+      });
+    }
+
+    let warmthDebounceTimer = null;
+    function debouncePostWarmthSettings() {
+      clearTimeout(warmthDebounceTimer);
+      warmthDebounceTimer = setTimeout(async () => {
+        await fetch("/api/master/dsp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ warmth: stageWarmthSettings })
+        });
+      }, 100);
+    }
+
+    function applyWarmthDomState() {
+      const btn = document.getElementById("warmthToggleBtn");
+      if (btn) {
+        btn.innerText = stageWarmthSettings.enabled ? "On" : "Bypass";
+        btn.classList.toggle("btn-active", stageWarmthSettings.enabled);
+      }
+      const drvInp = document.getElementById("warmthDriveRange");
+      if (drvInp && document.activeElement !== drvInp) drvInp.value = stageWarmthSettings.drive;
+      const drvTxt = document.getElementById("warmthDriveText");
+      if (drvTxt && document.activeElement !== drvInp) drvTxt.innerText = `${stageWarmthSettings.drive.toFixed(2)}x`;
+      const modeTxt = document.getElementById("warmthModeText");
+      if (modeTxt) modeTxt.innerText = stageWarmthSettings.mode === 1 ? "Crisp" : "Tape";
+      const btnTape = document.getElementById("warmthModeTape");
+      if (btnTape) btnTape.classList.toggle("btn-active", stageWarmthSettings.mode === 0);
+      const btnCrisp = document.getElementById("warmthModeCrisp");
+      if (btnCrisp) btnCrisp.classList.toggle("btn-active", stageWarmthSettings.mode === 1);
+    }
+
+    async function toggleSpectrumAnalyzer() {
+      analyzerEnabled = !analyzerEnabled;
+      const btn = document.getElementById("analyzerToggleBtn");
+      if (btn) btn.classList.toggle("btn-active", analyzerEnabled);
+      drawEqSpline();
+      await fetch("/api/master/dsp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analyzer_enabled: analyzerEnabled, analyzer_visible: analyzerEnabled })
+      });
+    }
+
+    function updateEngineStatusUi(force = false) {
+      const now = performance.now();
+      if (!force && now - lastStatusUiUpdate < 180) return;
+      lastStatusUiUpdate = now;
+
+      const engine = nativeEngineData || {};
+      const audio = lastKnownAudioTelemetry || {};
+      const reachable = Boolean(engine.reachable);
+      const sr = reachable ? (engine.sample_rate || 44100) : (audio.samplerate || 48000);
+      const srText = `${Math.round(sr / 1000)}k`;
+      const buf = reachable ? (engine.buffer_frames || 256) : (audio.blocksize || 256);
+      const latency = reachable ? engine.total_latency_ms : (audio.latency_ms || 6.8);
+      const dsp = reachable ? Math.max(0.0, engine.dsp_load_percent || 0.0) : 0.0;
+      const xruns = reachable ? (engine.xruns || 0) : 0;
+
+      let stateClass = "stable";
+      let stateLabel = "Stable";
+      if (dsp >= 90.0) {
+        stateClass = "overloaded";
+        stateLabel = "Overloaded";
+      } else if (dsp >= 70.0 || (reachable && engine.peak_dsp_load_percent >= 98.0)) {
+        stateClass = "warning";
+        stateLabel = "Warning";
+      }
+
+      const dot = document.getElementById("engineStatusDot");
+      if (dot) dot.className = `engine-dot ${stateClass === "stable" ? "" : stateClass}`;
+      const summary = document.getElementById("engineStatusSummary");
+      if (summary) {
+        if (!reachable && !audio.samplerate) {
+          summary.innerText = "Audio Status";
+        } else {
+          summary.innerText = `${srText} · ${buf} spl · ${latency.toFixed(1)}ms · DSP ${Math.round(dsp)}% · XRUN ${xruns}`;
+        }
+      }
+
+      const popStatus = document.getElementById("enginePopoverStatusText");
+      if (popStatus) {
+        popStatus.innerText = stateLabel;
+        popStatus.style.color = stateClass === "overloaded" ? "#ef4444" : (stateClass === "warning" ? "#f59e0b" : "var(--accent)");
+      }
+      const popDriver = document.getElementById("enginePopDriver");
+      if (popDriver) popDriver.innerText = reachable ? `${engine.backend || "native"} (${audio.hostapi || "ASIO"})` : (audio.hostapi || "ASIO");
+      const popDevice = document.getElementById("enginePopDevice");
+      if (popDevice) popDevice.innerText = reachable ? (engine.device || audio.device_name || "Default") : (audio.device_name || "Default");
+      const popSr = document.getElementById("enginePopSr");
+      if (popSr) popSr.innerText = `${sr} Hz`;
+      const popBuf = document.getElementById("enginePopBuffer");
+      if (popBuf) popBuf.innerText = `${buf} frames`;
+      const popLat = document.getElementById("enginePopLatency");
+      if (popLat) popLat.innerText = `${reachable ? engine.buffer_latency_ms : (latency/2).toFixed(1)}ms / ${latency.toFixed(1)}ms`;
+      const popDsp = document.getElementById("enginePopDsp");
+      if (popDsp) popDsp.innerText = `${dsp.toFixed(1)}% (Peak: ${(reachable ? engine.peak_dsp_load_percent || 0.0 : 0.0).toFixed(1)}%)`;
+      const popXruns = document.getElementById("enginePopXruns");
+      if (popXruns) popXruns.innerText = `${xruns}`;
+
+      if (reachable && engine.warmth) {
+        const sat = Math.max(0.0, engine.warmth.meter || 0.0);
+        const satBar = document.getElementById("warmthSatBar");
+        if (satBar) {
+          const pct = Math.min(100, Math.round(sat * 300));
+          satBar.style.width = `${pct}%`;
+        }
+      }
+    }
+    let tapTimes = [];
     function handleTapTempo() {
       const now = performance.now();
       tapTimes.push(now);
@@ -2096,8 +2434,8 @@
         return;
       }
 
-      // Find the upcoming chord within 0.5s to 8s
-      const nextChord = activeChordChart.find(c => c.time > (currentSeconds + 0.3) && c.time <= (currentSeconds + 8.0));
+      // Find the upcoming playable chord within 0.3s to 8s
+      const nextChord = activeChordChart.find(c => c.time > (currentSeconds + 0.3) && c.time <= (currentSeconds + 8.0) && ChordTimeline.playableChord(c));
       if (nextChord) {
         hud.style.display = "inline-flex";
         const diff = (nextChord.time - currentSeconds).toFixed(1);
@@ -2109,7 +2447,10 @@
     }
 
     // Modal Handlers
-    function openSettingsModal() { document.getElementById("preferencesModal").style.display = "flex"; }
+    function openSettingsModal() {
+      document.getElementById("preferencesModal").style.display = "flex";
+      loadDevices();
+    }
     function closeSettingsModal() { document.getElementById("preferencesModal").style.display = "none"; }
 
     // Master 4-Band Spline Equalizer Interactive Logic
@@ -2214,18 +2555,55 @@
       ctx.fillStyle = "#090a0c";
       ctx.fillRect(0, 0, w, h);
 
+      // Render FFT spectrum directly behind EQ curve with subtle low-contrast studio fill
+      if (analyzerEnabled && masterSpectrumBins && masterSpectrumBins.length > 0) {
+        ctx.beginPath();
+        for (let i = 0; i < masterSpectrumBins.length; ++i) {
+          const t = i / (masterSpectrumBins.length - 1);
+          const px = t * w;
+          const db = masterSpectrumBins[i];
+          const clampedDb = Math.max(-90, Math.min(0, db));
+          const py = h - ((clampedDb + 90) / 90) * (h - 6);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        const specGrad = ctx.createLinearGradient(0, 0, 0, h);
+        specGrad.addColorStop(0, "rgba(56, 189, 248, 0.20)");
+        specGrad.addColorStop(1, "rgba(30, 64, 175, 0.03)");
+        ctx.fillStyle = specGrad;
+        ctx.fill();
+
+        ctx.beginPath();
+        for (let i = 0; i < masterSpectrumBins.length; ++i) {
+          const t = i / (masterSpectrumBins.length - 1);
+          const px = t * w;
+          const clampedDb = Math.max(-90, Math.min(0, masterSpectrumBins[i]));
+          const py = h - ((clampedDb + 90) / 90) * (h - 6);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
       // Grid frequency lines (100Hz, 1kHz, 10kHz)
       ctx.lineWidth = 1;
       ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
-      [100, 1000, 10000].forEach(f => {
+      [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].forEach(f => {
         const gx = freqToX(f, w);
         ctx.beginPath();
         ctx.moveTo(gx, 0);
         ctx.lineTo(gx, h);
         ctx.stroke();
-        ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-        ctx.font = "9px var(--font-mono)";
-        ctx.fillText(f >= 1000 ? `${f/1000}k` : `${f}`, gx + 4, 12);
+        if ([100, 1000, 10000].includes(f)) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+          ctx.font = "9px var(--font-mono)";
+          ctx.fillText(f >= 1000 ? `${f/1000}k` : `${f}`, gx + 4, 12);
+        }
       });
 
       // Horizontal 0 dB line & +/-12dB
@@ -2465,12 +2843,12 @@
       return `Step ${fromChord} to ${toChord}`;
     }
 
-    let selectedVoicingExt = "root"; // "root", "ext1", "ext2"
+    let selectedVoicingExt = "root"; // "root", "inv1", "inv2", "ext1", "ext2"
     let currentVoicingChord = "";
 
     function selectVoicingExtension(extType) {
       selectedVoicingExt = extType;
-      ['root', 'ext1', 'ext2'].forEach(k => {
+      ['root', 'inv1', 'inv2', 'ext1', 'ext2'].forEach(k => {
         const b = document.getElementById(`extBtn_${k}`);
         if (b) b.classList.toggle("btn-active", k === extType);
       });
@@ -2481,21 +2859,43 @@
       if (!chordName || chordName === "--") return { name: "--", notes: [], formula: "None" };
       const root = chordName.length > 1 && (chordName[1] === "#" || chordName[1] === "b") ? chordName.slice(0, 2) : chordName.slice(0, 1);
       const isMinor = chordName.includes("m") && !chordName.includes("maj") && !chordName.includes("Maj");
+      const baseNotes = getChordNotes(chordName);
 
       if (extType === "root") {
-        const notes = getChordNotes(chordName);
         return {
           name: chordName,
-          notes: notes,
+          notes: baseNotes,
           formula: isMinor ? `Minor Triad [1 - b3 - 5]` : `Major Triad [1 - 3 - 5]`
         };
+      } else if (extType === "inv1") {
+        // 1st Inversion (3 in bass): e.g. [E, G, C]
+        if (baseNotes.length >= 3) {
+          const invNotes = [...baseNotes.slice(1), baseNotes[0]];
+          return {
+            name: `${chordName}/${baseNotes[1]}`,
+            notes: invNotes,
+            formula: `1st Inversion [3 - 5 - 1]`
+          };
+        }
+        return { name: chordName, notes: baseNotes, formula: "1st Inversion" };
+      } else if (extType === "inv2") {
+        // 2nd Inversion (5 in bass): e.g. [G, C, E]
+        if (baseNotes.length >= 3) {
+          const invNotes = [...baseNotes.slice(2), ...baseNotes.slice(0, 2)];
+          return {
+            name: `${chordName}/${baseNotes[2]}`,
+            notes: invNotes,
+            formula: `2nd Inversion [5 - 1 - 3]`
+          };
+        }
+        return { name: chordName, notes: baseNotes, formula: "2nd Inversion" };
       } else if (extType === "ext1") {
         // 7th extension
         const chord7 = isMinor ? `${root}m7` : `${root}Maj7`;
         const notes = getChordNotes(chord7);
         return {
           name: chord7,
-          notes: notes.length > 0 ? notes : getChordNotes(chordName),
+          notes: notes.length > 0 ? notes : baseNotes,
           formula: isMinor ? `Minor 7th [1 - b3 - 5 - b7]` : `Major 7th [1 - 3 - 5 - 7]`
         };
       } else {
@@ -2513,6 +2913,29 @@
           notes: combined,
           formula: isMinor ? `Minor 9th [1 - b3 - 5 - b7 - 9]` : `Add9 Voicing [1 - 3 - 5 - 9]`
         };
+      }
+    }
+
+    async function auditionCurrentVoicing() {
+      const chord = currentVoicingChord || "C";
+      const v = getExtendedVoicing(chord, selectedVoicingExt);
+      const notes = v.notes && v.notes.length > 0 ? v.notes : getChordNotes(chord);
+      if (!notes || notes.length === 0) return;
+
+      const btn = document.getElementById("auditionVoicingBtn");
+      if (btn) {
+        btn.classList.add("btn-active");
+        setTimeout(() => btn.classList.remove("btn-active"), 800);
+      }
+
+      try {
+        await fetch("/api/montage/audition", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chord: chord, notes: notes })
+        });
+      } catch (e) {
+        console.error("Failed to audition voicing:", e);
       }
     }
 
@@ -2535,17 +2958,24 @@
       // Render White keys (14 keys = 2 octaves)
       whiteKeys.forEach((wk, i) => {
         const isHeld = normNotes.includes(wk);
-        const fill = isHeld ? "var(--accent)" : "#1e222a";
-        const stroke = "#090a0c";
+        const fill = isHeld ? "var(--accent)" : "#16191f";
+        const stroke = "#0b0d11";
         html += `<rect x="${i * keyWidth}" y="0" width="${keyWidth - 1}" height="44" fill="${fill}" stroke="${stroke}" stroke-width="1" rx="1" />`;
+        if (isHeld) {
+          // Add touch marker dot for clean readability
+          html += `<circle cx="${i * keyWidth + (keyWidth - 1) / 2}" cy="36" r="2.5" fill="#ffffff" />`;
+        }
       });
 
       // Render Black keys
       blackKeys.forEach(bk => {
         const isHeld = normNotes.includes(bk.note);
-        const fill = isHeld ? "#ffffff" : "#090a0c";
-        const stroke = isHeld ? "var(--accent)" : "#1c2028";
+        const fill = isHeld ? "#ffffff" : "#0a0c0f";
+        const stroke = isHeld ? "var(--accent)" : "#1e222a";
         html += `<rect x="${bk.pos * keyWidth}" y="0" width="7" height="26" fill="${fill}" stroke="${stroke}" stroke-width="1" rx="1" />`;
+        if (isHeld) {
+          html += `<circle cx="${bk.pos * keyWidth + 3.5}" cy="20" r="2" fill="var(--accent)" />`;
+        }
       });
 
       svg.innerHTML = html;
@@ -2565,39 +2995,15 @@
     }
 
     function updateSongChordTracker(currentSeconds) {
-      if (!activeChordChart || activeChordChart.length === 0) return;
-
-      // 1. Find the current chord active right now
-      let curChord = null;
-      let curIdx = -1;
-      for (let i = 0; i < activeChordChart.length; i++) {
-        const c = activeChordChart[i];
-        const nextTime = (i + 1 < activeChordChart.length) ? activeChordChart[i + 1].time : 999999.0;
-        if (currentSeconds >= c.time && currentSeconds < nextTime) {
-          curChord = c;
-          curIdx = i;
-          break;
-        }
-      }
-
-      // Update Current Chord Display
       const curNameEl = document.getElementById("liveSongCurrentChord");
       const curNashEl = document.getElementById("liveSongCurrentNash");
       const curTimeEl = document.getElementById("currentChordTimecode");
       const curNotesEl = document.getElementById("currentVoicingNotes");
-      if (curChord) {
-        if (curChord.chord !== currentVoicingChord) {
-          currentVoicingChord = curChord.chord;
-          refreshVoicingVisualizer();
-        }
-        if (curNameEl) curNameEl.innerText = curChord.chord;
-        if (curNashEl) curNashEl.innerText = curChord.nashville ? `[${curChord.nashville}]` : '';
-        if (curTimeEl) curTimeEl.innerText = formatTime(curChord.time);
-        if (curNotesEl) {
-          const notes = getChordNotes(curChord.chord);
-          curNotesEl.innerHTML = notes.map(n => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${n}</span>`).join("");
-        }
-      } else {
+      const nextNameEl = document.getElementById("liveSongNextChord");
+      const nextCdEl = document.getElementById("liveSongNextCountdown");
+      const leadTipEl = document.getElementById("voiceLeadingTip");
+      const grid = document.getElementById("harmonicMeasureGrid");
+      const clearCurrent = () => {
         if (currentVoicingChord !== "") {
           currentVoicingChord = "";
           refreshVoicingVisualizer();
@@ -2606,30 +3012,72 @@
         if (curNashEl) curNashEl.innerText = "";
         if (curTimeEl) curTimeEl.innerText = formatTime(currentSeconds);
         if (curNotesEl) curNotesEl.innerText = "--";
+      };
+
+      const renderGridPlaceholders = () => {
+        if (!grid) return;
+        let html = "";
+        for (let b = 1; b <= 4; b++) {
+          html += `
+            <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px dashed var(--border-subtle); padding: 4px 6px; border-radius: 4px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; opacity: 0.5;">
+              <div style="font-size: 8px; font-weight: 700; color: var(--text-faint); font-family: var(--font-mono);">BAR ${b}</div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--text-faint); font-family: var(--font-mono); margin: 2px 0;">--</div>
+              <div style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">-</div>
+              <div style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint); margin-top: 2px;">--:--</div>
+            </div>
+          `;
+        }
+        grid.innerHTML = html;
+      };
+
+      if (!activeChordChart || activeChordChart.length === 0) {
+        clearCurrent();
+        if (nextNameEl) nextNameEl.innerText = "--";
+        if (nextCdEl) nextCdEl.innerText = "--";
+        if (leadTipEl) leadTipEl.innerText = "No chord analysis";
+        renderGridPlaceholders();
+        return;
       }
 
-      // 2. Find Next Chord and Countdown
-      const nextChord = activeChordChart.find(c => c.time > (currentSeconds + 0.1));
-      const nextNameEl = document.getElementById("liveSongNextChord");
-      const nextCdEl = document.getElementById("liveSongNextCountdown");
-      const leadTipEl = document.getElementById("voiceLeadingTip");
+      const rawChord = ChordTimeline.chordAtTime(activeChordChart, currentSeconds);
+      const curChord = ChordTimeline.playableChord(rawChord);
+      if (curChord) {
+        if (curChord.chord !== currentVoicingChord) {
+          currentVoicingChord = curChord.chord;
+          refreshVoicingVisualizer();
+        }
+        if (curNameEl) curNameEl.innerText = curChord.chord;
+        if (curNashEl) curNashEl.innerText = curChord.nashville && curChord.nashville !== "-" ? `[${curChord.nashville}]` : "";
+        if (curTimeEl) curTimeEl.innerText = formatTime(curChord.time);
+        if (curNotesEl) {
+          const notes = getChordNotes(curChord.chord);
+          curNotesEl.innerHTML = notes.map(n => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${n}</span>`).join("");
+        }
+      } else {
+        clearCurrent();
+      }
+
+      const nextChord = ChordTimeline.nextPlayableChord(activeChordChart, currentSeconds);
       if (nextChord) {
         const diff = (nextChord.time - currentSeconds).toFixed(1);
-        if (nextNameEl) nextNameEl.innerText = `${nextChord.chord}`;
+        if (nextNameEl) nextNameEl.innerText = nextChord.chord;
         if (nextCdEl) nextCdEl.innerText = `in ${diff}s`;
-        if (leadTipEl && curChord) {
-          leadTipEl.innerText = calculateVoiceLeading(curChord.chord, nextChord.chord);
-        }
+        if (leadTipEl) leadTipEl.innerText = curChord ? calculateVoiceLeading(curChord.chord, nextChord.chord) : "Waiting for harmony";
       } else {
         if (nextNameEl) nextNameEl.innerText = "--";
         if (nextCdEl) nextCdEl.innerText = "--";
         if (leadTipEl) leadTipEl.innerText = "End of track";
       }
 
-      // 3. Render 4-Bar Harmonic Measure Grid
-      const grid = document.getElementById("harmonicMeasureGrid");
-      if (grid && curIdx >= 0) {
-        const barChords = activeChordChart.slice(Math.max(0, curIdx), Math.max(0, curIdx) + 4);
+      // Render the next four playable chord events; this is not a detected bar grid.
+      if (grid) {
+        const playable = activeChordChart.filter(ChordTimeline.playableChord);
+        const gridStart = curChord ? playable.indexOf(curChord) : playable.findIndex(c => c.time > currentSeconds);
+        if (gridStart < 0) {
+          renderGridPlaceholders();
+          return;
+        }
+        const barChords = playable.slice(gridStart, gridStart + 4);
         let html = "";
         for (let b = 0; b < 4; b++) {
           const item = barChords[b];
@@ -3371,8 +3819,8 @@
         btn.style.overflow = "hidden";
         btn.style.textOverflow = "ellipsis";
         btn.style.whiteSpace = "nowrap";
-        btn.innerText = `S${s}`;
-        btn.title = name;
+        btn.innerText = name !== `Scene ${s}` ? `S${s}: ${name}` : `S${s}`;
+        btn.title = `Scene ${s}: ${name}`;
         btn.id = `sceneBtn_${s}`;
         btn.onclick = () => selectScene(s);
         grid.appendChild(btn);
@@ -3465,11 +3913,47 @@
     }
     connectWS();
 
+    let lastSpectrumDraw = 0;
     function renderTelemetry(data) {
-      const audio = data.audio;
+      if (data.audio) lastKnownAudioTelemetry = data.audio;
+      const audio = data.audio || lastKnownAudioTelemetry;
       const song = data.song;
       const midi = data.midi;
       const montage = data.montage;
+
+      if (data.engine) {
+        nativeEngineData = data.engine;
+        if (data.engine.analyzer_enabled !== undefined) {
+          analyzerEnabled = Boolean(data.engine.analyzer_enabled);
+          const btn = document.getElementById("analyzerToggleBtn");
+          if (btn) btn.classList.toggle("btn-active", analyzerEnabled);
+        }
+        if (data.engine.warmth && (performance.now() - lastWarmthUserInteraction > 1200)) {
+          stageWarmthSettings.enabled = Boolean(data.engine.warmth.enabled);
+          stageWarmthSettings.drive = Number(data.engine.warmth.drive);
+          stageWarmthSettings.mode = Number(data.engine.warmth.mode);
+          applyWarmthDomState();
+        }
+      }
+      updateEngineStatusUi();
+
+      if (data.spectrum && Array.isArray(data.spectrum)) {
+        masterSpectrumBins = data.spectrum;
+        const now = performance.now();
+        const mixerMin = document.getElementById("mixerDeck")?.classList.contains("is-minimized");
+        if (analyzerEnabled && !mixerMin && (now - lastSpectrumDraw > 90)) {
+          lastSpectrumDraw = now;
+          requestAnimationFrame(drawEqSpline);
+        }
+      }
+
+      // When server sends periodic hotplug device list, update open preference dropdowns dynamically
+      if (data.devices) {
+        const prefModal = document.getElementById("preferencesModal");
+        if (prefModal && prefModal.style.display !== "none") {
+          loadDevices(data);
+        }
+      }
 
       // Remote bidirectional synchronization for volumes (when not locally dragging)
       if (!draggingFader && audio) {
@@ -3527,21 +4011,34 @@
       }
 
       if (montage) {
-        if (montage.current_scene !== undefined && montage.current_scene !== activeScene) {
+        let sceneNamesChanged = false;
+        if (montage.scene_names) {
+          const oldNamesStr = JSON.stringify(desktopSceneNames);
+          desktopSceneNames = { ...desktopSceneNames, ...montage.scene_names };
+          if (oldNamesStr !== JSON.stringify(desktopSceneNames)) {
+            sceneNamesChanged = true;
+          }
+        }
+        if (montage.current_scene !== undefined && (montage.current_scene !== activeScene || sceneNamesChanged)) {
           activeScene = montage.current_scene;
-          document.getElementById("activeSceneText").innerText = `Scene ${activeScene}`;
+          const sName = desktopSceneNames[activeScene] || `Scene ${activeScene}`;
+          const activeTextEl = document.getElementById("activeSceneText");
+          if (activeTextEl) activeTextEl.innerText = sName;
           for (let s = 1; s <= 8; s++) {
             const b = document.getElementById(`sceneBtn_${s}`);
             if (b) b.classList.toggle("btn-active", s === activeScene);
+          }
+        }
+        if (sceneNamesChanged) {
+          renderScenesUI();
+          if (cachedMarkers && cachedMarkers.length > 0) {
+            renderMarkersUI(cachedMarkers, currentSongDuration);
           }
         }
         if (montage.part_names) {
           for (let p = 1; p <= 8; p++) {
             if (montage.part_names[p]) desktopPartsState[p - 1].name = montage.part_names[p];
           }
-        }
-        if (montage.scene_names) {
-          desktopSceneNames = { ...desktopSceneNames, ...montage.scene_names };
         }
         if (montage.part_pans) {
           for (let p = 1; p <= 8; p++) {
@@ -3640,8 +4137,12 @@
         if (song.chord_chart) {
           activeChordChart = song.chord_chart;
         }
-        if (song.lyrics_sheet && song.lyrics_sheet.length > 0 && activeLyricsSheet.length !== song.lyrics_sheet.length) {
-          renderLyricsSheet(song.lyrics_sheet);
+        if (song.lyrics_sheet && song.lyrics_sheet.length > 0) {
+          if (activeLyricsSheet.length !== song.lyrics_sheet.length || !document.getElementById("lyricLine_0")) {
+            renderLyricsSheet(song.lyrics_sheet);
+          }
+        } else if (activeLyricsSheet.length > 0) {
+          renderLyricsSheet([]);
         }
         updateNextChordHUD(curSec);
         updateSongChordTracker(curSec);
@@ -3772,21 +4273,33 @@
     }
 
     let lastTriggeredMarkerId = null;
+    let lastMarkerCheckTime = -1;
 
     function checkMarkerAutoSceneTrigger(curSec, markers) {
       if (!markers || markers.length === 0) return;
-      // Find the most recent marker that playback has entered
+
+      // If user rewound, seeked backwards, or looped, reset last triggered state
+      if (curSec < lastMarkerCheckTime - 0.5) {
+        lastTriggeredMarkerId = null;
+      }
+      lastMarkerCheckTime = curSec;
+
+      const sorted = [...markers].sort((a, b) => a.time - b.time);
       let activeM = null;
-      for (let i = 0; i < markers.length; i++) {
-        if (curSec >= markers[i].time - 0.05) {
-          activeM = markers[i];
+      for (let i = 0; i < sorted.length; i++) {
+        if (curSec >= sorted[i].time - 0.05) {
+          activeM = sorted[i];
         } else {
           break;
         }
       }
-      if (activeM && activeM.scene && activeM.id !== lastTriggeredMarkerId) {
-        lastTriggeredMarkerId = activeM.id;
-        selectScene(activeM.scene);
+
+      if (activeM && activeM.scene) {
+        const scNum = parseInt(activeM.scene, 10);
+        if (scNum >= 1 && scNum <= 8 && activeM.id !== lastTriggeredMarkerId) {
+          lastTriggeredMarkerId = activeM.id;
+          selectScene(scNum);
+        }
       }
     }
 
@@ -3804,9 +4317,11 @@
       markers.forEach((m, idx) => {
         const pill = document.createElement("div");
         pill.className = "marker-pill";
-        const sceneBadge = m.scene ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${m.scene}</span>` : '';
+        const scNum = m.scene ? parseInt(m.scene, 10) : null;
+        const sName = scNum ? (desktopSceneNames[scNum] || `Scene ${scNum}`) : '';
+        const sceneBadge = scNum ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${scNum}${sName && sName !== `Scene ${scNum}` ? `: ${sName}` : ''}</span>` : '';
         pill.innerHTML = `<span>${m.name}${sceneBadge} (${formatTime(m.time)})</span><span class="del-btn" style="display: inline-flex; align-items: center;" onclick="event.stopPropagation(); deleteMarker(${m.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
-        pill.onclick = () => jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null, m.scene);
+        pill.onclick = () => jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null, scNum);
         ribbon.appendChild(pill);
 
         if (duration > 0) {
@@ -3820,9 +4335,9 @@
           tag.className = "section-marker-label";
           tag.id = `tag-${m.id}`;
           tag.style.left = `${pct}%`;
-          tag.innerText = m.scene ? `${m.name} [S${m.scene}]` : m.name;
+          tag.innerText = scNum ? `${m.name} [S${scNum}${sName && sName !== `Scene ${scNum}` ? `: ${sName}` : ''}]` : m.name;
           tag.onmousedown = (e) => startMarkerDrag(m.id, e);
-          tag.onclick = (e) => { e.stopPropagation(); jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null, m.scene); };
+          tag.onclick = (e) => { e.stopPropagation(); jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null, scNum); };
 
           overlay.appendChild(flag);
           overlay.appendChild(tag);
@@ -4095,9 +4610,18 @@
           body: JSON.stringify({})
         });
         const data = await res.json();
-        if (data.success && data.result) {
-          const r = data.result;
-          displayTrackIntelligence(r);
+        if (data.success) {
+          if (data.result) displayTrackIntelligence(data.result);
+          if (data.song) {
+            if (data.song.lyrics_sheet && data.song.lyrics_sheet.length > 0) {
+              renderLyricsSheet(data.song.lyrics_sheet);
+            }
+            if (data.song.chord_chart && data.song.chord_chart.length > 0) {
+              activeChordChart = data.song.chord_chart;
+              updateNextChordHUD(data.song.current_time_seconds || 0);
+              updateSongChordTracker(data.song.current_time_seconds || 0);
+            }
+          }
           btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>`;
           setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
         } else {
@@ -4122,15 +4646,17 @@
         const kDisplay = intel.key || intel.key_full || '--';
         keyText.innerText = `Key: ${kDisplay}`;
         bpmText.innerText = `${intel.bpm || '--'} BPM`;
-        meterText.innerText = `${intel.time_sig || intel.time_signature || '4/4'}`;
+        meterText.innerText = `${intel.time_sig || intel.time_signature || '--'}`;
 
-        // Automatically set user Nashville key selector to match detected song key
-        const rootKey = (intel.key || intel.key_root || 'C').replace("m", "");
-        userNashvilleKey = rootKey;
-        const kSel = document.getElementById("nashvilleKeySelect");
-        if (kSel) kSel.value = rootKey;
-        const rSel = document.getElementById("remoteNashvilleKeySelect");
-        if (rSel) rSel.value = rootKey;
+        const detectedKey = intel.key || intel.key_root;
+        if (detectedKey) {
+          const rootKey = detectedKey.replace("m", "");
+          userNashvilleKey = rootKey;
+          const kSel = document.getElementById("nashvilleKeySelect");
+          if (kSel) kSel.value = rootKey;
+          const rSel = document.getElementById("remoteNashvilleKeySelect");
+          if (rSel) rSel.value = rootKey;
+        }
       }
     }
 
@@ -4195,36 +4721,51 @@
       }
     }
 
-    async function loadDevices() {
-      const res = await fetch("/api/status");
-      const data = await res.json();
+    async function loadDevices(prefetchedData = null) {
+      let data = prefetchedData;
+      if (!data) {
+        try {
+          const res = await fetch("/api/status");
+          data = await res.json();
+        } catch (e) {
+          return;
+        }
+      }
+      if (!data || !data.devices) return;
 
       const prefAudioSelect = document.getElementById("prefAudioSelect");
-      prefAudioSelect.innerHTML = "";
-      data.devices.audio_outputs.forEach(d => {
-        const opt = document.createElement("option");
-        opt.value = d.id;
-        opt.innerText = `${d.is_asio ? "[ASIO] " : ""}${d.name} (${d.hostapi})`;
-        if (d.id === data.audio.device_id) opt.selected = true;
-        prefAudioSelect.appendChild(opt);
-      });
-
-      const prefMidiSelect = document.getElementById("prefMidiSelect");
-      prefMidiSelect.innerHTML = "";
-      if (data.devices.midi_inputs.length === 0) {
-        prefMidiSelect.innerHTML = "<option>No MIDI Input Connected</option>";
-      } else {
-        data.devices.midi_inputs.forEach((port, idx) => {
+      if (prefAudioSelect) {
+        const currentSelected = prefAudioSelect.value;
+        prefAudioSelect.innerHTML = "";
+        data.devices.audio_outputs.forEach(d => {
           const opt = document.createElement("option");
-          opt.value = idx;
-          opt.innerText = port;
-          if (port === data.midi.port_name) opt.selected = true;
-          prefMidiSelect.appendChild(opt);
+          opt.value = d.id;
+          opt.innerText = `${d.is_asio ? "[ASIO] " : ""}${d.name} (${d.hostapi})`;
+          if (data.audio && d.id === data.audio.device_id) opt.selected = true;
+          else if (!data.audio && String(d.id) === String(currentSelected)) opt.selected = true;
+          prefAudioSelect.appendChild(opt);
         });
       }
 
-      if (data.audio.blocksize) {
-        document.getElementById("prefBufferSelect").value = data.audio.blocksize;
+      const prefMidiSelect = document.getElementById("prefMidiSelect");
+      if (prefMidiSelect) {
+        prefMidiSelect.innerHTML = "";
+        if (!data.devices.midi_inputs || data.devices.midi_inputs.length === 0) {
+          prefMidiSelect.innerHTML = "<option value=\"\">No MIDI Input Connected</option>";
+        } else {
+          data.devices.midi_inputs.forEach((port, idx) => {
+            const opt = document.createElement("option");
+            opt.value = port;
+            opt.innerText = port;
+            if (data.midi && port === data.midi.port_name) opt.selected = true;
+            prefMidiSelect.appendChild(opt);
+          });
+        }
+      }
+
+      if (data.audio && data.audio.blocksize) {
+        const bufSelect = document.getElementById("prefBufferSelect");
+        if (bufSelect) bufSelect.value = data.audio.blocksize;
       }
     }
 
@@ -4248,11 +4789,13 @@
     }
 
     async function changeMidiDevice(port) {
+      if (!port) return;
       await fetch("/api/midi/device", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ port: parseInt(port) })
+        body: JSON.stringify({ port: port })
       });
+      loadDevices();
     }
 
     // Yamaha VST Window State Cycling:
@@ -4308,6 +4851,11 @@
 
     window.addEventListener("keydown", (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+      if (e.code === "F12" || (e.code === "KeyP" && (e.ctrlKey || e.metaKey) && e.shiftKey)) {
+        e.preventDefault();
+        triggerMidiPanic();
+        return;
+      }
       if (e.code === "Space") { e.preventDefault(); transportAction("toggle"); }
       else if (e.key === "[") transportAction("loop_a");
       else if (e.key === "]") transportAction("loop_b");
@@ -4323,6 +4871,7 @@
     });
 
     loadDevices();
+    refreshVoicingVisualizer();
     setTimeout(initEqCanvas, 100);
   </script>
 </body>

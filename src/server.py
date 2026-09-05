@@ -6,6 +6,8 @@ Connects the backend audio/MIDI engine to the Impeccable studio frontend
 import os
 import json
 import asyncio
+import threading
+import time
 from typing import List
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse, HTMLResponse, FileResponse
@@ -32,6 +34,10 @@ class AppState:
         self.ear_training = EarTrainingManager()
         self.ws_clients: List[WebSocket] = []
         self._loop: asyncio.AbstractEventLoop = None
+        self.analyzer_visible_clients = 1
+        self._monitor_running = True
+        self._monitor_thread = threading.Thread(target=self._monitor_native_engine, daemon=True)
+        self._monitor_thread.start()
         
         # Start audio with default ASIO or system device
         self.audio.start_stream()
@@ -44,6 +50,21 @@ class AppState:
     def _on_midi_event(self, event_dict):
         # We don't flood the websocket with hundreds of raw note messages since telemetry runs at 25fps
         pass
+
+    def _monitor_native_engine(self):
+        """Poll slow native DSP/FFT state off the audio and ASGI threads."""
+        last_sync = 0.0
+        while self._monitor_running:
+            now = time.monotonic()
+            if now - last_sync > 2.0 and self.montage.native_status.get("reachable") is not True:
+                self.montage.sync_master_dsp_settings()
+                last_sync = now
+            self.montage.poll_realtime_state(include_spectrum=self.analyzer_visible_clients > 0)
+            time.sleep(0.12)
+
+    def set_analyzer_visible(self, visible: bool):
+        self.analyzer_visible_clients = 1 if visible else 0
+        self.montage.set_analyzer_active(visible)
 
     async def broadcast(self, message: str):
         dead_clients = []
@@ -65,9 +86,10 @@ async def api_status(request):
         "midi": state.midi.get_snapshot(),
         "song": state.audio.song_player.get_telemetry(),
         "montage": state.montage.check_installation(),
+        "engine": state.montage.native_status,
         "devices": {
-            "audio_outputs": state.audio.get_output_devices(),
-            "midi_inputs": state.midi.get_available_ports()
+            "audio_outputs": state.audio.get_output_devices(force_refresh=True),
+            "midi_inputs": state.midi.get_available_ports(force_refresh=True)
         }
     }
     return JSONResponse(telemetry)
@@ -81,7 +103,7 @@ async def api_transport(request):
         sp.play()
         # Align metronome phase ONCE at play/seek trigger
         if state.audio.metronome.enabled:
-            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            downbeat = sp.get_beat_origin()
             cur_sec = sp.current_frame / float(state.audio.samplerate)
             state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
     elif action == "pause":
@@ -89,19 +111,19 @@ async def api_transport(request):
     elif action == "stop":
         sp.stop()
         if state.audio.metronome.enabled:
-            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            downbeat = sp.get_beat_origin()
             state.audio.metronome.sync_to_playhead(0.0, downbeat)
     elif action == "toggle":
         sp.toggle_play()
         if sp.is_playing and state.audio.metronome.enabled:
-            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            downbeat = sp.get_beat_origin()
             cur_sec = sp.current_frame / float(state.audio.samplerate)
             state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
     elif action == "seek":
         sec = float(body.get("seconds", 0.0))
         sp.seek_seconds(sec)
         if state.audio.metronome.enabled:
-            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            downbeat = sp.get_beat_origin()
             state.audio.metronome.sync_to_playhead(sec, downbeat)
     elif action == "loop_a":
         sec = body.get("seconds")
@@ -177,7 +199,7 @@ async def api_mixer(request):
         # Immediately lock phase to backing track if song is playing
         if state.audio.metronome.enabled and state.audio.song_player.is_playing:
             sp = state.audio.song_player
-            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            downbeat = sp.get_beat_origin()
             cur_sec = sp.current_frame / float(state.audio.samplerate)
             state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
         
@@ -268,13 +290,19 @@ async def ws_telemetry(websocket: WebSocket):
     await websocket.accept()
     state.ws_clients.append(websocket)
     state._loop = asyncio.get_event_loop()
+    tick = 0
     try:
         while True:
+            tick += 1
+            # Every 25 ticks (~1.0s), include refreshed device lists in telemetry
+            include_devices = (tick % 25 == 0)
             telemetry = {
                 "type": "telemetry",
                 "audio": state.audio.get_telemetry(),
                 "song": state.audio.song_player.get_telemetry(),
                 "midi": state.midi.get_snapshot(),
+                "engine": state.montage.native_status,
+                "spectrum": state.montage.spectrum_bins if state.analyzer_visible_clients > 0 else [],
                 "montage": {
                     "master_volume": state.montage.master_vst_volume,
                     "part_volumes": state.montage.part_volumes,
@@ -292,6 +320,11 @@ async def ws_telemetry(websocket: WebSocket):
                     "current_scene": state.montage.current_scene
                 }
             }
+            if include_devices:
+                telemetry["devices"] = {
+                    "audio_outputs": state.audio.get_output_devices(),
+                    "midi_inputs": state.midi.get_available_ports()
+                }
             await websocket.send_text(json.dumps(telemetry, cls=CustomJSONEncoder))
             await asyncio.sleep(0.04) # 25fps refresh
     except (WebSocketDisconnect, asyncio.CancelledError, RuntimeError):
@@ -446,6 +479,70 @@ async def api_custom_names(request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
+async def api_midi_panic(request):
+    """Stop stuck notes across Litwave and every native plugin MIDI channel."""
+    active_notes = state.midi.panic()
+    state.montage.panic(active_notes)
+    return JSONResponse({"success": True, "released_notes": len(active_notes)})
+
+
+async def api_master_dsp(request):
+    """Update persisted master spectrum analyzer and stage warmth controls."""
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):
+            return JSONResponse({"error": "Expected JSON object"}, status_code=400)
+        if "warmth" in data and isinstance(data["warmth"], dict):
+            w = data["warmth"]
+            state.montage.configure_warmth(
+                enabled=w.get("enabled"),
+                drive=w.get("drive"),
+                mode=w.get("mode"),
+            )
+        if "analyzer_enabled" in data:
+            state.montage.set_analyzer_enabled(bool(data["analyzer_enabled"]))
+        if "analyzer_visible" in data:
+            state.set_analyzer_visible(bool(data["analyzer_visible"]))
+        # Refresh native status immediately so returned JSON and cached telemetry are up to date
+        fresh_status = state.montage.query_native_status()
+        return JSONResponse({"success": True, "engine": fresh_status})
+    except (TypeError, ValueError) as error:
+        return JSONResponse({"error": str(error)}, status_code=400)
+
+
+async def api_play_voicing(request):
+    """Audition a chord voicing directly to MONTAGE M via UDP"""
+    try:
+        data = await request.json()
+        chord_name = data.get("chord", "C")
+        notes = data.get("notes", [])
+        if not notes:
+            return JSONResponse({"success": False, "error": "No notes provided"}, status_code=400)
+
+        # Convert pitch note names (e.g. ['C', 'E', 'G']) to MIDI note numbers
+        note_map = {'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4,
+                    'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9,
+                    'A#': 10, 'Bb': 10, 'B': 11}
+        root_name = chord_name.split('/')[0].strip()
+        root_key = root_name[:2] if len(root_name) > 1 and root_name[1] in ('#', 'b') else root_name[:1]
+        root_semi = note_map.get(root_key, 0)
+        root_midi = 60 + root_semi  # Center around C4
+
+        intervals = []
+        for n in notes:
+            n_clean = n.strip()
+            semi = note_map.get(n_clean, 0)
+            diff = (semi - root_semi) % 12
+            intervals.append(diff)
+
+        # Deduplicate preserving order
+        unique_intervals = sorted(list(set(intervals)))
+        state.ear_training.play_voicing(root_midi, unique_intervals, duration=1.5)
+        return JSONResponse({"success": True, "chord": chord_name, "notes": notes})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
 async def api_ear_exercise(request):
     """Generate or retrieve ear training exercise"""
     try:
@@ -502,50 +599,41 @@ async def api_analyze_song(request):
                 data = await request.json()
             except Exception:
                 data = {}
-        filename = data.get("filename") or state.audio.song_player.filename
-        if not filename:
+        sp = state.audio.song_player
+        raw_name = data.get("filename") or sp.filename
+        if not raw_name:
             return JSONResponse({"error": "No active song loaded"}, status_code=400)
-            
+        filename = os.path.basename(raw_name)
+        if filename != sp.filename:
+            return JSONResponse({"error": "Requested song is not active"}, status_code=409)
+
         upload_dir = os.path.join(STATIC_DIR, "uploads")
         fpath = os.path.join(upload_dir, filename)
         if not os.path.exists(fpath):
             return JSONResponse({"error": "File not found"}, status_code=404)
 
-        # Run deep MIR & BTC analysis in a dedicated background worker thread
-        # This keeps the FastAPI/Starlette async loop and WebSocket telemetry at 25fps with zero UI stutter
+        # Keep analysis away from the async loop and real-time audio callback.
         res = await run_in_executor(analyze_track, fpath)
-        if "error" not in res:
-            # Auto-populate song player chord progression & analysis data
-            sp = state.audio.song_player
-            sp.analysis_data = {
-                "bpm": res["bpm"],
-                "key_full": res["key"],
-                "key_root": res["key"].replace("m", ""),
-                "is_major": not res["key"].endswith("m"),
-                "time_signature": 4,
-                "first_downbeat_seconds": res.get("first_downbeat_seconds", 0.0)
-            }
-            # Auto-fill chord progression with BTC clean progression
-            sp.chord_chart = res["chords"]
-            
-            # Fetch synced lyrics with duration matching and Whisper AI audio fallback
-            try:
-                dur = sp.total_frames / float(sp.target_samplerate) if sp.target_samplerate > 0 else None
-                lyrics_res = fetch_synced_lyrics(filename, duration=dur, audio_path=fpath)
-                if lyrics_res and lyrics_res.get("lines"):
-                    sp.lyrics_sheet = lyrics_res["lines"]
-            except Exception as le:
-                print(f"[Server] Failed to fetch lyrics: {le}")
-                
-            sp._persist_chart()
-            
-            # Auto-sync metronome BPM & phase to song
-            if res.get("bpm"):
-                state.audio.metronome.set_bpm(float(res["bpm"]))
-            if res.get("time_sig"):
-                state.audio.metronome.set_time_sig(4)
+        if sp.filename != filename:
+            return JSONResponse({"error": "Active song changed during analysis"}, status_code=409)
 
-        return JSONResponse({"success": True, "result": res, "song": state.audio.song_player.get_telemetry()})
+        lyrics = None
+        try:
+            duration = sp.total_frames / float(sp.target_samplerate) if sp.target_samplerate > 0 else None
+            lyrics_result = fetch_synced_lyrics(filename, duration=duration, audio_path=fpath)
+            if lyrics_result and lyrics_result.get("lines"):
+                lyrics = lyrics_result["lines"]
+        except Exception as error:
+            print(f"[Server] Failed to fetch lyrics: {error}")
+
+        if not sp.apply_analysis(filename, res, lyrics):
+            if sp.filename != filename:
+                return JSONResponse({"error": "Active song changed during analysis"}, status_code=409)
+            return JSONResponse({"error": "Failed to save analysis; existing chart preserved"}, status_code=500)
+        if res.get("bpm"):
+            state.audio.metronome.set_bpm(float(res["bpm"]))
+
+        return JSONResponse({"success": True, "result": res, "song": sp.get_telemetry()})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
@@ -566,6 +654,9 @@ routes = [
     Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
     Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
     Route("/api/montage/names", api_custom_names, methods=["GET", "POST"]),
+    Route("/api/montage/audition", api_play_voicing, methods=["POST"]),
+    Route("/api/midi/panic", api_midi_panic, methods=["POST"]),
+    Route("/api/master/dsp", api_master_dsp, methods=["POST"]),
     Route("/api/ear-training", api_ear_exercise, methods=["GET", "POST"]),
     Route("/api/montage/license", api_launch_license_manager, methods=["POST"]),
     WebSocketRoute("/ws", ws_telemetry),

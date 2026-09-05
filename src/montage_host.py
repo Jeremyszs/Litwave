@@ -5,8 +5,18 @@ Manages discovery, verification, license state, and native editor launching
 
 import os
 import json
+import math
+import socket
+import struct
 import subprocess
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+
+NATIVE_STATUS_MAGIC = 0x5354574C
+SPECTRUM_MAGIC = 0x54435053
+NATIVE_STATUS_FORMAT = "<IffIIIIfffIIfIf32s96s"
+NATIVE_STATUS_SIZE = struct.calcsize(NATIVE_STATUS_FORMAT)
+SPECTRUM_FORMAT = "<II96f"
+SPECTRUM_SIZE = struct.calcsize(SPECTRUM_FORMAT)
 
 VST3_DIR = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin for MONTAGE M.vst3"
 VST3_BIN = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin for MONTAGE M.vst3\Contents\x86_64-win\Expanded Softsynth Plugin for MONTAGE M.vst3"
@@ -27,6 +37,15 @@ class MontageHost:
         self.current_scene = 1
         self.presets_file = os.path.join(os.path.dirname(__file__), "scene_presets.json")
         self.names_file = os.path.join(os.path.dirname(__file__), "custom_names.json")
+        self.dsp_settings_file = os.path.join(os.path.dirname(__file__), "master_dsp_settings.json")
+        self.analyzer_enabled = True
+        self.analyzer_active = True
+        self.warmth_enabled = True
+        self.warmth_drive = 1.2
+        self.warmth_mode = 0
+        self.native_status = {"reachable": False}
+        self.spectrum_bins: List[float] = []
+        self._load_dsp_settings()
         self.part_names = {i: f"Part {i}" for i in range(1, 9)}
         self.scene_names = {i: f"Scene {i}" for i in range(1, 9)}
         self.part_pans = {i: 64 for i in range(1, 9)}
@@ -38,6 +57,141 @@ class MontageHost:
         self._load_custom_names()
         # Persistent storage for Scene snapshots: scene 1-8 -> { "master": 127, "parts": { 1: 100, ... } }
         self.saved_scenes = self._load_saved_scenes()
+
+    def _send_udp(self, payload: bytes, response_size: int = 0) -> bytes:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            if response_size:
+                sock.settimeout(0.05)
+            sock.sendto(payload, ("127.0.0.1", 9123))
+            if response_size:
+                return sock.recvfrom(response_size)[0]
+            return b""
+        except OSError:
+            return b""
+        finally:
+            sock.close()
+
+    def _load_dsp_settings(self):
+        try:
+            with open(self.dsp_settings_file, "r", encoding="utf-8") as file:
+                data = json.load(file)
+            self.analyzer_enabled = bool(data.get("analyzer_enabled", True))
+            self.warmth_enabled = bool(data.get("warmth_enabled", True))
+            self.warmth_drive = max(1.0, min(3.0, float(data.get("warmth_drive", 1.2))))
+            self.warmth_mode = int(data.get("warmth_mode", 0))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            pass
+
+    def _persist_dsp_settings(self):
+        temp = self.dsp_settings_file + ".tmp"
+        with open(temp, "w", encoding="utf-8") as file:
+            json.dump({
+                "analyzer_enabled": self.analyzer_enabled,
+                "warmth_enabled": self.warmth_enabled,
+                "warmth_drive": round(self.warmth_drive, 2),
+                "warmth_mode": self.warmth_mode,
+            }, file, indent=2)
+        os.replace(temp, self.dsp_settings_file)
+
+    def configure_warmth(self, enabled=None, drive=None, mode=None) -> bool:
+        if enabled is not None:
+            self.warmth_enabled = bool(enabled)
+        if drive is not None:
+            self.warmth_drive = max(1.0, min(3.0, float(drive)))
+        if mode is not None:
+            self.warmth_mode = 1 if int(mode) == 1 else 0
+        self._persist_dsp_settings()
+        payload = struct.pack("<BBBBf", 0x57, int(self.warmth_enabled), self.warmth_mode, 0, self.warmth_drive)
+        self._send_udp(payload)
+        return True
+
+    def set_analyzer_enabled(self, enabled: bool) -> bool:
+        self.analyzer_enabled = bool(enabled)
+        self.analyzer_active = self.analyzer_enabled
+        self._persist_dsp_settings()
+        self._send_udp(bytes([0x48, int(self.analyzer_active), 0, 0]))
+        return True
+
+    def set_analyzer_active(self, active: bool) -> bool:
+        self.analyzer_active = self.analyzer_enabled and bool(active)
+        self._send_udp(bytes([0x48, int(self.analyzer_active), 0, 0]))
+        if not self.analyzer_active:
+            self.spectrum_bins = []
+        return True
+
+    def poll_realtime_state(self, include_spectrum: bool = True):
+        self.query_native_status()
+        if include_spectrum and self.analyzer_active:
+            self.query_spectrum()
+
+    def panic(self, active_notes=None) -> bool:
+        # Explicit note-offs supplement the native host's own active-note tracking.
+        for note in active_notes or []:
+            for channel in range(16):
+                self._send_udp(bytes([0x80, channel, int(note) & 0x7F, 0]))
+        self._send_udp(bytes([0x21, 0, 0, 0]))
+        return True
+
+    @staticmethod
+    def _decode_string(raw: bytes) -> str:
+        return raw.split(b"\0", 1)[0].decode("utf-8", errors="replace")
+
+    def _parse_native_status(self, packet: bytes) -> Dict[str, Any]:
+        if len(packet) != NATIVE_STATUS_SIZE:
+            return {"reachable": False}
+        values = struct.unpack(NATIVE_STATUS_FORMAT, packet)
+        if values[0] != NATIVE_STATUS_MAGIC:
+            return {"reachable": False}
+        return {
+            "reachable": True,
+            "dsp_load_percent": round(values[1] * 100.0, 1),
+            "peak_dsp_load_percent": round(values[2] * 100.0, 1),
+            "xruns": values[3],
+            "sample_rate": values[4],
+            "buffer_frames": values[5],
+            "periods": values[6],
+            "buffer_latency_ms": round(values[7], 1),
+            "output_latency_ms": round(values[8], 1),
+            "total_latency_ms": round(values[9], 1),
+            "analyzer_enabled": bool(values[10]),
+            "warmth": {
+                "enabled": bool(values[11]),
+                "drive": round(values[12], 2),
+                "mode": int(values[13]),
+                "meter": round(values[14], 3),
+            },
+            "backend": self._decode_string(values[15]),
+            "device": self._decode_string(values[16]),
+        }
+
+    def query_native_status(self) -> Dict[str, Any]:
+        self.native_status = self._parse_native_status(
+            self._send_udp(bytes([0x54, 0, 0, 0]), NATIVE_STATUS_SIZE)
+        )
+        return self.native_status
+
+    def _parse_spectrum(self, packet: bytes) -> List[float]:
+        if len(packet) != SPECTRUM_SIZE:
+            return []
+        values = struct.unpack(SPECTRUM_FORMAT, packet)
+        if values[0] != SPECTRUM_MAGIC or values[1] != 96:
+            return []
+        bins = [round(max(-90.0, min(0.0, float(value))), 1) for value in values[2:]
+                if math.isfinite(value)]
+        return bins if len(bins) == 96 else []
+
+    def query_spectrum(self) -> List[float]:
+        if not self.analyzer_enabled:
+            return []
+        bins = self._parse_spectrum(self._send_udp(bytes([0x46, 0, 0, 0]), SPECTRUM_SIZE))
+        if bins:
+            self.spectrum_bins = bins
+        return self.spectrum_bins
+
+    def sync_master_dsp_settings(self):
+        self.set_analyzer_enabled(self.analyzer_enabled)
+        self.configure_warmth(self.warmth_enabled, self.warmth_drive, self.warmth_mode)
 
     def _load_custom_names(self):
         if os.path.exists(self.names_file):

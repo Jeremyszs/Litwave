@@ -9,6 +9,7 @@ Supports MP3, WAV, FLAC, OGG, AAC playback with:
 
 import os
 import json
+import shutil
 import threading
 import numpy as np
 import soundfile as sf
@@ -129,6 +130,15 @@ class SongPlayer:
         else:
             self.waveform_peaks = peaks[:num_points]
 
+    def get_beat_origin(self) -> float:
+        """Return the detected beat origin, with legacy sidecar compatibility."""
+        if not self.analysis_data:
+            return 0.0
+        value = self.analysis_data.get("first_beat_seconds")
+        if value is None:
+            value = self.analysis_data.get("first_downbeat_seconds", 0.0)
+        return float(value or 0.0)
+
     def play(self):
         with self.lock:
             if self.audio_data is not None:
@@ -213,20 +223,96 @@ class SongPlayer:
             except Exception as e:
                 print(f"[SongPlayer] Failed to load chord chart: {e}")
 
-    def _persist_chart(self):
-        chart_file = self._get_chart_file()
-        if chart_file:
+        # If lyrics_sheet is empty, check for local sidecar .lyrics.json or .lrc automatically
+        if not self.lyrics_sheet and self.filepath:
             try:
-                with open(chart_file, "w", encoding="utf-8") as f:
-                    json.dump({
-                        "filename": self.filename,
-                        "markers": self.markers,
-                        "chord_chart": self.chord_chart,
-                        "analysis": self.analysis_data,
-                        "lyrics_sheet": self.lyrics_sheet
-                    }, f, indent=2)
+                from src.lyrics import find_local_sidecar_lyrics
+                sidecar = find_local_sidecar_lyrics(self.filepath)
+                if sidecar and sidecar.get("lines"):
+                    self.lyrics_sheet = sidecar["lines"]
+                    self._persist_chart(backup=False)
             except Exception as e:
-                print(f"[SongPlayer] Failed to persist chord chart: {e}")
+                print(f"[SongPlayer] Failed to load sidecar lyrics: {e}")
+
+    def _persist_chart(self, backup: bool = False) -> bool:
+        """Atomically persist chart state, optionally backing up its previous version."""
+        chart_file = self._get_chart_file()
+        if not chart_file:
+            return False
+        temp_file = chart_file + ".tmp"
+        try:
+            if backup and os.path.exists(chart_file):
+                shutil.copy2(chart_file, chart_file + ".bak")
+            with open(temp_file, "w", encoding="utf-8") as file:
+                json.dump({
+                    "schema_version": 2,
+                    "filename": self.filename,
+                    "markers": self.markers,
+                    "chord_chart": self.chord_chart,
+                    "analysis": self.analysis_data,
+                    "lyrics_sheet": self.lyrics_sheet,
+                }, file, indent=2)
+                file.flush()
+                os.fsync(file.fileno())
+            os.replace(temp_file, chart_file)
+            return True
+        except Exception as error:
+            try:
+                os.remove(temp_file)
+            except FileNotFoundError:
+                pass
+            print(f"[SongPlayer] Failed to persist chord chart: {error}")
+            return False
+
+    def apply_analysis(self, filename: str, result: Dict[str, Any], lyrics=None) -> bool:
+        """Apply analysis only to its source song while retaining manual chord overrides."""
+        if filename != self.filename:
+            return False
+        with self.lock:
+            if filename != self.filename:
+                return False
+            previous_state = self.chord_chart, self.analysis_data, self.lyrics_sheet
+            previous_pipeline = (self.analysis_data or {}).get("pipeline_version")
+            manual = []
+            for chord in self.chord_chart:
+                source = chord.get("source")
+                if source == "manual" or (source is None and "duration" not in chord):
+                    manual.append({**chord, "source": "manual"})
+            generated = [{**chord, "source": "btc"} for chord in result["chords"]]
+            timeline_end = max(
+                [self.duration_seconds]
+                + [chord.get("end", chord["time"] + chord.get("duration", 0.0))
+                   for chord in generated]
+            )
+            for override in manual:
+                generated = [chord for chord in generated
+                             if abs(chord["time"] - override["time"]) > 0.25]
+            merged = sorted(generated + manual, key=lambda chord: chord["time"])
+            for index, chord in enumerate(merged):
+                next_start = merged[index + 1]["time"] if index + 1 < len(merged) else timeline_end
+                if chord["source"] == "manual":
+                    chord["end"] = max(chord["time"], next_start)
+                elif next_start > chord["time"]:
+                    chord["end"] = min(chord.get("end", next_start), next_start)
+                chord["duration"] = round(chord.get("end", chord["time"]) - chord["time"], 3)
+            self.chord_chart = [chord for chord in merged if chord["duration"] > 0]
+            key = result.get("key")
+            self.analysis_data = {
+                "bpm": result.get("bpm"),
+                "key_full": key,
+                "key_root": key[:-1] if key and key.endswith("m") else key,
+                "is_major": None if key is None else not key.endswith("m"),
+                "time_signature": result.get("time_sig"),
+                "first_beat_seconds": result.get("first_beat_seconds"),
+                "model": result.get("model"),
+                "pipeline_version": result.get("pipeline_version"),
+            }
+            if lyrics is not None:
+                self.lyrics_sheet = lyrics
+            if self._persist_chart(backup=previous_pipeline != result.get("pipeline_version")):
+                return True
+            self.chord_chart, self.analysis_data, self.lyrics_sheet = previous_state
+            return False
 
     def record_chord(self, chord_name: str, nashville: str, sec: Optional[float] = None):
         """Records a played chord into the song's real-time timeline"""
@@ -243,7 +329,7 @@ class SongPlayer:
             
             # Insert or replace chord at current time
             self.chord_chart = [c for c in self.chord_chart if abs(c["time"] - sec) > 0.25]
-            self.chord_chart.append({"time": sec, "chord": chord_name, "nashville": nashville})
+            self.chord_chart.append({"time": sec, "chord": chord_name, "nashville": nashville, "source": "manual"})
             self.chord_chart.sort(key=lambda c: c["time"])
             self._persist_chart()
 

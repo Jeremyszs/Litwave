@@ -1,4 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -9,9 +10,13 @@
 #include <vector>
 #include <atomic>
 #include <thread>
+#include <chrono>
+#include <cstdint>
+#include <cstring>
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
+#include "master_dsp.h"
 
 #include "pluginterfaces/base/funknown.h"
 #include "pluginterfaces/gui/iplugview.h"
@@ -57,8 +62,16 @@ static const int MAX_MIDI_EVENTS = 256;
 static MidiNoteEvent g_midi_queue[MAX_MIDI_EVENTS];
 static std::atomic<int> g_midi_head{0};
 static std::atomic<int> g_midi_tail{0};
+static std::atomic<bool> g_active_plugin_notes[16][128];
 
 void enqueue_midi_note(int16 type, int16 channel, int16 pitch, float velocity) {
+    if (channel >= 0 && channel < 16 && pitch >= 0 && pitch < 128) {
+        if (type == Event::kNoteOnEvent && velocity > 0.0f) {
+            g_active_plugin_notes[channel][pitch].store(true, std::memory_order_relaxed);
+        } else if (type == Event::kNoteOffEvent) {
+            g_active_plugin_notes[channel][pitch].store(false, std::memory_order_relaxed);
+        }
+    }
     int next = (g_midi_head.load(std::memory_order_relaxed) + 1) % MAX_MIDI_EVENTS;
     if (next != g_midi_tail.load(std::memory_order_acquire)) {
         int idx = g_midi_head.load(std::memory_order_relaxed);
@@ -234,7 +247,7 @@ public:
     int64 cursor = 0;
     virtual tresult PLUGIN_API read(void* buf, int32 numBytes, int32* numBytesRead) SMTG_OVERRIDE {
         int64 available = (int64)buffer.size() - cursor;
-        int32 toRead = (int32)min((int64)numBytes, available);
+        int32 toRead = (int32)std::min((int64)numBytes, available);
         if (toRead > 0) { memcpy(buf, buffer.data() + cursor, toRead); cursor += toRead; }
         if (numBytesRead) *numBytesRead = toRead;
         return kResultOk;
@@ -277,9 +290,15 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
 
         if (type == 0x90) {
             float vel = (float)data2 / 127.0f;
-            if (data2 > 0) enqueue_midi_note(Event::kNoteOnEvent, channel, (int16)data1, vel);
-            else enqueue_midi_note(Event::kNoteOffEvent, channel, (int16)data1, 0.0f);
+            if (data2 > 0) {
+                g_active_plugin_notes[channel][data1].store(true, std::memory_order_relaxed);
+                enqueue_midi_note(Event::kNoteOnEvent, channel, (int16)data1, vel);
+            } else {
+                g_active_plugin_notes[channel][data1].store(false, std::memory_order_relaxed);
+                enqueue_midi_note(Event::kNoteOffEvent, channel, (int16)data1, 0.0f);
+            }
         } else if (type == 0x80) {
+            g_active_plugin_notes[channel][data1].store(false, std::memory_order_relaxed);
             enqueue_midi_note(Event::kNoteOffEvent, channel, (int16)data1, 0.0f);
         } else if (type == 0xB0) {
             enqueue_midi_note((int16)Event::kLegacyMIDICCOutEvent, channel, data1, (float)data2 / 127.0f);
@@ -287,12 +306,91 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
     }
 }
 
-static float g_synth_out_l[1024];
-static float g_synth_out_r[1024];
+static const int MAX_AUDIO_FRAMES = 4096;
+static float g_synth_out_l[MAX_AUDIO_FRAMES];
+static float g_synth_out_r[MAX_AUDIO_FRAMES];
 static std::atomic<float> g_synth_peak_meter{0.0f};
 static std::atomic<float> g_track_peak_meter{0.0f};
 static std::atomic<float> g_master_peak_meter_l{0.0f};
 static std::atomic<float> g_master_peak_meter_r{0.0f};
+
+// Authoritative native engine safety/monitoring state.
+static SpectrumCapture g_master_spectrum(44100.0f);
+static StageWarmth g_stage_warmth(44100.0f);
+static CallbackPerformanceMonitor g_callback_monitor;
+static std::atomic<bool> g_analyzer_enabled{true};
+static std::atomic<bool> g_warmth_enabled{true};
+static std::atomic<float> g_warmth_drive{1.2f};
+static std::atomic<int> g_warmth_mode{0}; // 0: Tape Warmth, 1: Crisp Stage
+static std::atomic<float> g_warmth_meter{0.0f};
+static std::atomic<float> g_dsp_load{0.0f};
+static std::atomic<float> g_peak_dsp_load{0.0f};
+static std::atomic<uint32_t> g_xrun_count{0};
+static std::atomic<uint32_t> g_device_sample_rate{44100};
+static std::atomic<uint32_t> g_device_buffer_frames{256};
+static std::atomic<uint32_t> g_device_periods{2};
+static std::atomic<bool> g_panic_requested{false};
+static std::chrono::steady_clock::time_point g_last_callback_start;
+static bool g_has_callback_time = false;
+static char g_device_name[MA_MAX_DEVICE_NAME_LENGTH + 1] = "Default";
+static char g_backend_name[64] = "unknown";
+
+#pragma pack(push, 1)
+struct NativeEngineStatusPacket {
+    uint32_t magic;
+    float dspLoad;
+    float peakDspLoad;
+    uint32_t xruns;
+    uint32_t sampleRate;
+    uint32_t bufferFrames;
+    uint32_t periods;
+    float bufferLatencyMs;
+    float outputLatencyMs;
+    float totalLatencyMs;
+    uint32_t analyzerEnabled;
+    uint32_t warmthEnabled;
+    float warmthDrive;
+    uint32_t warmthMode;
+    float warmthMeter;
+    char backend[32];
+    char device[96];
+};
+#pragma pack(pop)
+
+inline void add_plugin_event(int16 type, int16 channel, int16 pitch, float velocity) {
+    Event event;
+    memset(&event, 0, sizeof(Event));
+    event.busIndex = 0;
+    event.sampleOffset = 0;
+    event.type = type;
+    if (type == Event::kNoteOffEvent) {
+        event.noteOff.channel = channel;
+        event.noteOff.pitch = pitch;
+        event.noteOff.velocity = 0.0f;
+        event.noteOff.noteId = -1;
+    } else {
+        event.type = Event::kLegacyMIDICCOutEvent;
+        event.midiCCOut.channel = (uint8)channel;
+        event.midiCCOut.controlNumber = (uint8)pitch;
+        event.midiCCOut.value = (int8)(velocity * 127.0f);
+        event.midiCCOut.value2 = 0;
+    }
+    g_eventList.addEvent(event);
+}
+
+void add_panic_events_to_current_block() {
+    for (int channel = 0; channel < 16; ++channel) {
+        for (int pitch = 0; pitch < 128; ++pitch) {
+            if (g_active_plugin_notes[channel][pitch].exchange(false, std::memory_order_relaxed)) {
+                add_plugin_event(Event::kNoteOffEvent, (int16)channel, (int16)pitch, 0.0f);
+            }
+        }
+        add_plugin_event((int16)Event::kLegacyMIDICCOutEvent, (int16)channel, 64, 0.0f);
+        add_plugin_event((int16)Event::kLegacyMIDICCOutEvent, (int16)channel, 123, 0.0f);
+        add_plugin_event((int16)Event::kLegacyMIDICCOutEvent, (int16)channel, 120, 0.0f);
+        add_plugin_event((int16)Event::kLegacyMIDICCOutEvent, (int16)channel, 121, 0.0f);
+    }
+}
 
 // Lock-free Ring Buffer for Incoming Backing Track PCM Stream (from Python)
 static const int TRACK_RING_SIZE = 131072; // ~1.5s at 44.1kHz stereo
@@ -384,11 +482,24 @@ void update_eq_band(int band_idx, int type, float f0, float gain_db, float Q, fl
 }
 
 void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+    const auto callbackStart = std::chrono::steady_clock::now();
+    const double budgetSeconds = (pDevice && pDevice->sampleRate > 0)
+        ? static_cast<double>(frameCount) / pDevice->sampleRate : 0.0;
+    const double callbackGapSeconds = g_has_callback_time
+        ? std::chrono::duration<double>(callbackStart - g_last_callback_start).count() : budgetSeconds;
+    g_last_callback_start = callbackStart;
+    g_has_callback_time = true;
+
     float* pOut = (float*)pOutput;
     memset(pOut, 0, frameCount * 2 * sizeof(float));
     if (!g_processor) return;
 
     g_eventList.clear();
+    if (g_panic_requested.exchange(false, std::memory_order_acquire)) {
+        // Drain queued notes first, then add dedicated all-notes/sound/controller reset events.
+        g_midi_tail.store(g_midi_head.load(std::memory_order_acquire), std::memory_order_release);
+        add_panic_events_to_current_block();
+    }
     while (g_midi_tail.load(std::memory_order_relaxed) != g_midi_head.load(std::memory_order_acquire)) {
         int tail = g_midi_tail.load(std::memory_order_relaxed);
         MidiNoteEvent m = g_midi_queue[tail];
@@ -503,6 +614,17 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
         sum_l *= mGain;
         sum_r *= mGain;
 
+        // Post-EQ analyzer tap. Push only one fixed-buffer mono sample.
+        if (g_analyzer_enabled.load(std::memory_order_relaxed)) {
+            g_master_spectrum.push((sum_l + sum_r) * 0.5f);
+        }
+
+        // Apply Stage Warmth / Analog Soft Saturation across Master Mix
+        g_stage_warmth.setEnabled(g_warmth_enabled.load(std::memory_order_relaxed));
+        g_stage_warmth.setDrive(g_warmth_drive.load(std::memory_order_relaxed));
+        g_stage_warmth.setMode(g_warmth_mode.load(std::memory_order_relaxed));
+        g_stage_warmth.process(sum_l, sum_r);
+
         float sl_abs = fabsf(sum_l);
         float sr_abs = fabsf(sum_r);
         if (sl_abs > master_peak_l) master_peak_l = sl_abs;
@@ -515,6 +637,15 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
     g_track_peak_meter.store(track_peak_acc, std::memory_order_relaxed);
     g_master_peak_meter_l.store(master_peak_l, std::memory_order_relaxed);
     g_master_peak_meter_r.store(master_peak_r, std::memory_order_relaxed);
+    g_stage_warmth.endBlock();
+    g_warmth_meter.store(g_stage_warmth.saturationMeter(), std::memory_order_relaxed);
+
+    const double processingSeconds = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - callbackStart).count();
+    g_callback_monitor.update(processingSeconds, callbackGapSeconds, budgetSeconds, g_device_periods.load(std::memory_order_relaxed));
+    g_dsp_load.store(g_callback_monitor.smoothedLoad(), std::memory_order_relaxed);
+    g_peak_dsp_load.store(g_callback_monitor.peakLoad(), std::memory_order_relaxed);
+    g_xrun_count.store(g_callback_monitor.xruns(), std::memory_order_relaxed);
 }
 
 #define WM_HOST_WINDOW_CMD (WM_USER + 101)
@@ -613,7 +744,7 @@ void UdpControlServerThread() {
     sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(9123);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
     if (bind(sock, (sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
         closesocket(sock);
@@ -645,6 +776,53 @@ void UdpControlServerThread() {
                     meterVals[2] = g_master_peak_meter_l.load(std::memory_order_relaxed);
                     meterVals[3] = g_master_peak_meter_r.load(std::memory_order_relaxed);
                     sendto(sock, (const char*)meterVals, sizeof(meterVals), 0, (sockaddr*)&client_addr, client_len);
+                    continue;
+                } else if (cmd == 0x54) { // 'T': Native engine performance status.
+                    NativeEngineStatusPacket status = {};
+                    status.magic = 0x5354574C; // "LWTS"
+                    status.dspLoad = g_dsp_load.load(std::memory_order_relaxed);
+                    status.peakDspLoad = g_peak_dsp_load.load(std::memory_order_relaxed);
+                    status.xruns = g_xrun_count.load(std::memory_order_relaxed);
+                    status.sampleRate = g_device_sample_rate.load(std::memory_order_relaxed);
+                    status.bufferFrames = g_device_buffer_frames.load(std::memory_order_relaxed);
+                    status.periods = g_device_periods.load(std::memory_order_relaxed);
+                    status.bufferLatencyMs = 1000.0f * status.bufferFrames / std::max(1u, status.sampleRate);
+                    status.outputLatencyMs = status.bufferLatencyMs * std::max(1u, status.periods);
+                    status.totalLatencyMs = status.bufferLatencyMs + status.outputLatencyMs;
+                    status.analyzerEnabled = g_analyzer_enabled.load(std::memory_order_relaxed) ? 1u : 0u;
+                    status.warmthEnabled = g_warmth_enabled.load(std::memory_order_relaxed) ? 1u : 0u;
+                    status.warmthDrive = g_warmth_drive.load(std::memory_order_relaxed);
+                    status.warmthMode = (uint32_t)g_warmth_mode.load(std::memory_order_relaxed);
+                    status.warmthMeter = g_warmth_meter.load(std::memory_order_relaxed);
+                    strncpy_s(status.backend, g_backend_name, _TRUNCATE);
+                    strncpy_s(status.device, g_device_name, _TRUNCATE);
+                    sendto(sock, (const char*)&status, sizeof(status), 0, (sockaddr*)&client_addr, client_len);
+                    continue;
+                } else if (cmd == 0x46) { // 'F': Post-EQ master spectrum query.
+                    struct SpectrumPacket {
+                        uint32_t magic;
+                        uint32_t binCount;
+                        float db[SpectrumCapture::OUTPUT_BINS];
+                    } packet = {};
+                    packet.magic = 0x54435053; // "SPCT"
+                    packet.binCount = SpectrumCapture::OUTPUT_BINS;
+                    g_master_spectrum.computeLogBins(packet.db);
+                    sendto(sock, (const char*)&packet, sizeof(packet), 0, (sockaddr*)&client_addr, client_len);
+                    continue;
+                } else if (cmd == 0x48) { // 'H': Spectrum analyzer enable.
+                    g_analyzer_enabled.store(buf[1] != 0, std::memory_order_relaxed);
+                    continue;
+                } else if (cmd == 0x57) { // 'W': Stage Warmth config: [ 'W', enabled (0/1), mode (0/1), 0, drive (float) ]
+                    if (len >= 8) {
+                        g_warmth_enabled.store(buf[1] != 0, std::memory_order_relaxed);
+                        g_warmth_mode.store((int)buf[2], std::memory_order_relaxed);
+                        float d = 1.2f;
+                        memcpy(&d, buf + 4, sizeof(float));
+                        g_warmth_drive.store(std::max(1.0f, std::min(3.0f, d)), std::memory_order_relaxed);
+                    }
+                    continue;
+                } else if (cmd == 0x21) { // '!': Global MIDI panic on next audio block.
+                    g_panic_requested.store(true, std::memory_order_release);
                     continue;
                 } else if (cmd == 0x41) { // 'A': Raw Audio Stream chunk: [ 'A', 0, frames_high, frames_low, float_stereo_interleaved_samples... ]
                     uint16_t num_frames = ((uint16_t)(unsigned char)buf[2] << 8) | (uint16_t)(unsigned char)buf[3];
@@ -910,6 +1088,19 @@ int main() {
         std::cout << "[ERROR] Failed to initialize soundcard audio output" << std::endl;
         return 1;
     }
+    const ma_uint32 nativeRate = device.sampleRate > 0 ? device.sampleRate : config.sampleRate;
+    const ma_uint32 nativePeriod = device.playback.internalPeriodSizeInFrames > 0
+        ? device.playback.internalPeriodSizeInFrames : config.periodSizeInFrames;
+    const ma_uint32 nativePeriods = device.playback.internalPeriods > 0
+        ? device.playback.internalPeriods : 1;
+    g_device_sample_rate.store(nativeRate, std::memory_order_relaxed);
+    g_device_buffer_frames.store(nativePeriod, std::memory_order_relaxed);
+    g_device_periods.store(nativePeriods, std::memory_order_relaxed);
+    g_master_spectrum.setSampleRate((float)nativeRate);
+    g_stage_warmth.setSampleRate((float)nativeRate);
+    strncpy_s(g_device_name, device.playback.name, _TRUNCATE);
+    strncpy_s(g_backend_name, ma_get_backend_name(context.backend), _TRUNCATE);
+
     ma_device_start(&device);
     std::cout << "[OK] Audio routed directly to Soundcard: " << chosenDeviceName << std::endl;
 

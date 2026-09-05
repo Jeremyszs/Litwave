@@ -19,6 +19,7 @@ class MidiManager:
     def __init__(self, on_event_callback: Optional[Callable[[Dict[str, Any]], None]] = None):
         self.port: Optional[mido.ports.BaseInput] = None
         self.current_port_name: Optional[str] = None
+        self.preferred_port_name: Optional[str] = None
         self.on_event = on_event_callback
         self.lock = threading.Lock()
         
@@ -33,42 +34,79 @@ class MidiManager:
         }
         self.pitch_bend: int = 8192
         self.modulation: int = 0
+        self.available_ports: List[str] = []
+        self._last_scan_time: float = 0.0
         
         # Background worker for auto-detect and reading
         self._running = True
         self._thread = threading.Thread(target=self._worker_loop, daemon=True)
         self._thread.start()
 
-    def get_available_ports(self) -> List[str]:
-        try:
-            return mido.get_input_names()
-        except Exception:
-            return []
+    def get_available_ports(self, force_refresh: bool = False) -> List[str]:
+        now = time.time()
+        if force_refresh or (now - self._last_scan_time > 1.0) or not self.available_ports:
+            try:
+                ports = mido.get_input_names()
+                self.available_ports = ports
+                self._last_scan_time = now
+            except Exception:
+                self.available_ports = []
+        return list(self.available_ports)
 
-    def open_port(self, port_name: Optional[str] = None) -> bool:
+    def open_port(self, port_identifier: Optional[Any] = None) -> bool:
         with self.lock:
             self._close_internal()
-            ports = self.get_available_ports()
+            ports = self.get_available_ports(force_refresh=True)
             if not ports:
                 return False
                 
             chosen = None
-            if port_name:
-                for p in ports:
-                    if port_name.lower() in p.lower():
-                        chosen = p
-                        break
+            if port_identifier is not None:
+                # Handle numeric port index passed as int or string digit
+                if isinstance(port_identifier, int) and 0 <= port_identifier < len(ports):
+                    chosen = ports[port_identifier]
+                elif isinstance(port_identifier, str):
+                    if port_identifier.isdigit():
+                        idx = int(port_identifier)
+                        if 0 <= idx < len(ports):
+                            chosen = ports[idx]
+                    if not chosen:
+                        # Case-insensitive substring match
+                        for p in ports:
+                            if port_identifier.lower() in p.lower():
+                                chosen = p
+                                break
+                                
             if not chosen:
                 chosen = ports[0]
                 
             try:
                 self.port = mido.open_input(chosen)
                 self.current_port_name = chosen
+                self.preferred_port_name = chosen
                 return True
             except Exception as e:
                 self.port = None
                 self.current_port_name = None
                 return False
+
+    def _probe_and_reconnect(self):
+        """Checks for new or restored MIDI ports and auto-connects to preferred or first device."""
+        ports = self.get_available_ports(force_refresh=True)
+        if not ports:
+            return
+            
+        with self.lock:
+            if self.port is not None:
+                # Verify active port is still listed in physical ports
+                if self.current_port_name and not any(self.current_port_name.lower() in p.lower() for p in ports):
+                    self._close_internal()
+                else:
+                    return
+
+        # Attempt to reconnect preferred port, or first port
+        target = self.preferred_port_name or ports[0]
+        self.open_port(target)
 
     def _close_internal(self):
         if self.port:
@@ -85,12 +123,16 @@ class MidiManager:
             self._close_internal()
 
     def _worker_loop(self):
+        last_hotplug_check = 0.0
         while self._running:
-            # Auto-connect if no port is currently open
-            if self.port is None:
-                ports = self.get_available_ports()
-                if ports:
-                    self.open_port(ports[0])
+            now = time.time()
+            # Periodically scan for device hotplug / auto-reconnect (every 1.0s)
+            if now - last_hotplug_check >= 1.0:
+                last_hotplug_check = now
+                try:
+                    self._probe_and_reconnect()
+                except Exception:
+                    pass
             
             if self.port is not None:
                 try:
@@ -174,6 +216,22 @@ class MidiManager:
                 self.on_event(event_dict)
             except Exception:
                 pass
+
+    def panic(self) -> List[int]:
+        """Clear all Litwave MIDI state and return notes needing explicit Note Off."""
+        with self.lock:
+            active = sorted(self.active_notes)
+            self.active_notes.clear()
+            self.pedals.update({
+                "sustain": 0,
+                "expression": 127,
+                "soft": 0,
+                "volume": 127,
+                "sostenuto": 0,
+            })
+            self.pitch_bend = 8192
+            self.modulation = 0
+            return active
 
     def get_snapshot(self) -> Dict[str, Any]:
         with self.lock:

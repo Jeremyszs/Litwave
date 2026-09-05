@@ -53,11 +53,16 @@ class AudioEngine:
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_target = ("127.0.0.1", 9123)
 
-    def get_output_devices(self) -> List[Dict[str, Any]]:
+    def get_output_devices(self, force_refresh: bool = False) -> List[Dict[str, Any]]:
         """List all available audio output devices with special emphasis on ASIO and dedicated Soundcards"""
         devices = []
-        apis = sd.query_hostapis()
-        for idx, d in enumerate(sd.query_devices()):
+        try:
+            apis = sd.query_hostapis()
+            raw_devs = sd.query_devices()
+        except Exception:
+            return []
+            
+        for idx, d in enumerate(raw_devs):
             if d.get("max_output_channels", 0) > 0:
                 api_name = apis[d["hostapi"]]["name"] if d["hostapi"] < len(apis) else "Unknown"
                 is_asio = "ASIO" in api_name.upper()

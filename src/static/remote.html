@@ -846,6 +846,7 @@
     Notification
   </div>
 
+  <script src="/static/chord_timeline.js"></script>
   <script>
     function showRemoteToast(msg, durationMs = 2500) {
       const toast = document.getElementById("remoteToastNotice");
@@ -1127,7 +1128,15 @@
         return;
       }
       document.getElementById("remoteMarkerNameInput").value = `Section ${(cachedRemoteMarkers ? cachedRemoteMarkers.length : 0) + 1}`;
-      document.getElementById("remoteMarkerSceneSelect").value = "";
+      const sel = document.getElementById("remoteMarkerSceneSelect");
+      if (sel) {
+        sel.innerHTML = '<option value="">None (Keep current scene)</option>';
+        for (let s = 1; s <= 8; s++) {
+          const sName = remoteSceneNames[s] || `Scene ${s}`;
+          sel.innerHTML += `<option value="${s}">${sName !== `Scene ${s}` ? `Scene ${s} (${sName})` : sName}</option>`;
+        }
+        sel.value = "";
+      }
       document.getElementById("remoteBookmarkModal").style.display = "flex";
       setTimeout(() => document.getElementById("remoteMarkerNameInput").focus(), 50);
     }
@@ -1145,6 +1154,43 @@
       await sendTransport("add_marker", { name, scene, time: currentPosition });
     }
 
+    async function jumpToRemoteMarker(time, scene) {
+      if (scene) {
+        const scNum = parseInt(scene, 10);
+        if (scNum >= 1 && scNum <= 8) selectRemoteScene(scNum);
+      }
+      await sendTransport("seek", { seconds: time });
+    }
+
+    let lastTriggeredRemoteMarkerId = null;
+    let lastRemoteMarkerCheckTime = -1;
+
+    function checkRemoteMarkerAutoSceneTrigger(curSec, markers) {
+      if (!markers || markers.length === 0) return;
+      if (curSec < lastRemoteMarkerCheckTime - 0.5) {
+        lastTriggeredRemoteMarkerId = null;
+      }
+      lastRemoteMarkerCheckTime = curSec;
+
+      const sorted = [...markers].sort((a, b) => a.time - b.time);
+      let activeM = null;
+      for (let i = 0; i < sorted.length; i++) {
+        if (curSec >= sorted[i].time - 0.05) {
+          activeM = sorted[i];
+        } else {
+          break;
+        }
+      }
+
+      if (activeM && activeM.scene) {
+        const scNum = parseInt(activeM.scene, 10);
+        if (scNum >= 1 && scNum <= 8 && activeM.id !== lastTriggeredRemoteMarkerId) {
+          lastTriggeredRemoteMarkerId = activeM.id;
+          selectRemoteScene(scNum);
+        }
+      }
+    }
+
     // Mobile AI Song Intelligence Analysis Handler
     async function triggerRemoteAnalyze() {
       const btn = document.getElementById("remoteAnalyzeBtn");
@@ -1156,15 +1202,15 @@
       try {
         const res = await fetch("/api/analyze", { method: "POST" });
         const data = await res.json();
-        if (data.success) {
-          showRemoteToast(`Analysis complete: ${data.analysis.estimated_key || ''} (${data.analysis.bpm || ''} BPM)`);
+        if (data.success && data.result) {
+          showRemoteToast(`Analysis complete: ${data.result.key || "Unknown key"} (${data.result.bpm || "Unknown"} BPM)`);
           txt.innerText = "Analyzed";
         } else {
-          showRemoteToast(data.message || "Analysis queued in background");
+          showRemoteToast(data.error || "Analysis failed; existing chart preserved");
           txt.innerText = "Analyze";
         }
       } catch (e) {
-        showRemoteToast("Analysis request sent");
+        showRemoteToast("Analysis failed; existing chart preserved");
         txt.innerText = "Analyze";
       } finally {
         setTimeout(() => { btn.disabled = false; }, 3000);
@@ -1945,29 +1991,23 @@
             }
             document.getElementById("remoteTimeText").innerText = `${formatTime(currentPosition)} / ${formatTime(songDuration)}`;
 
-            // Update mobile Live Song Chord Tracker (Current & Next Chord)
-            if (song.chord_chart && song.chord_chart.length > 0) {
-              const curChord = song.chord_chart.find((c, i) => {
-                const nextT = (i + 1 < song.chord_chart.length) ? song.chord_chart[i + 1].time : 999999.0;
-                return currentPosition >= c.time && currentPosition < nextT;
-              });
-              const nextChord = song.chord_chart.find(c => c.time > (currentPosition + 0.1));
-
-              const curEl = document.getElementById("rLiveCurrentChord");
-              const timeEl = document.getElementById("remoteCurrentChordTime");
-              if (curEl) curEl.innerText = curChord ? curChord.chord : "--";
-              if (timeEl) timeEl.innerText = curChord ? formatTime(curChord.time) : formatTime(currentPosition);
-
-              const nextEl = document.getElementById("rLiveNextChord");
-              const nextCd = document.getElementById("rLiveNextCount");
-              if (nextChord) {
-                const diff = (nextChord.time - currentPosition).toFixed(1);
-                if (nextEl) nextEl.innerText = nextChord.chord;
-                if (nextCd) nextCd.innerText = `in ${diff}s`;
-              } else {
-                if (nextEl) nextEl.innerText = "--";
-                if (nextCd) nextCd.innerText = "--";
-              }
+            // Update mobile chord tracker using real interval ends and silent gaps.
+            const chart = song.chord_chart || [];
+            const curChord = ChordTimeline.playableChord(ChordTimeline.chordAtTime(chart, currentPosition));
+            const nextChord = ChordTimeline.nextPlayableChord(chart, currentPosition);
+            const curEl = document.getElementById("rLiveCurrentChord");
+            const timeEl = document.getElementById("remoteCurrentChordTime");
+            const nextEl = document.getElementById("rLiveNextChord");
+            const nextCd = document.getElementById("rLiveNextCount");
+            if (curEl) curEl.innerText = curChord ? curChord.chord : "--";
+            if (timeEl) timeEl.innerText = curChord ? formatTime(curChord.time) : formatTime(currentPosition);
+            if (nextChord) {
+              const diff = (nextChord.time - currentPosition).toFixed(1);
+              if (nextEl) nextEl.innerText = nextChord.chord;
+              if (nextCd) nextCd.innerText = `in ${diff}s`;
+            } else {
+              if (nextEl) nextEl.innerText = "--";
+              if (nextCd) nextCd.innerText = "--";
             }
 
             // Update mobile Static Lyrics Container
@@ -2010,17 +2050,26 @@
               document.getElementById("remotePitchVal").innerText = `${sign}${currentPitch} st`;
             }
 
+            if (isPlaying && song.markers) {
+              checkRemoteMarkerAutoSceneTrigger(currentPosition, song.markers);
+            }
+
             // 2. Section Markers (Pills)
             const markersSec = document.getElementById("markersSection");
             const container = document.getElementById("markersContainer");
             if (song.markers && song.markers.length > 0) {
               markersSec.style.display = "flex";
-              container.innerHTML = song.markers.map(m => `
-                <div class="marker-pill" onclick="sendTransport('seek', { seconds: ${m.time} })">
-                  <span>${m.name}</span>
-                  <span style="color: var(--text-faint); font-family: var(--font-mono);">${formatTime(m.time)}</span>
-                </div>
-              `).join("");
+              container.innerHTML = song.markers.map(m => {
+                const scNum = m.scene ? parseInt(m.scene, 10) : null;
+                const sName = scNum ? (remoteSceneNames[scNum] || `Scene ${scNum}`) : '';
+                const badge = scNum ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${scNum}${sName && sName !== `Scene ${scNum}` ? `: ${sName}` : ''}</span>` : '';
+                return `
+                  <div class="marker-pill" onclick="jumpToRemoteMarker(${m.time}, ${scNum})">
+                    <span>${m.name}${badge}</span>
+                    <span style="color: var(--text-faint); font-family: var(--font-mono);">${formatTime(m.time)}</span>
+                  </div>
+                `;
+              }).join("");
             } else {
               markersSec.style.display = "none";
             }
@@ -2029,6 +2078,14 @@
           // 3. Live MIDI Chord Recognition & Notes Display
           if (midi) {
             const activeNotes = midi.active_notes || [];
+            if (song.analysis && (song.analysis.key_root || song.analysis.key)) {
+              const detectedRoot = (song.analysis.key_root || song.analysis.key).replace("m", "");
+              if (detectedRoot && remoteNashvilleKey !== detectedRoot) {
+                remoteNashvilleKey = detectedRoot;
+                const rSel = document.getElementById("remoteNashvilleKeySelect");
+                if (rSel) rSel.value = detectedRoot;
+              }
+            }
             if (activeNotes.length > 0) {
               const chordName = detectAdvancedChord(activeNotes);
               const nashObj = getChordWithNashville(chordName, remoteNashvilleKey);
@@ -2096,8 +2153,25 @@
                 if (montage.part_names[p]) partsState[p - 1].name = montage.part_names[p];
               }
             }
+            let remoteNamesChanged = false;
             if (montage.scene_names) {
+              const oldNamesStr = JSON.stringify(remoteSceneNames);
               remoteSceneNames = { ...remoteSceneNames, ...montage.scene_names };
+              if (oldNamesStr !== JSON.stringify(remoteSceneNames)) {
+                remoteNamesChanged = true;
+              }
+            }
+            if (montage.current_scene !== undefined && (montage.current_scene !== remoteActiveScene || remoteNamesChanged)) {
+              remoteActiveScene = montage.current_scene;
+              const sName = remoteSceneNames[remoteActiveScene] || `Scene ${remoteActiveScene}`;
+              document.getElementById("remoteActiveSceneText").innerText = sName;
+              for (let s = 1; s <= 8; s++) {
+                const b = document.getElementById(`remoteSceneBtn_${s}`);
+                if (b) b.classList.toggle("is-active-loop", s === remoteActiveScene);
+              }
+            }
+            if (remoteNamesChanged) {
+              renderRemoteScenes();
             }
             if (montage.master_volume !== undefined) {
               const norm = montage.master_volume / 127.0;
@@ -2106,14 +2180,6 @@
               document.getElementById("remoteSynthVolText").innerText = `${db} dB`;
               document.getElementById("sliderFill_synth").style.width = pct + "%";
               document.getElementById("sliderThumb_synth").style.left = pct + "%";
-            }
-            if (montage.current_scene !== undefined && montage.current_scene !== remoteActiveScene) {
-              remoteActiveScene = montage.current_scene;
-              document.getElementById("remoteActiveSceneText").innerText = `Scene ${remoteActiveScene}`;
-              for (let s = 1; s <= 8; s++) {
-                const b = document.getElementById(`remoteSceneBtn_${s}`);
-                if (b) b.classList.toggle("is-active-loop", s === remoteActiveScene);
-              }
             }
             if (montage.part_volumes) {
               for (let p = 1; p <= 8; p++) {
