@@ -620,7 +620,10 @@
     <div class="card">
       <div class="card-title">
         <span>MONTAGE M Scene</span>
-        <span id="remoteActiveSceneText" style="font-size: 10px; color: var(--accent); font-family: var(--font-mono);">Scene 1</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span id="remoteActiveSceneText" style="font-size: 10px; color: var(--accent); font-family: var(--font-mono);">Scene 1</span>
+          <button class="btn" style="padding: 2px 6px; font-size: 9px; font-weight: 700;" onclick="openRemoteRenameSceneModal()">Rename</button>
+        </div>
       </div>
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="remoteScenesGrid">
         <!-- Scenes 1 to 8 rendered dynamically -->
@@ -640,6 +643,26 @@
 
       <div class="parts-grid" id="partsGrid">
         <!-- Render 8 parts dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Custom Rename Scene Modal -->
+  <div id="remoteRenameSceneModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 320px; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 13px; font-weight: 600;" id="remoteRenameSceneTitle">Rename Scene</span>
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteRenameSceneModal()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <label style="font-size: 11px; font-weight: 600; color: var(--text-dim);">Scene Label</label>
+        <input type="text" id="remoteRenameSceneInput" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; padding: 8px 10px; color: var(--text-main); font-size: 13px; outline: none;" placeholder="e.g. Intro, Verse, Solo" maxlength="24">
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px;">
+          <button class="btn" onclick="closeRemoteRenameSceneModal()">Cancel</button>
+          <button class="btn is-active-loop" onclick="confirmRemoteRenameScene()">Save</button>
+        </div>
       </div>
     </div>
   </div>
@@ -690,7 +713,22 @@
     </div>
   </div>
 
+  <!-- In-App Notification Toast Banner -->
+  <div id="remoteToastNotice" style="position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #111317; border: 1px solid var(--accent); color: var(--text-main); padding: 8px 16px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--font-sans); box-shadow: 0 4px 16px rgba(0,0,0,0.7); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;">
+    Notification
+  </div>
+
   <script>
+    function showRemoteToast(msg, durationMs = 2500) {
+      const toast = document.getElementById("remoteToastNotice");
+      if (!toast) return;
+      toast.innerText = msg;
+      toast.style.opacity = "1";
+      clearTimeout(window._rToastTimer);
+      window._rToastTimer = setTimeout(() => {
+        toast.style.opacity = "0";
+      }, durationMs);
+    }
     // State for Parts 1 to 8 (Standard clean Part 1 - 8 labeling with Reverb, Mute & Solo)
     const partsState = [
       { part: 1, name: "Part 1", val: 100, rev: 40, mute: false, solo: false },
@@ -924,6 +962,33 @@
       }
     }
 
+    function openRemoteRenameSceneModal() {
+      const cur = remoteSceneNames[remoteActiveScene] || `Scene ${remoteActiveScene}`;
+      document.getElementById("remoteRenameSceneTitle").innerText = `Rename Scene ${remoteActiveScene}`;
+      const inp = document.getElementById("remoteRenameSceneInput");
+      inp.value = cur;
+      document.getElementById("remoteRenameSceneModal").style.display = "flex";
+      setTimeout(() => inp.focus(), 50);
+    }
+
+    function closeRemoteRenameSceneModal() {
+      document.getElementById("remoteRenameSceneModal").style.display = "none";
+    }
+
+    async function confirmRemoteRenameScene() {
+      const inp = document.getElementById("remoteRenameSceneInput");
+      const newName = (inp.value.trim() || `Scene ${remoteActiveScene}`).slice(0, 24);
+      closeRemoteRenameSceneModal();
+      remoteSceneNames[remoteActiveScene] = newName;
+      renderRemoteScenes();
+      document.getElementById("remoteActiveSceneText").innerText = newName;
+      await fetch("/api/montage/names", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenes: { [remoteActiveScene]: newName } })
+      });
+    }
+
     async function saveRemoteCurrentScene() {
       const btn = document.getElementById("remoteSaveSceneBtn");
       try {
@@ -934,8 +999,10 @@
         });
         const data = await res.json();
         if (data.success) {
+          const sName = remoteSceneNames[remoteActiveScene] || `Scene ${remoteActiveScene}`;
+          showRemoteToast(`✓ Saved mix to ${sName}`);
           const orig = btn.innerHTML;
-          btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to Scene ${remoteActiveScene}!</span>`;
+          btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to ${sName}!</span>`;
           setTimeout(() => { btn.innerHTML = orig; }, 1500);
         }
       } catch (e) {
@@ -961,13 +1028,13 @@
         row.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="part-num" style="font-size: 12px; font-weight: 600; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans);">${p.name}</span>
+              <span class="part-num" style="font-size: 13px; font-weight: 700; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans);">${p.name}</span>
               <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleRemoteMute(${p.part})">M</button>
               <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleRemoteSolo(${p.part})">S</button>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 10px;">
-              <span id="partValText_${p.part}" style="color: ${p.mute ? 'var(--text-faint)' : 'var(--accent)'};">Vol: ${p.val}</span>
-              <span id="partRevText_${p.part}" style="color: var(--text-dim);">Rev: ${p.rev || 40}</span>
+            <div style="display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 11px;">
+              <span id="partValText_${p.part}" style="color: ${p.mute ? 'var(--text-faint)' : 'var(--accent)'}; font-weight: 700;">Vol: ${p.val}</span>
+              <span id="partRevText_${p.part}" style="color: var(--accent-secondary); font-weight: 700;">Rev: ${p.rev || 40}</span>
             </div>
           </div>
 
@@ -979,10 +1046,73 @@
 
           <!-- Reverb Secondary Fader -->
           <div style="display: flex; align-items: center; gap: 8px; width: 100%; padding-left: 2px;">
-            <span style="font-size: 9px; font-weight: 600; color: var(--text-faint); font-family: var(--font-mono); width: 24px;">REV</span>
-            <div class="part-slider-wrap" id="reverbWrap_${p.part}" style="height: 12px; flex: 1; background: var(--bg-sunken);">
+            <span style="font-size: 10px; font-weight: 700; color: var(--text-main); font-family: var(--font-mono); width: 28px;">REV</span>
+            <div class="part-slider-wrap" id="reverbWrap_${p.part}" style="height: 14px; flex: 1; background: var(--bg-sunken);">
               <div class="part-slider-fill" id="reverbFill_${p.part}" style="width: ${pctRev}%; background: linear-gradient(90deg, rgba(30, 58, 138, 0.4), rgba(96, 165, 250, 0.65)); border-right: 2px solid #60a5fa;"></div>
               <div class="part-slider-thumb" id="reverbThumb_${p.part}" style="left: ${pctRev}%; width: 10px; height: 10px; top: -1px; background: #ffffff;"></div>
+            </div>
+          </div>
+
+          <!-- Extended Sculpting Controls on Remote (Pan, Cutoff, Resonance, Attack, Release, Chorus) -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-subtle);">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>PAN</span><span id="remotePanVal_${p.part}" style="color: var(--accent);">${p.pan !== undefined ? p.pan : 64}</span>
+              </div>
+              <div class="part-slider-wrap" id="remotePanWrap_${p.part}" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remotePanFill_${p.part}" style="width: ${(((p.pan !== undefined ? p.pan : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="part-slider-thumb" id="remotePanThumb_${p.part}" style="left: ${(((p.pan !== undefined ? p.pan : 64) / 127) * 100).toFixed(1)}%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>CUTOFF</span><span id="remoteCutVal_${p.part}" style="color: var(--accent);">${p.cutoff !== undefined ? p.cutoff : 64}</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteCutWrap_${p.part}" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteCutFill_${p.part}" style="width: ${(((p.cutoff !== undefined ? p.cutoff : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="part-slider-thumb" id="remoteCutThumb_${p.part}" style="left: ${(((p.cutoff !== undefined ? p.cutoff : 64) / 127) * 100).toFixed(1)}%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>RESON</span><span id="remoteResVal_${p.part}" style="color: var(--accent);">${p.resonance !== undefined ? p.resonance : 64}</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteResWrap_${p.part}" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteResFill_${p.part}" style="width: ${(((p.resonance !== undefined ? p.resonance : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="part-slider-thumb" id="remoteResThumb_${p.part}" style="left: ${(((p.resonance !== undefined ? p.resonance : 64) / 127) * 100).toFixed(1)}%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>ATTACK</span><span id="remoteAttVal_${p.part}" style="color: var(--accent);">${p.attack !== undefined ? p.attack : 64}</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteAttWrap_${p.part}" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteAttFill_${p.part}" style="width: ${(((p.attack !== undefined ? p.attack : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="part-slider-thumb" id="remoteAttThumb_${p.part}" style="left: ${(((p.attack !== undefined ? p.attack : 64) / 127) * 100).toFixed(1)}%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>RELEASE</span><span id="remoteRelVal_${p.part}" style="color: var(--accent);">${p.release !== undefined ? p.release : 64}</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteRelWrap_${p.part}" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill" id="remoteRelFill_${p.part}" style="width: ${(((p.release !== undefined ? p.release : 64) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="part-slider-thumb" id="remoteRelThumb_${p.part}" style="left: ${(((p.release !== undefined ? p.release : 64) / 127) * 100).toFixed(1)}%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>CHORUS</span><span id="remoteChoVal_${p.part}" style="color: var(--accent);">${p.chorus !== undefined ? p.chorus : 0}</span>
+              </div>
+              <div class="part-slider-wrap" id="remoteChoWrap_${p.part}" style="height: 14px; background: var(--bg-sunken);">
+                <div class="part-slider-fill secondary" id="remoteChoFill_${p.part}" style="width: ${(((p.chorus !== undefined ? p.chorus : 0) / 127) * 100).toFixed(1)}%;"></div>
+                <div class="part-slider-thumb" id="remoteChoThumb_${p.part}" style="left: ${(((p.chorus !== undefined ? p.chorus : 0) / 127) * 100).toFixed(1)}%; width: 10px; height: 10px; top: -1px;"></div>
+              </div>
             </div>
           </div>
         `;
@@ -993,6 +1123,61 @@
 
         const wrapRev = row.querySelector(`#reverbWrap_${p.part}`);
         bindReverbSliderDrag(wrapRev, p.part);
+
+        // Bind extended touch dragging for phone remote
+        ['pan', 'cut', 'res', 'att', 'rel', 'cho'].forEach((paramShort) => {
+          const mapParam = { pan: 'pan', cut: 'cutoff', res: 'resonance', att: 'attack', rel: 'release', cho: 'chorus' };
+          const pName = mapParam[paramShort];
+          const wrapEl = row.querySelector(`#remote${paramShort.charAt(0).toUpperCase() + paramShort.slice(1)}Wrap_${p.part}`);
+          if (wrapEl) {
+            bindRemoteParamSliderDrag(wrapEl, p.part, pName, paramShort);
+          }
+        });
+      });
+    }
+
+    function bindRemoteParamSliderDrag(element, partNum, paramName, paramShort) {
+      function updateFromX(clientX) {
+        const rect = element.getBoundingClientRect();
+        let ratio = (clientX - rect.left) / rect.width;
+        ratio = Math.max(0, Math.min(1, ratio));
+        const val = Math.round(ratio * 127);
+
+        partsState[partNum - 1][paramName] = val;
+        const pct = (ratio * 100).toFixed(1);
+        const pCap = paramShort.charAt(0).toUpperCase() + paramShort.slice(1);
+        const fill = document.getElementById(`remote${pCap}Fill_${partNum}`);
+        const thumb = document.getElementById(`remote${pCap}Thumb_${partNum}`);
+        const text = document.getElementById(`remote${pCap}Val_${partNum}`);
+
+        if (fill) fill.style.width = pct + "%";
+        if (thumb) thumb.style.left = pct + "%";
+        if (text) text.innerText = val;
+
+        fetch("/api/montage/volume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ part: partNum, [paramName]: val })
+        });
+      }
+
+      element.addEventListener("touchstart", (e) => {
+        updateFromX(e.touches[0].clientX);
+      }, { passive: true });
+
+      element.addEventListener("touchmove", (e) => {
+        updateFromX(e.touches[0].clientX);
+      }, { passive: true });
+
+      element.addEventListener("mousedown", (e) => {
+        updateFromX(e.clientX);
+        const onMove = (ev) => updateFromX(ev.clientX);
+        const onUp = () => {
+          window.removeEventListener("mousemove", onMove);
+          window.removeEventListener("mouseup", onUp);
+        };
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
       });
     }
 

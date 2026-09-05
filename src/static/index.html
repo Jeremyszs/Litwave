@@ -1607,7 +1607,10 @@
           <div style="display: flex; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid var(--border-dim);">
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: var(--text-dim); font-weight: 600; text-transform: uppercase;">
               <span>Scene Preset</span>
-              <span id="activeSceneText" style="font-family: var(--font-mono); color: var(--accent);">Scene 1</span>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span id="activeSceneText" style="font-family: var(--font-mono); color: var(--accent);">Scene 1</span>
+                <button class="btn" style="padding: 1px 4px; font-size: 8px; font-weight: 700;" onclick="openRenameSceneModal(activeScene)" title="Rename active scene">Rename</button>
+              </div>
             </div>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;" id="desktopScenesGrid">
               <!-- Scenes 1 - 8 rendered dynamically -->
@@ -1775,6 +1778,28 @@
     </div>
   </div>
 
+  <!-- Rename Scene In-App Custom Modal -->
+  <div class="modal-backdrop" id="renameSceneModal">
+    <div class="modal-window" style="width: 320px;">
+      <div class="modal-header">
+        <div class="modal-title" id="renameSceneModalTitle">Rename Scene</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeRenameSceneModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="pref-group">
+          <label class="pref-label">Scene Label</label>
+          <input type="text" id="renameSceneInput" class="modal-input" placeholder="e.g. Intro, Verse, Solo" maxlength="24">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px;">
+          <button class="btn" onclick="closeRenameSceneModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmRenameScene()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Preferences & Customization Modal -->
   <div class="modal-backdrop" id="preferencesModal">
     <div class="modal-window">
@@ -1828,7 +1853,22 @@
     </div>
   </div>
 
+  <!-- In-App Notification Toast Banner -->
+  <div id="appToastNotice" style="position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #111317; border: 1px solid var(--accent); color: var(--text-main); padding: 8px 16px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--font-sans); box-shadow: 0 4px 16px rgba(0,0,0,0.7); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;">
+    Notification
+  </div>
+
   <script>
+    function showAppToast(msg, durationMs = 2500) {
+      const toast = document.getElementById("appToastNotice");
+      if (!toast) return;
+      toast.innerText = msg;
+      toast.style.opacity = "1";
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.style.opacity = "0";
+      }, durationMs);
+    }
     let ws = null;
     let waveformPeaks = [];
     const START_KEY = 21;
@@ -2845,7 +2885,7 @@
           </div>
 
           <div style="display: flex; align-items: center; gap: 12px; opacity: ${p.mute ? '0.4' : '1.0'};">
-            <span style="font-size: 9px; font-weight: 600; font-family: var(--font-mono); color: var(--text-faint); width: 26px;">VOL</span>
+            <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main); width: 28px;">VOL</span>
             <div class="slider-rect-wrap" id="dtVolWrap_${p.part}" style="flex: 1; height: 20px;" onmousedown="startDesktopPartFaderDrag(${p.part}, 'vol', event)">
               <div class="slider-rect-fill" id="dtVolFill_${p.part}" style="width: ${pctVol}%;"></div>
               <div class="slider-rect-thumb" id="dtVolThumb_${p.part}" style="left: ${pctVol}%;"></div>
@@ -2853,7 +2893,7 @@
           </div>
 
           <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 9px; font-weight: 600; font-family: var(--font-mono); color: var(--text-faint); width: 26px;">REV</span>
+            <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main); width: 28px;">REV</span>
             <div class="slider-rect-wrap" id="dtRevWrap_${p.part}" style="flex: 1; height: 16px;" onmousedown="startDesktopPartFaderDrag(${p.part}, 'rev', event)">
               <div class="slider-rect-fill secondary" id="dtRevFill_${p.part}" style="width: ${pctRev}%;"></div>
               <div class="slider-rect-thumb" id="dtRevThumb_${p.part}" style="left: ${pctRev}%;"></div>
@@ -2861,10 +2901,10 @@
           </div>
 
           <!-- Extended Sound Sculpting Controls (Point 2, 3, 4: Pan, Filter Cutoff/Resonance, Envelope Attack/Release, Chorus) -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 4px; border-top: 1px dashed var(--border-dim);">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-subtle);">
             <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
-                <span>PAN</span><span id="dtPanVal_${p.part}">${p.pan !== undefined ? p.pan : 64}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>PAN</span><span id="dtPanVal_${p.part}" style="color: var(--accent);">${p.pan !== undefined ? p.pan : 64}</span>
               </div>
               <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'pan', event)">
                 <div class="slider-rect-fill" id="dtPanFill_${p.part}" style="width: ${(((p.pan !== undefined ? p.pan : 64) / 127) * 100).toFixed(1)}%;"></div>
@@ -2873,8 +2913,8 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
-                <span>CUTOFF</span><span id="dtCutVal_${p.part}">${p.cutoff !== undefined ? p.cutoff : 64}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>CUTOFF</span><span id="dtCutVal_${p.part}" style="color: var(--accent);">${p.cutoff !== undefined ? p.cutoff : 64}</span>
               </div>
               <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'cutoff', event)">
                 <div class="slider-rect-fill" id="dtCutFill_${p.part}" style="width: ${(((p.cutoff !== undefined ? p.cutoff : 64) / 127) * 100).toFixed(1)}%;"></div>
@@ -2883,8 +2923,8 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
-                <span>RESON</span><span id="dtResVal_${p.part}">${p.resonance !== undefined ? p.resonance : 64}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>RESON</span><span id="dtResVal_${p.part}" style="color: var(--accent);">${p.resonance !== undefined ? p.resonance : 64}</span>
               </div>
               <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'resonance', event)">
                 <div class="slider-rect-fill" id="dtResFill_${p.part}" style="width: ${(((p.resonance !== undefined ? p.resonance : 64) / 127) * 100).toFixed(1)}%;"></div>
@@ -2893,8 +2933,8 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
-                <span>ATTACK</span><span id="dtAttVal_${p.part}">${p.attack !== undefined ? p.attack : 64}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>ATTACK</span><span id="dtAttVal_${p.part}" style="color: var(--accent);">${p.attack !== undefined ? p.attack : 64}</span>
               </div>
               <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'attack', event)">
                 <div class="slider-rect-fill" id="dtAttFill_${p.part}" style="width: ${(((p.attack !== undefined ? p.attack : 64) / 127) * 100).toFixed(1)}%;"></div>
@@ -2903,8 +2943,8 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
-                <span>RELEASE</span><span id="dtRelVal_${p.part}">${p.release !== undefined ? p.release : 64}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>RELEASE</span><span id="dtRelVal_${p.part}" style="color: var(--accent);">${p.release !== undefined ? p.release : 64}</span>
               </div>
               <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'release', event)">
                 <div class="slider-rect-fill" id="dtRelFill_${p.part}" style="width: ${(((p.release !== undefined ? p.release : 64) / 127) * 100).toFixed(1)}%;"></div>
@@ -2913,8 +2953,8 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">
-                <span>CHORUS</span><span id="dtChoVal_${p.part}">${p.chorus !== undefined ? p.chorus : 0}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 700; font-family: var(--font-mono); color: var(--text-main);">
+                <span>CHORUS</span><span id="dtChoVal_${p.part}" style="color: var(--accent);">${p.chorus !== undefined ? p.chorus : 0}</span>
               </div>
               <div class="slider-rect-wrap" style="height: 14px;" onmousedown="startDesktopParamDrag(${p.part}, 'chorus', event)">
                 <div class="slider-rect-fill secondary" id="dtChoFill_${p.part}" style="width: ${(((p.chorus !== undefined ? p.chorus : 0) / 127) * 100).toFixed(1)}%;"></div>
@@ -3318,32 +3358,42 @@
         btn.style.textOverflow = "ellipsis";
         btn.style.whiteSpace = "nowrap";
         btn.innerText = `S${s}`;
-        btn.title = `${name} (Right-click or hold to rename)`;
+        btn.title = name;
         btn.id = `sceneBtn_${s}`;
         btn.onclick = () => selectScene(s);
-        btn.oncontextmenu = (e) => {
-          e.preventDefault();
-          promptRenameScene(s);
-        };
         grid.appendChild(btn);
       }
     }
 
-    async function promptRenameScene(sceneNum) {
+    let renamingSceneTarget = 1;
+    function openRenameSceneModal(sceneNum) {
+      renamingSceneTarget = sceneNum;
       const cur = desktopSceneNames[sceneNum] || `Scene ${sceneNum}`;
-      const newName = prompt(`Rename Scene ${sceneNum} (e.g. Intro, Verse, Solo, Pad Build):`, cur);
-      if (newName && newName.trim()) {
-        desktopSceneNames[sceneNum] = newName.trim().slice(0, 24);
-        renderScenesUI();
-        if (activeScene === sceneNum) {
-          document.getElementById("activeSceneText").innerText = desktopSceneNames[sceneNum];
-        }
-        await fetch("/api/montage/names", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scenes: { [sceneNum]: newName.trim() } })
-        });
+      document.getElementById("renameSceneModalTitle").innerText = `Rename Scene ${sceneNum}`;
+      const inp = document.getElementById("renameSceneInput");
+      inp.value = cur;
+      document.getElementById("renameSceneModal").style.display = "flex";
+      setTimeout(() => inp.focus(), 50);
+    }
+
+    function closeRenameSceneModal() {
+      document.getElementById("renameSceneModal").style.display = "none";
+    }
+
+    async function confirmRenameScene() {
+      const inp = document.getElementById("renameSceneInput");
+      const newName = (inp.value.trim() || `Scene ${renamingSceneTarget}`).slice(0, 24);
+      closeRenameSceneModal();
+      desktopSceneNames[renamingSceneTarget] = newName;
+      renderScenesUI();
+      if (activeScene === renamingSceneTarget) {
+        document.getElementById("activeSceneText").innerText = newName;
       }
+      await fetch("/api/montage/names", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenes: { [renamingSceneTarget]: newName } })
+      });
     }
 
     async function selectScene(sceneNum) {
@@ -3375,8 +3425,10 @@
         });
         const data = await res.json();
         if (data.success) {
+          const sName = desktopSceneNames[activeScene] || `Scene ${activeScene}`;
+          showAppToast(`✓ Saved mix to ${sName}`);
           const originalText = btn.innerHTML;
-          btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to Scene ${activeScene}!</span>`;
+          btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Saved to ${sName}!</span>`;
           setTimeout(() => { btn.innerHTML = originalText; }, 1500);
         }
       } catch (e) {
