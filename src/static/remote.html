@@ -454,12 +454,20 @@
     </div>
 
     <!-- Static Song Lyrics View (Mobile) -->
-    <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; max-height: 160px;">
+    <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; max-height: 180px;">
       <div style="display: flex; align-items: center; justify-content: space-between;">
         <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Song Lyrics</span>
-        <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">Static Reference</span>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <!-- Font Size Controls for Phone Lyrics -->
+          <div style="display: flex; align-items: center; gap: 2px; background: var(--bg-sunken); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border-dim);">
+            <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeRemoteLyricsFontSize(-1)">-</button>
+            <span id="remoteLyricsFontText" style="font-family: var(--font-mono); font-size: 10px; min-width: 24px; text-align: center; color: var(--accent);">13px</span>
+            <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeRemoteLyricsFontSize(1)">+</button>
+          </div>
+          <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">Static</span>
+        </div>
       </div>
-      <div id="remoteStaticLyricsContainer" style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-dim); max-height: 120px;">
+      <div id="remoteStaticLyricsContainer" style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-dim); max-height: 130px; line-height: 1.35;">
         Tap Analyze to load song lyrics...
       </div>
     </div>
@@ -1166,6 +1174,16 @@
       sendTransport("pitch_shift", { semitones: val });
     }
 
+    // Remote Lyrics Font Size Stepper
+    let rLyricsFontSize = 13;
+    function changeRemoteLyricsFontSize(delta) {
+      rLyricsFontSize = Math.max(10, Math.min(22, rLyricsFontSize + delta));
+      const txt = document.getElementById("remoteLyricsFontText");
+      if (txt) txt.innerText = `${rLyricsFontSize}px`;
+      const container = document.getElementById("remoteStaticLyricsContainer");
+      if (container) container.style.fontSize = `${rLyricsFontSize}px`;
+    }
+
     // Remote Metronome Controls
     async function toggleRemoteMetronome() {
       try {
@@ -1534,10 +1552,10 @@
               currentBpm = audio.metronome_bpm;
               document.getElementById("remoteBpmText").innerText = `${Math.round(currentBpm)} BPM`;
             }
-            if (audio.metronome_time_sig !== undefined) {
-              const sel = document.getElementById("remoteTimeSigSelect");
-              if (sel && sel.value !== String(audio.metronome_time_sig)) {
-                sel.value = String(audio.metronome_time_sig);
+            if (audio.metronome_profile !== undefined) {
+              const pSel = document.getElementById("remoteMetroSoundSelect");
+              if (pSel && pSel.value !== audio.metronome_profile) {
+                pSel.value = audio.metronome_profile;
               }
             }
           }

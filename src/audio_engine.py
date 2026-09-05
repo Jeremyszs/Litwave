@@ -192,5 +192,6 @@ class AudioEngine:
             "is_clipping": self.is_clipping,
             "metronome_bpm": self.metronome.bpm,
             "metronome_enabled": self.metronome.enabled,
-            "metronome_time_sig": self.metronome.time_sig_num
+            "metronome_time_sig": self.metronome.time_sig_num,
+            "metronome_profile": self.metronome.sound_profile
         }

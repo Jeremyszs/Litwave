@@ -1316,9 +1316,9 @@
         </div>
       </section>
 
-      <!-- Song Performance & Lyrics Workspace (Divided: Lyrics on Left, Live Chord HUD on Right) -->
-      <div style="display: grid; grid-template-columns: 1fr 280px; gap: 8px; min-height: 240px; max-height: 380px; resize: vertical; overflow: hidden;" id="performanceWorkspace">
-        <!-- Static Lyrics Window -->
+      <!-- Song Performance & Lyrics Workspace (Divided: Lyrics on Left at ~45% width, Live Chord HUD on Right) -->
+      <div style="display: grid; grid-template-columns: minmax(280px, 45%) 1fr; gap: 8px; min-height: 240px; max-height: 380px; resize: vertical; overflow: hidden;" id="performanceWorkspace">
+        <!-- Static Lyrics Window (Compacted to 45% width with customizable Font Size) -->
         <section class="dockable-window" id="lyricsWindow" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
           <div class="window-titlebar" id="lyricsTitlebar">
             <div class="panel-title">
@@ -1326,6 +1326,12 @@
               <span class="panel-title-text" id="lyricsTitleText">Song Lyrics</span>
             </div>
             <div class="window-controls">
+              <!-- Font Size Stepper -->
+              <div style="display: flex; align-items: center; gap: 2px; background: var(--bg-sunken); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border-dim); margin-right: 4px;">
+                <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeLyricsFontSize(-1)" title="Smaller font">-</button>
+                <span id="lyricsFontSizeText" style="font-family: var(--font-mono); font-size: 10px; min-width: 26px; text-align: center; color: var(--accent);">13px</span>
+                <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeLyricsFontSize(1)" title="Larger font">+</button>
+              </div>
               <button class="btn" id="toggleLyricsFollowBtn" style="padding: 2px 6px; font-size: 10px;" onclick="toggleLyricsFollow()">Follow: Off</button>
             </div>
           </div>
@@ -2062,6 +2068,15 @@
     }
 
     let lyricsFollowEnabled = false;
+    let lyricsFontSize = 13;
+
+    function changeLyricsFontSize(delta) {
+      lyricsFontSize = Math.max(10, Math.min(24, lyricsFontSize + delta));
+      const txt = document.getElementById("lyricsFontSizeText");
+      if (txt) txt.innerText = `${lyricsFontSize}px`;
+      const lines = document.querySelectorAll("#lyricsContainer .lyric-text");
+      lines.forEach(l => l.style.fontSize = `${lyricsFontSize}px`);
+    }
 
     function toggleLyricsFollow() {
       lyricsFollowEnabled = !lyricsFollowEnabled;
@@ -2734,6 +2749,37 @@
             mRange.value = audio.metronome_volume;
             const pct = Math.round(audio.metronome_volume * 100);
             document.getElementById("metroVolText").innerText = audio.metronome_volume > 1.0 ? `Boost ${pct}%` : `${pct}%`;
+            const fillPct = (audio.metronome_volume / 2.0) * 100;
+            const fill = document.getElementById("metroVolFill");
+            const thumb = document.getElementById("metroVolThumb");
+            if (fill) fill.style.width = `${fillPct}%`;
+            if (thumb) thumb.style.left = `${fillPct}%`;
+          }
+        }
+        if (audio.metronome_enabled !== undefined) {
+          const mBtn = document.getElementById("metroBtn");
+          if (mBtn) {
+            const isEn = Boolean(audio.metronome_enabled);
+            mBtn.innerText = isEn ? "Click [On]" : "Click [Off]";
+            mBtn.classList.toggle("btn-active", isEn);
+          }
+        }
+        if (audio.metronome_bpm !== undefined) {
+          const bpmInp = document.getElementById("bpmInput");
+          if (bpmInp && document.activeElement !== bpmInp && Math.abs(parseFloat(bpmInp.value) - audio.metronome_bpm) >= 1) {
+            bpmInp.value = Math.round(audio.metronome_bpm);
+          }
+        }
+        if (audio.metronome_time_sig !== undefined) {
+          const sigSel = document.getElementById("timeSigSelect");
+          if (sigSel && parseInt(sigSel.value) !== audio.metronome_time_sig) {
+            sigSel.value = audio.metronome_time_sig;
+          }
+        }
+        if (audio.metronome_profile !== undefined) {
+          const profSel = document.getElementById("metroSoundSelect");
+          if (profSel && profSel.value !== audio.metronome_profile) {
+            profSel.value = audio.metronome_profile;
           }
         }
       }
