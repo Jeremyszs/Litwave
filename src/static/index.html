@@ -4245,24 +4245,47 @@
       });
     }
 
-    let vstWindowVisible = true;
+    // Yamaha VST Window State Cycling:
+    // State 0: Not Running / Initial -> Click 1: Starts in background / Hides (Running in Background)
+    // State 1: Running in Background -> Click 2: Show GUI Window
+    // State 2: GUI Visible -> Click 3: Kill / Delete GUI & Process Completely
+    let vstGuiCycleState = 0; // 0 = not running/fresh, 1 = running in background, 2 = gui visible
+
     async function openSynthEditor() {
-      if (vstWindowVisible) {
+      if (vstGuiCycleState === 0) {
+        // Start engine and hide window (runs purely in background)
         await fetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "hide" })
+          body: JSON.stringify({ action: "start" })
         });
-        vstWindowVisible = false;
-        showAppToast("Yamaha VST window hidden (running in background)");
-      } else {
+        setTimeout(async () => {
+          await fetch("/api/montage/editor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "hide" })
+          });
+        }, 800);
+        vstGuiCycleState = 1;
+        showAppToast("Yamaha VST running in background");
+      } else if (vstGuiCycleState === 1) {
+        // 2nd click: Show the GUI window
         await fetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "show" })
         });
-        vstWindowVisible = true;
-        showAppToast("Yamaha VST window restored");
+        vstGuiCycleState = 2;
+        showAppToast("Yamaha VST GUI opened");
+      } else {
+        // 3rd click: Kill / Delete GUI and process completely
+        await fetch("/api/montage/editor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "kill" })
+        });
+        vstGuiCycleState = 0;
+        showAppToast("Yamaha VST process terminated");
       }
     }
 

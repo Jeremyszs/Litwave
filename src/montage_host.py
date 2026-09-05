@@ -154,6 +154,34 @@ class MontageHost:
             "status": "ready" if (has_vst and has_data) else "missing_components"
         }
 
+    def is_engine_running(self) -> bool:
+        """Check if native montage_live_engine C++ host process is active"""
+        import subprocess
+        try:
+            out = subprocess.check_output(
+                ['powershell', '-Command', '(Get-Process -Name "montage_live_engine" -ErrorAction SilentlyContinue).Id'],
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            return bool(out.strip())
+        except Exception:
+            return False
+
+    def kill_vst_engine(self) -> bool:
+        """Kill montage_live_engine C++ host process completely"""
+        import subprocess
+        # Try graceful command first
+        self.toggle_vst_window("kill")
+        try:
+            subprocess.run(
+                ['powershell', '-Command', 'Stop-Process -Name "montage_live_engine" -Force -ErrorAction SilentlyContinue'],
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            return True
+        except Exception as e:
+            print(f"Error killing engine: {e}")
+            return False
+
     def toggle_vst_window(self, action: str = "toggle") -> bool:
         """
         Controls native Yamaha MONTAGE M VST3 window visibility:

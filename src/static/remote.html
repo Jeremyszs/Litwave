@@ -391,9 +391,14 @@
       <span class="brand-title">Litwave Remote</span>
       <span style="font-size: 11px; color: var(--text-faint); font-weight: 500;">Practice Station</span>
     </div>
-    <div class="status-badge">
-      <span id="connDot" class="status-dot"></span>
-      <span id="connText">Connecting</span>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="cycleRemoteVstState()" title="1: Start/Hide, 2: Open GUI, 3: Kill process">
+        <span id="remoteVstCycleText">VST GUI</span>
+      </button>
+      <div class="status-badge">
+        <span id="connDot" class="status-dot"></span>
+        <span id="connText">Connecting</span>
+      </div>
     </div>
   </header>
 
@@ -1657,6 +1662,47 @@
       const sign = currentPitch > 0 ? "+" : "";
       document.getElementById("remotePitchVal").innerText = `${sign}${currentPitch} st`;
       sendTransport("pitch_shift", { semitones: val });
+    }
+
+    // Remote Yamaha VST State Cycling (1: Start in Background, 2: Open GUI, 3: Kill Process)
+    let rVstCycleState = 0;
+    async function cycleRemoteVstState() {
+      const txt = document.getElementById("remoteVstCycleText");
+      if (rVstCycleState === 0) {
+        await fetch("/api/montage/editor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "start" })
+        });
+        setTimeout(async () => {
+          await fetch("/api/montage/editor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "hide" })
+          });
+        }, 800);
+        rVstCycleState = 1;
+        if (txt) txt.innerText = "Show GUI";
+        showRemoteToast("Yamaha VST running in background");
+      } else if (rVstCycleState === 1) {
+        await fetch("/api/montage/editor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "show" })
+        });
+        rVstCycleState = 2;
+        if (txt) txt.innerText = "Kill VST";
+        showRemoteToast("Yamaha VST GUI opened");
+      } else {
+        await fetch("/api/montage/editor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "kill" })
+        });
+        rVstCycleState = 0;
+        if (txt) txt.innerText = "Start VST";
+        showRemoteToast("Yamaha VST process terminated");
+      }
     }
 
     // Remote Lyrics Font Size Stepper

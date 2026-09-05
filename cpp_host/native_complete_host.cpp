@@ -517,7 +517,25 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
     g_master_peak_meter_r.store(master_peak_r, std::memory_order_relaxed);
 }
 
+#define WM_HOST_WINDOW_CMD (WM_USER + 101)
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == WM_HOST_WINDOW_CMD) {
+        int action = (int)wParam;
+        if (action == 0) {
+            ShowWindow(hwnd, SW_HIDE);
+        } else if (action == 1) {
+            ShowWindow(hwnd, SW_SHOW);
+            ShowWindow(hwnd, SW_RESTORE);
+            SetForegroundWindow(hwnd);
+        } else if (action == 2) {
+            ShowWindow(hwnd, SW_MINIMIZE);
+        } else if (action == 3) {
+            // Kill / Exit process
+            DestroyWindow(hwnd);
+        }
+        return 0;
+    }
     if (msg == WM_DESTROY) { PostQuitMessage(0); return 0; }
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
@@ -730,17 +748,10 @@ void UdpControlServerThread() {
                         float gVal = *(float*)(buf + 4);
                         g_master_gain.store(gVal, std::memory_order_relaxed);
                     }
-                } else if (cmd == 0x57) { // 'W' Window Visibility Toggle: [ 'W', showCmd (0=Hide, 1=Show, 2=Minimize), 0, 0 ]
+                } else if (cmd == 0x57) { // 'W' Window Visibility Toggle: [ 'W', showCmd (0=Hide, 1=Show, 2=Minimize, 3=Kill), 0, 0 ]
                     int action = (int)ch;
                     if (g_hwnd) {
-                        if (action == 0) {
-                            ShowWindow(g_hwnd, SW_HIDE);
-                        } else if (action == 1) {
-                            ShowWindow(g_hwnd, SW_SHOW);
-                            SetForegroundWindow(g_hwnd);
-                        } else if (action == 2) {
-                            ShowWindow(g_hwnd, SW_MINIMIZE);
-                        }
+                        PostMessage(g_hwnd, WM_HOST_WINDOW_CMD, (WPARAM)action, 0);
                     }
                 } else if (cmd == 0x53) { // 'S' Scene Select Command: [ 'S', sceneNumber (1-8), 0, 0 ]
                     int sceneNum = (int)ch; // 1 to 8

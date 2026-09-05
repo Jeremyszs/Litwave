@@ -292,9 +292,19 @@ async def api_open_editor(request):
     try:
         data = await request.json() if request.method == "POST" else {}
         action = data.get("action")
-        if action in ("hide", "show", "minimize"):
+        if action == "kill":
+            ok = state.montage.kill_vst_engine()
+            return JSONResponse({"success": ok, "action": "kill"})
+        elif action in ("hide", "show", "minimize"):
+            # Check if running first
+            if not state.montage.is_engine_running():
+                ok = state.montage.open_vst_editor()
+                return JSONResponse({"success": ok, "action": "started_fresh"})
             ok = state.montage.toggle_vst_window(action)
             return JSONResponse({"success": ok, "action": action})
+        elif action == "start":
+            ok = state.montage.open_vst_editor()
+            return JSONResponse({"success": ok, "action": "started"})
     except Exception:
         pass
     ok = state.montage.open_vst_editor()
