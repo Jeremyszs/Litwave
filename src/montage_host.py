@@ -314,6 +314,23 @@ class MontageHost:
             print(f"Failed to set master VST volume: {e}")
             return False
 
+    def set_master_output_gain(self, gain_float: float) -> bool:
+        """
+        Sets global hardware output gain in C++ host across both VST and Backing Track.
+        Command 'G' (0x47): [ 'G', 0, 0, 0, gainFloat (float32) ]
+        """
+        import socket
+        import struct
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            payload = struct.pack("<BBBBf", 0x47, 0, 0, 0, float(gain_float))
+            sock.sendto(payload, ("127.0.0.1", 9123))
+            sock.close()
+            return True
+        except Exception as e:
+            print(f"Failed to send Master hardware gain: {e}")
+            return False
+
     def update_vst_equalizer(self, band_idx: int, eq_type: int, freq: float, gain: float, q: float) -> bool:
         """
         Sends real-time parametric EQ updates to montage_live_engine C++ host over UDP (Port 9123).

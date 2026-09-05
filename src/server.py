@@ -158,7 +158,9 @@ async def api_transport(request):
 async def api_mixer(request):
     body = await request.json()
     if "master_volume" in body:
-        state.audio.master_volume = float(body["master_volume"])
+        mv = float(body["master_volume"])
+        state.audio.master_volume = mv
+        state.montage.set_master_output_gain(mv)
     if "track_volume" in body:
         v = float(body["track_volume"])
         state.audio.track_volume = v

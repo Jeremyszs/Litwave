@@ -3610,10 +3610,15 @@
 
       // VU meters
       const dbToPercent = (db) => Math.max(0, Math.min(100, ((db + 60) / 60) * 85));
-      document.getElementById("vuTrack").style.height = `${dbToPercent(audio.vu_track)}%`;
-      document.getElementById("vuSynth").style.height = `${dbToPercent(audio.vu_synth !== undefined ? audio.vu_synth : -60.0)}%`;
-      document.getElementById("vuMasterL").style.height = `${dbToPercent(audio.vu_master_l)}%`;
-      document.getElementById("vuMasterR").style.height = `${dbToPercent(audio.vu_master_r)}%`;
+      const trkDb = audio.vu_track !== undefined ? audio.vu_track : -60.0;
+      const synDb = audio.vu_synth !== undefined ? audio.vu_synth : -60.0;
+      const mstLDb = audio.vu_master_l !== undefined ? audio.vu_master_l : -60.0;
+      const mstRDb = audio.vu_master_r !== undefined ? audio.vu_master_r : -60.0;
+
+      document.getElementById("vuTrack").style.height = `${dbToPercent(trkDb)}%`;
+      document.getElementById("vuSynth").style.height = `${dbToPercent(synDb)}%`;
+      document.getElementById("vuMasterL").style.height = `${dbToPercent(mstLDb)}%`;
+      document.getElementById("vuMasterR").style.height = `${dbToPercent(mstRDb)}%`;
 
       // Song / Transport
       if (song && song.has_track) {

@@ -164,11 +164,26 @@ class AudioEngine:
             header = bytes([0x41, 0, (n_frames >> 8) & 0xFF, n_frames & 0xFF])
             payload = header + interleaved[:n_frames].tobytes()
             self.udp_sock.sendto(payload, self.udp_target)
-            # Try to read peak from C++ host non-blockingly
+            # Try to read peak meters from C++ host non-blockingly
             self.udp_sock.setblocking(False)
             try:
-                resp, _ = self.udp_sock.recvfrom(16)
-                if len(resp) >= 4:
+                resp, _ = self.udp_sock.recvfrom(32)
+                if len(resp) >= 16:
+                    import struct
+                    s_peak, t_peak, ml_peak, mr_peak = struct.unpack("ffff", resp[:16])
+                    if s_peak > 0:
+                        self.peak_synth_db = 20.0 * np.log10(max(1e-4, s_peak))
+                    else:
+                        self.peak_synth_db = -60.0
+                    
+                    if t_peak > 0:
+                        self.peak_track_db = 20.0 * np.log10(max(1e-4, t_peak))
+                    
+                    if ml_peak > 0:
+                        self.peak_left_db = 20.0 * np.log10(max(1e-4, ml_peak))
+                    if mr_peak > 0:
+                        self.peak_right_db = 20.0 * np.log10(max(1e-4, mr_peak))
+                elif len(resp) >= 4:
                     import struct
                     s_peak = struct.unpack("f", resp[:4])[0]
                     self.peak_synth_db = 20.0 * np.log10(max(1e-4, s_peak))

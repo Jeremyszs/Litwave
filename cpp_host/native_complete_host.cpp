@@ -290,6 +290,9 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
 static float g_synth_out_l[1024];
 static float g_synth_out_r[1024];
 static std::atomic<float> g_synth_peak_meter{0.0f};
+static std::atomic<float> g_track_peak_meter{0.0f};
+static std::atomic<float> g_master_peak_meter_l{0.0f};
+static std::atomic<float> g_master_peak_meter_r{0.0f};
 
 // Lock-free Ring Buffer for Incoming Backing Track PCM Stream (from Python)
 static const int TRACK_RING_SIZE = 131072; // ~1.5s at 44.1kHz stereo
@@ -297,6 +300,7 @@ static float g_track_ring_l[TRACK_RING_SIZE];
 static float g_track_ring_r[TRACK_RING_SIZE];
 static std::atomic<int> g_track_write_idx{0};
 static std::atomic<int> g_track_read_idx{0};
+static std::atomic<float> g_master_gain{1.0f};
 
 void enqueue_track_audio(const float* l_samples, const float* r_samples, int num_samples) {
     int w = g_track_write_idx.load(std::memory_order_relaxed);
@@ -465,6 +469,10 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
     int w = g_track_write_idx.load(std::memory_order_acquire);
     int available = (w >= r) ? (w - r) : (TRACK_RING_SIZE - r + w);
 
+    float track_peak_acc = 0.0f;
+    float master_peak_l = 0.0f;
+    float master_peak_r = 0.0f;
+
     for (ma_uint32 i = 0; i < frameCount; i++) {
         float track_l = 0.0f;
         float track_r = 0.0f;
@@ -474,6 +482,10 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
             r = (r + 1) % TRACK_RING_SIZE;
             available--;
         }
+        float tl_abs = fabsf(track_l);
+        float tr_abs = fabsf(track_r);
+        if (tl_abs > track_peak_acc) track_peak_acc = tl_abs;
+        if (tr_abs > track_peak_acc) track_peak_acc = tr_abs;
 
         // Sum VST synth and backing track into unified stereo output
         float sum_l = g_synth_out_l[i] + track_l;
@@ -486,10 +498,23 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
             }
         }
 
+        // Apply Master Gain across entire mix (VST + Backing track)
+        float mGain = g_master_gain.load(std::memory_order_relaxed);
+        sum_l *= mGain;
+        sum_r *= mGain;
+
+        float sl_abs = fabsf(sum_l);
+        float sr_abs = fabsf(sum_r);
+        if (sl_abs > master_peak_l) master_peak_l = sl_abs;
+        if (sr_abs > master_peak_r) master_peak_r = sr_abs;
+
         pOut[i * 2 + 0] = sum_l;
         pOut[i * 2 + 1] = sum_r;
     }
     g_track_read_idx.store(r, std::memory_order_release);
+    g_track_peak_meter.store(track_peak_acc, std::memory_order_relaxed);
+    g_master_peak_meter_l.store(master_peak_l, std::memory_order_relaxed);
+    g_master_peak_meter_r.store(master_peak_r, std::memory_order_relaxed);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -608,9 +633,13 @@ void UdpControlServerThread() {
                         }
                         enqueue_track_audio(temp_l, temp_r, num_frames);
                     }
-                    // Echo back real Synth peak to Python so VU meter represents authentic VST audio
-                    float curPeak = g_synth_peak_meter.load(std::memory_order_relaxed);
-                    sendto(sock, (const char*)&curPeak, sizeof(float), 0, (sockaddr*)&client_addr, client_len);
+                    // Echo back real Synth, Track, and Master peak meters to Python
+                    float meterVals[4];
+                    meterVals[0] = g_synth_peak_meter.load(std::memory_order_relaxed);
+                    meterVals[1] = g_track_peak_meter.load(std::memory_order_relaxed);
+                    meterVals[2] = g_master_peak_meter_l.load(std::memory_order_relaxed);
+                    meterVals[3] = g_master_peak_meter_r.load(std::memory_order_relaxed);
+                    sendto(sock, (const char*)meterVals, sizeof(meterVals), 0, (sockaddr*)&client_addr, client_len);
                     continue;
                 }
 
@@ -696,6 +725,11 @@ void UdpControlServerThread() {
                         g_controller->setParamNormalized(kCommonPerformanceVolumeID, normVal);
                     }
                     enqueue_param_change(kCommonPerformanceVolumeID, normVal);
+                } else if (cmd == 0x47) { // 'G' Master Hardware Output Gain (Combined VST + Backing Track): [ 'G', 0, 0, 0, gainFloat (float32) ]
+                    if (len >= 8) {
+                        float gVal = *(float*)(buf + 4);
+                        g_master_gain.store(gVal, std::memory_order_relaxed);
+                    }
                 } else if (cmd == 0x57) { // 'W' Window Visibility Toggle: [ 'W', showCmd (0=Hide, 1=Show, 2=Minimize), 0, 0 ]
                     int action = (int)ch;
                     if (g_hwnd) {
