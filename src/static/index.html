@@ -197,14 +197,15 @@
       border-color: var(--text-main);
     }
 
-    /* Main Workspace: 2-Column Responsive Layout */
+    /* Main Workspace: 2-Column Responsive Layout with Flexible Scrollability */
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 240px;
+      grid-template-columns: 1fr 270px;
       gap: 8px;
       padding: 8px;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       min-height: 0;
       position: relative;
     }
@@ -212,7 +213,6 @@
     @media (max-width: 900px) {
       main {
         grid-template-columns: 1fr;
-        overflow-y: auto;
       }
     }
 
@@ -221,8 +221,8 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      min-height: 0;
-      overflow: hidden;
+      min-height: min-content;
+      overflow: visible;
     }
 
     /* Right Column: Vertical Accordion Flex for Collapsible Sidebar Modules */
@@ -789,7 +789,9 @@
     }
 
     .bpm-input {
-      width: 46px;
+      width: 50px;
+      min-width: 48px;
+      box-sizing: border-box;
       background: var(--bg-sunken);
       border: 1px solid var(--border-dim);
       color: var(--text-main);
@@ -799,7 +801,7 @@
       font-weight: 600;
       text-align: center;
       border-radius: 4px;
-      padding: 3px 4px;
+      padding: 2px 3px;
       outline: none;
       -moz-appearance: textfield;
     }
@@ -1293,6 +1295,26 @@
           </div>
         </div>
       </section>
+
+      <!-- Musician Synchronized Lyrics & Chord Sheet Window -->
+      <section class="dockable-window" id="lyricsWindow" style="min-height: 220px; max-height: 380px; display: flex; flex-direction: column; overflow: hidden; resize: vertical;">
+        <div class="window-titlebar" id="lyricsTitlebar">
+          <div class="panel-title">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <span class="panel-title-text" id="lyricsTitleText">Musician Lead Sheet & Lyrics</span>
+          </div>
+          <div class="window-controls">
+            <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-faint); margin-right: 6px;" id="lyricsStatusText">Auto-synced</span>
+            <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="scrollToActiveLyricLine()">Follow</button>
+          </div>
+        </div>
+
+        <div class="lyrics-body" id="lyricsContainer" style="flex: 1; padding: 12px 16px; overflow-y: auto; scroll-behavior: smooth; display: flex; flex-direction: column; gap: 10px; font-family: var(--font-sans); background: var(--bg-surface);">
+          <div style="color: var(--text-faint); font-size: 11px; text-align: center; margin-top: 24px;" id="lyricsEmptyMsg">
+            Load and analyze a backing track to view time-synchronized chords and lyrics sheet.
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- Right Sidebar: Fluid Accordion Layout for Key Shift, Output Mixer & Others -->
@@ -1390,21 +1412,28 @@
 
         <div class="others-body">
           <!-- Standalone Metronome Strip -->
-          <div class="metro-strip">
-            <div class="metro-controls-group">
-              <div class="metro-status-wrapper">
-                <div id="metroPulse" class="pulse-dot"></div>
+          <div class="metro-strip" style="flex-direction: column; align-items: stretch; gap: 6px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+              <div class="metro-controls-group">
+                <div class="metro-status-wrapper">
+                  <div id="metroPulse" class="pulse-dot"></div>
+                </div>
+                <button id="metroBtn" class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 500;" onclick="toggleMetronome()">Click [Off]</button>
+                <button id="tapTempoBtn" class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 500;" onclick="handleTapTempo()">Tap</button>
               </div>
-              <button id="metroBtn" class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 500;" onclick="toggleMetronome()">Click [Off]</button>
-              <button id="tapTempoBtn" class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 500;" onclick="handleTapTempo()">Tap</button>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: var(--text-faint);">BPM</span>
+                <input type="number" id="bpmInput" class="bpm-input" value="120" min="40" max="280" onchange="updateMixer('metronome_bpm', this.value)">
+              </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <select id="metroSoundSelect" class="custom-select-dark" style="padding: 1px 4px; font-size: 10px; height: 22px;" onchange="handleMetroSoundChange(this.value)" title="Metronome Sound Profile">
+            
+            <div style="display: flex; align-items: center; gap: 4px; width: 100%;">
+              <select id="metroSoundSelect" class="custom-select-dark" style="flex: 1; padding: 2px 4px; font-size: 10px; height: 22px;" onchange="handleMetroSoundChange(this.value)" title="Metronome Sound Profile">
                 <option value="treble">Treble Studio Click</option>
                 <option value="woodblock">Woodblock / Perc</option>
                 <option value="beep">Digital Beep</option>
               </select>
-              <select id="timeSigSelect" class="custom-select-dark" style="padding: 1px 4px; font-size: 10px; height: 22px;" onchange="handleTimeSigChange(this.value)" title="Metronome Time Signature">
+              <select id="timeSigSelect" class="custom-select-dark" style="width: 54px; padding: 2px 4px; font-size: 10px; height: 22px;" onchange="handleTimeSigChange(this.value)" title="Metronome Time Signature">
                 <option value="4">4/4</option>
                 <option value="3">3/4</option>
                 <option value="6">6/8</option>
@@ -1412,8 +1441,6 @@
                 <option value="7">7/8</option>
                 <option value="2">2/4</option>
               </select>
-              <span style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: var(--text-faint);">BPM</span>
-              <input type="number" id="bpmInput" class="bpm-input" value="120" min="40" max="280" onchange="updateMixer('metronome_bpm', this.value)">
             </div>
           </div>
 
@@ -1859,7 +1886,7 @@
       if (nextChord) {
         hud.style.display = "inline-flex";
         const diff = (nextChord.time - currentSeconds).toFixed(1);
-        nameEl.innerText = `${nextChord.chord} ${nextChord.nashville || ''}`;
+        nameEl.innerText = `${nextChord.chord}`;
         cdEl.innerText = `in ${diff}s`;
       } else {
         hud.style.display = "none";
@@ -1871,7 +1898,101 @@
     function closeSettingsModal() { document.getElementById("preferencesModal").style.display = "none"; }
 
     // Ear Training Modal Handlers
-    let currentEarModule = "chord_quality";
+    let activeLyricsSheet = [];
+    let activeLyricIndex = -1;
+
+    function renderLyricsSheet(sheet) {
+      activeLyricsSheet = sheet || [];
+      const container = document.getElementById("lyricsContainer");
+      if (!container) return;
+
+      if (!activeLyricsSheet || activeLyricsSheet.length === 0) {
+        container.innerHTML = `
+          <div style="color: var(--text-faint); font-size: 11px; text-align: center; margin-top: 24px;">
+            No synchronized lyrics found for this track. Chords will continue displaying in real-time.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = "";
+      activeLyricsSheet.forEach((row, idx) => {
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "lyric-line-row";
+        lineDiv.id = `lyricLine_${idx}`;
+        lineDiv.style.padding = "4px 8px";
+        lineDiv.style.borderRadius = "4px";
+        lineDiv.style.cursor = "pointer";
+        lineDiv.style.transition = "all 0.15s ease";
+        lineDiv.onclick = () => seekToSongTime(row.time);
+
+        // Chords header over text
+        const chordsHtml = (row.chords && row.chords.length > 0) 
+          ? `<div style="display: flex; gap: 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 2px;">
+              ${row.chords.map(c => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${c}</span>`).join("")}
+             </div>`
+          : `<div style="height: 14px;"></div>`;
+
+        lineDiv.innerHTML = `
+          ${chordsHtml}
+          <div class="lyric-text" style="font-size: 13px; font-weight: 500; color: var(--text-dim); transition: color 0.15s ease;">
+            ${row.text}
+          </div>
+        `;
+        container.appendChild(lineDiv);
+      });
+    }
+
+    function updateLyricsHighlight(currentSeconds) {
+      if (!activeLyricsSheet || activeLyricsSheet.length === 0) return;
+
+      let currentIndex = -1;
+      for (let i = 0; i < activeLyricsSheet.length; i++) {
+        if (activeLyricsSheet[i].time <= currentSeconds + 0.2) {
+          currentIndex = i;
+        } else {
+          break;
+        }
+      }
+
+      if (currentIndex !== activeLyricIndex) {
+        if (activeLyricIndex >= 0) {
+          const prevEl = document.getElementById(`lyricLine_${activeLyricIndex}`);
+          if (prevEl) {
+            prevEl.style.background = "transparent";
+            const textEl = prevEl.querySelector(".lyric-text");
+            if (textEl) textEl.style.color = "var(--text-dim)";
+          }
+        }
+
+        activeLyricIndex = currentIndex;
+
+        if (activeLyricIndex >= 0) {
+          const curEl = document.getElementById(`lyricLine_${activeLyricIndex}`);
+          if (curEl) {
+            curEl.style.background = "rgba(56, 189, 248, 0.12)";
+            const textEl = curEl.querySelector(".lyric-text");
+            if (textEl) {
+              textEl.style.color = "#ffffff";
+              textEl.style.fontWeight = "700";
+            }
+            // Auto scroll active lyric into view smoothly
+            curEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+      }
+    }
+
+    function scrollToActiveLyricLine() {
+      if (activeLyricIndex >= 0) {
+        const curEl = document.getElementById(`lyricLine_${activeLyricIndex}`);
+        if (curEl) curEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
+    async function seekToSongTime(sec) {
+      await transportAction("seek", { position: sec });
+    }
     let activeEarExercise = null;
     let earLocked = false;
 
@@ -2544,7 +2665,11 @@
         if (song.chord_chart) {
           activeChordChart = song.chord_chart;
         }
+        if (song.lyrics_sheet && song.lyrics_sheet.length > 0 && activeLyricsSheet.length !== song.lyrics_sheet.length) {
+          renderLyricsSheet(song.lyrics_sheet);
+        }
         updateNextChordHUD(curSec);
+        updateLyricsHighlight(curSec);
         
         if (durSec > 0) {
           const ratio = curSec / durSec;
