@@ -202,7 +202,12 @@ class MontageHost:
             return False
 
     def open_vst_editor(self) -> bool:
-        """Launch the exact native Yamaha MONTAGE M GUI window directly"""
+        """Launch the exact native Yamaha MONTAGE M GUI window directly (Single Instance Enforcement)"""
+        # If already running, do not spawn another instance
+        if self.is_engine_running():
+            self.toggle_vst_window("show")
+            return True
+
         if os.path.exists(MONTAGE_ENGINE_EXE):
             try:
                 subprocess.Popen(

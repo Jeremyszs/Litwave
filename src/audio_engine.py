@@ -204,13 +204,16 @@ class AudioEngine:
         local_left_db = 20.0 * np.log10(max(1e-4, peak_l))
         local_right_db = 20.0 * np.log10(max(1e-4, peak_r))
 
-        if self.peak_track_db <= -59.0 and track_peak > 0:
+        # Always update track meter if track is producing sound
+        if track_peak > 0:
             self.peak_track_db = local_track_db
 
-        # Combine local and C++ host peaks so master meter reflects whichever is active (synth, track, or both)
-        synth_lin = 10.0 ** (self.peak_synth_db / 20.0) if self.peak_synth_db > -59.0 else 0.0
-        mix_lin_l = max(peak_l, synth_lin) * self.master_volume
-        mix_lin_r = max(peak_r, synth_lin) * self.master_volume
+        # Combine local (track/metronome) and C++ host peaks (synth)
+        synth_lin = 10.0 ** (self.peak_synth_db / 20.0) if self.peak_synth_db > -55.0 else 0.0
+        # If no synth sound is active, master meter reflects only backing track
+        # If synth is active, master meter reflects the sum
+        mix_lin_l = (peak_l + synth_lin) * self.master_volume
+        mix_lin_r = (peak_r + synth_lin) * self.master_volume
 
         self.peak_left_db = 20.0 * np.log10(max(1e-4, mix_lin_l))
         self.peak_right_db = 20.0 * np.log10(max(1e-4, mix_lin_r))

@@ -777,6 +777,17 @@ void UdpControlServerThread() {
 }
 
 int main() {
+    // Enforce strict Single Instance via Named Mutex
+    HANDLE hSingleMutex = CreateMutexW(NULL, TRUE, L"Local\\YamahaMontageMLiveEngine_SingleInstance");
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        // Another instance is already running; signal it to show and exit this new one immediately
+        HWND existingHwnd = FindWindowW(L"YamahaMontageMLiveHost", NULL);
+        if (existingHwnd) {
+            PostMessage(existingHwnd, WM_HOST_WINDOW_CMD, 1, 0);
+        }
+        return 0;
+    }
+
     OleInitialize(NULL);
 
     std::cout << "==================================================" << std::endl;
@@ -982,5 +993,9 @@ int main() {
     g_comp->setActive(false);
     g_controller->terminate();
     g_comp->terminate();
+
+    if (hSingleMutex) {
+        CloseHandle(hSingleMutex);
+    }
     return 0;
 }
