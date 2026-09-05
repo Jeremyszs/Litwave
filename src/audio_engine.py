@@ -219,7 +219,35 @@ class AudioEngine:
         self.peak_right_db = 20.0 * np.log10(max(1e-4, mix_lin_r))
         self.is_clipping = (mix_lin_l >= 0.99 or mix_lin_r >= 0.99)
 
+    def query_vst_meters(self):
+        """Polls peak levels from C++ host independently of playback"""
+        try:
+            self.udp_sock.sendto(bytes([0x50, 0, 0, 0]), self.udp_target)
+            self.udp_sock.setblocking(False)
+            resp, _ = self.udp_sock.recvfrom(32)
+            if len(resp) >= 16:
+                import struct
+                s_peak, t_peak, ml_peak, mr_peak = struct.unpack("ffff", resp[:16])
+                if s_peak > 0.0001:
+                    self.peak_synth_db = 20.0 * np.log10(s_peak)
+                else:
+                    self.peak_synth_db = -60.0
+
+                if not self.song_player.is_playing:
+                    # When only playing keys (no backing track), master follows synth
+                    mix_lin = s_peak * self.master_volume
+                    if mix_lin > 0.0001:
+                        db = 20.0 * np.log10(mix_lin)
+                        self.peak_left_db = db
+                        self.peak_right_db = db
+                    else:
+                        self.peak_left_db = -60.0
+                        self.peak_right_db = -60.0
+        except Exception:
+            pass
+
     def get_telemetry(self) -> Dict[str, Any]:
+        self.query_vst_meters()
         return {
             "is_running": self.is_running,
             "device_name": self.current_device_name,

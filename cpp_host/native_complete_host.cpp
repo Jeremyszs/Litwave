@@ -638,7 +638,15 @@ void UdpControlServerThread() {
             if (len >= 4) {
                 unsigned char cmd = (unsigned char)buf[0];
 
-                if (cmd == 0x41) { // 'A': Raw Audio Stream chunk: [ 'A', 0, frames_high, frames_low, float_stereo_interleaved_samples... ]
+                if (cmd == 0x50) { // 'P': Periodic Peak Meter Query: [ 'P', 0, 0, 0 ]
+                    float meterVals[4];
+                    meterVals[0] = g_synth_peak_meter.load(std::memory_order_relaxed);
+                    meterVals[1] = g_track_peak_meter.load(std::memory_order_relaxed);
+                    meterVals[2] = g_master_peak_meter_l.load(std::memory_order_relaxed);
+                    meterVals[3] = g_master_peak_meter_r.load(std::memory_order_relaxed);
+                    sendto(sock, (const char*)meterVals, sizeof(meterVals), 0, (sockaddr*)&client_addr, client_len);
+                    continue;
+                } else if (cmd == 0x41) { // 'A': Raw Audio Stream chunk: [ 'A', 0, frames_high, frames_low, float_stereo_interleaved_samples... ]
                     uint16_t num_frames = ((uint16_t)(unsigned char)buf[2] << 8) | (uint16_t)(unsigned char)buf[3];
                     int expected_bytes = 4 + (num_frames * 2 * sizeof(float));
                     if (len >= expected_bytes && num_frames > 0 && num_frames <= 512) {

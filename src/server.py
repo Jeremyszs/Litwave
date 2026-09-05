@@ -42,9 +42,8 @@ class AppState:
             self.midi.open_port(0)
 
     def _on_midi_event(self, event_dict):
-        if self._loop and self.ws_clients:
-            msg = json.dumps({"type": "midi_event", "data": event_dict})
-            asyncio.run_coroutine_threadsafe(self.broadcast(msg), self._loop)
+        # We don't flood the websocket with hundreds of raw note messages since telemetry runs at 25fps
+        pass
 
     async def broadcast(self, message: str):
         dead_clients = []
