@@ -2463,12 +2463,14 @@
     let draggedEqBandIdx = null;
 
     function openEqModal() {
-      document.getElementById("eqModal").style.display = "flex";
+      const modal = document.getElementById("eqModal");
+      if (modal) modal.style.display = "flex";
       setTimeout(initEqCanvas, 50);
     }
 
     function closeEqModal() {
-      document.getElementById("eqModal").style.display = "none";
+      const modal = document.getElementById("eqModal");
+      if (modal) modal.style.display = "none";
     }
 
     async function resetEqFlat() {
@@ -3454,7 +3456,7 @@
       const thumb = document.getElementById(`dtRevThumb_${partNum}`);
       if (fill) fill.style.width = `${pct}%`;
       if (thumb) thumb.style.left = `${pct}%`;
-      await fetch("/api/montage/reverb", {
+      await fetch("/api/montage/volume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ part: partNum, reverb: parseInt(val) })
@@ -4362,8 +4364,6 @@
     let userNashvilleKey = 'C';
     function onNashvilleKeyChange(val) {
       userNashvilleKey = val;
-      const remoteSelect = document.getElementById("remoteNashvilleKeySelect");
-      if (remoteSelect) remoteSelect.value = val;
     }
 
     const CHORD_LIBRARY = [
@@ -4654,8 +4654,6 @@
           userNashvilleKey = rootKey;
           const kSel = document.getElementById("nashvilleKeySelect");
           if (kSel) kSel.value = rootKey;
-          const rSel = document.getElementById("remoteNashvilleKeySelect");
-          if (rSel) rSel.value = rootKey;
         }
       }
     }
