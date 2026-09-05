@@ -2105,21 +2105,21 @@
           const audio = msg.audio;
           const montage = msg.montage;
           if (audio) {
-            if (audio.track_volume !== undefined) {
+            if (activeMixerDrag !== 'track' && audio.track_volume !== undefined) {
               const pct = (audio.track_volume / 1.0) * 100;
               const db = audio.track_volume > 0 ? (20 * Math.log10(audio.track_volume)).toFixed(1) : "-inf";
               document.getElementById("remoteTrackVolText").innerText = `${db} dB`;
               document.getElementById("sliderFill_track").style.width = pct + "%";
               document.getElementById("sliderThumb_track").style.left = pct + "%";
             }
-            if (audio.master_volume !== undefined) {
+            if (activeMixerDrag !== 'master' && audio.master_volume !== undefined) {
               const pct = (audio.master_volume / 1.2) * 100;
               const db = audio.master_volume > 0 ? (20 * Math.log10(audio.master_volume)).toFixed(1) : "-inf";
               document.getElementById("remoteMasterVolText").innerText = `${db} dB`;
               document.getElementById("sliderFill_master").style.width = pct + "%";
               document.getElementById("sliderThumb_master").style.left = pct + "%";
             }
-            if (audio.metronome_volume !== undefined) {
+            if (activeMixerDrag !== 'metro' && audio.metronome_volume !== undefined) {
               const mVol = audio.metronome_volume;
               const pct = (mVol / 2.0) * 100;
               const pctVal = Math.round(mVol * 100);
@@ -2174,12 +2174,14 @@
               renderRemoteScenes();
             }
             if (montage.master_volume !== undefined) {
-              const norm = montage.master_volume / 127.0;
-              const pct = norm * 100;
-              const db = norm > 0 ? (20 * Math.log10(norm)).toFixed(1) : "-inf";
-              document.getElementById("remoteSynthVolText").innerText = `${db} dB`;
-              document.getElementById("sliderFill_synth").style.width = pct + "%";
-              document.getElementById("sliderThumb_synth").style.left = pct + "%";
+              if (activeMixerDrag !== 'synth') {
+                const norm = montage.master_volume / 127.0;
+                const pct = norm * 100;
+                const db = norm > 0 ? (20 * Math.log10(norm)).toFixed(1) : "-inf";
+                document.getElementById("remoteSynthVolText").innerText = `${db} dB`;
+                document.getElementById("sliderFill_synth").style.width = pct + "%";
+                document.getElementById("sliderThumb_synth").style.left = pct + "%";
+              }
             }
             if (montage.part_volumes) {
               for (let p = 1; p <= 8; p++) {
@@ -2239,12 +2241,13 @@
     }
 
     // Mix Fader Bindings (Track, Synth, Master, Metronome)
+    let activeMixerDrag = null;
+
     function setupMixerFaders() {
       ['track', 'synth', 'master', 'metro'].forEach(type => {
         const wrap = document.getElementById(`sliderWrap_${type}`);
         if (!wrap) return;
 
-        let isDragging = false;
         function update(clientX) {
           const rect = wrap.getBoundingClientRect();
           let ratio = (clientX - rect.left) / rect.width;
@@ -2296,15 +2299,15 @@
           }
         }
 
-        wrap.addEventListener("touchstart", (e) => { isDragging = true; update(e.touches[0].clientX); }, { passive: true });
-        wrap.addEventListener("touchmove", (e) => { if (isDragging) update(e.touches[0].clientX); }, { passive: true });
-        window.addEventListener("touchend", () => { isDragging = false; });
+        wrap.addEventListener("touchstart", (e) => { activeMixerDrag = type; update(e.touches[0].clientX); }, { passive: true });
+        wrap.addEventListener("touchmove", (e) => { if (activeMixerDrag === type) update(e.touches[0].clientX); }, { passive: true });
+        window.addEventListener("touchend", () => { activeMixerDrag = null; });
 
         wrap.addEventListener("mousedown", (e) => {
-          isDragging = true;
+          activeMixerDrag = type;
           update(e.clientX);
-          const onMv = (m) => { if (isDragging) update(m.clientX); };
-          const onUp = () => { isDragging = false; window.removeEventListener("mousemove", onMv); window.removeEventListener("mouseup", onUp); };
+          const onMv = (m) => { if (activeMixerDrag === type) update(m.clientX); };
+          const onUp = () => { activeMixerDrag = null; window.removeEventListener("mousemove", onMv); window.removeEventListener("mouseup", onUp); };
           window.addEventListener("mousemove", onMv);
           window.addEventListener("mouseup", onUp);
         });

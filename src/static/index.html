@@ -3971,6 +3971,15 @@
           document.getElementById("masterVolText").innerText = `${db} dB`;
           renderCustomFaders();
         }
+        if (montage && montage.master_volume !== undefined) {
+          const normSynth = montage.master_volume / 127.0;
+          if (Math.abs(normSynth - valSynth) > 0.02) {
+            valSynth = normSynth;
+            const db = valSynth > 0 ? (20 * Math.log10(valSynth)).toFixed(1) : "-inf";
+            document.getElementById("synthVolText").innerText = `${db} dB`;
+            renderCustomFaders();
+          }
+        }
         if (audio.metronome_volume !== undefined) {
           const mRange = document.getElementById("metroVolRange");
           if (mRange && Math.abs(parseFloat(mRange.value) - audio.metronome_volume) > 0.04) {
