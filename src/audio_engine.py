@@ -17,6 +17,7 @@ import threading
 from typing import Dict, Any, List, Optional
 from src.song_player import SongPlayer
 from src.metronome import Metronome
+from src.equalizer import ParametricEqualizer
 
 class AudioEngine:
     def __init__(self, samplerate: int = 48000, blocksize: int = 256):
@@ -31,6 +32,7 @@ class AudioEngine:
         # Audio sources
         self.song_player = SongPlayer(target_samplerate=samplerate)
         self.metronome = Metronome(samplerate=samplerate)
+        self.equalizer = ParametricEqualizer(samplerate=samplerate)
         
         # Mixer parameters
         self.master_volume: float = 1.0
@@ -147,6 +149,9 @@ class AudioEngine:
         # Master mix
         mix = (track_buf + metro_buf) * self.master_volume
         
+        # 3. Master Parametric Equalizer Filter Cascade
+        mix = self.equalizer.process_block(mix)
+        
         # Soft limiter / saturator to prevent harsh digital clipping: tanh saturation
         np.tanh(mix, out=mix)
         
@@ -193,5 +198,6 @@ class AudioEngine:
             "metronome_bpm": self.metronome.bpm,
             "metronome_enabled": self.metronome.enabled,
             "metronome_time_sig": self.metronome.time_sig_num,
-            "metronome_profile": self.metronome.sound_profile
+            "metronome_profile": self.metronome.sound_profile,
+            "equalizer": self.equalizer.get_state()
         }

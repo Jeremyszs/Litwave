@@ -1091,6 +1091,10 @@
     </div>
 
     <div class="header-actions">
+      <button class="btn-header-action" onclick="openEqModal()" title="Master 4-Band Spline Equalizer">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        <span>Master EQ</span>
+      </button>
       <button class="btn-header-action" onclick="openEarModal()" title="Ear Training & Chord Progression Practice">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
         <span>Ear Training</span>
@@ -1582,6 +1586,39 @@
     </div>
   </main>
 
+  <!-- Master 4-Band Spline Equalizer Modal -->
+  <div class="modal-backdrop" id="eqModal">
+    <div class="modal-window" style="width: 580px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="modal-title">Master Parametric EQ</div>
+          <span style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">4-Band Precision Curve</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="resetEqFlat()">Flat</button>
+          <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEqModal()" title="Close">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Interactive Spline Canvas with Grid Lines -->
+        <div style="position: relative; width: 100%; height: 200px; background: #08090c; border: 1px solid var(--border-dim); border-radius: 6px; overflow: hidden; cursor: crosshair;" id="eqCanvasWrap">
+          <canvas id="eqCanvas" width="530" height="200" style="display: block;"></canvas>
+        </div>
+
+        <!-- Dynamic Band Inspector Readout -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="eqBandInspectors">
+          <!-- 4 Band parameter readout tiles rendered dynamically -->
+        </div>
+
+        <div style="font-size: 10px; color: var(--text-faint); text-align: center; font-family: var(--font-mono);">
+          Drag dots horizontally for Freq (Hz), vertically for Gain (dB). Mousewheel scales Bandwidth (Q).
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Ear Training Studio Modal -->
   <div class="modal-backdrop" id="earModal">
     <div class="modal-window" style="width: 480px; max-height: 85vh; display: flex; flex-direction: column;">
@@ -2002,6 +2039,277 @@
     // Modal Handlers
     function openSettingsModal() { document.getElementById("preferencesModal").style.display = "flex"; }
     function closeSettingsModal() { document.getElementById("preferencesModal").style.display = "none"; }
+
+    // Master 4-Band Spline Equalizer Interactive Logic
+    let eqBands = [
+      { id: 1, type: "lowshelf", freq: 100.0, gain: 0.0, q: 0.707 },
+      { id: 2, type: "peaking", freq: 500.0, gain: 0.0, q: 1.0 },
+      { id: 3, type: "peaking", freq: 2500.0, gain: 0.0, q: 1.0 },
+      { id: 4, type: "highshelf", freq: 8000.0, gain: 0.0, q: 0.707 },
+    ];
+    let draggedEqBandIdx = null;
+
+    function openEqModal() {
+      document.getElementById("eqModal").style.display = "flex";
+      setTimeout(initEqCanvas, 50);
+    }
+
+    function closeEqModal() {
+      document.getElementById("eqModal").style.display = "none";
+    }
+
+    async function resetEqFlat() {
+      eqBands.forEach(b => b.gain = 0.0);
+      drawEqSpline();
+      renderEqInspectors();
+      await fetch("/api/mixer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ equalizer_reset: true })
+      });
+    }
+
+    function freqToX(freq, w) {
+      const minLog = Math.log10(20.0);
+      const maxLog = Math.log10(20000.0);
+      const fLog = Math.log10(Math.max(20.0, Math.min(20000.0, freq)));
+      return ((fLog - minLog) / (maxLog - minLog)) * w;
+    }
+
+    function xToFreq(x, w) {
+      const minLog = Math.log10(20.0);
+      const maxLog = Math.log10(20000.0);
+      const ratio = Math.max(0, Math.min(1, x / w));
+      return Math.pow(10, minLog + ratio * (maxLog - minLog));
+    }
+
+    function gainToY(gain, h) {
+      const maxDb = 18.0;
+      const norm = gain / maxDb; // -1 to +1
+      return (h / 2) - (norm * (h / 2) * 0.85);
+    }
+
+    function yToGain(y, h) {
+      const maxDb = 18.0;
+      const norm = ((h / 2) - y) / ((h / 2) * 0.85);
+      return Math.max(-18.0, Math.min(18.0, norm * maxDb));
+    }
+
+    function computeEqResponseAtFreq(f) {
+      let totalGainDb = 0.0;
+      for (const b of eqBands) {
+        if (Math.abs(b.gain) < 0.05) continue;
+        const ratio = f / b.freq;
+        const logRatio = Math.abs(Math.log2(ratio));
+        // Approximate bell/shelf transfer curve
+        const bandwidth = 1.0 / b.q;
+        if (b.type === "peaking") {
+          const bell = Math.exp(-Math.pow(logRatio / (bandwidth * 0.7), 2));
+          totalGainDb += b.gain * bell;
+        } else if (b.type === "lowshelf") {
+          if (f <= b.freq) totalGainDb += b.gain;
+          else {
+            const decay = Math.exp(-Math.pow(logRatio / 0.5, 2));
+            totalGainDb += b.gain * decay;
+          }
+        } else if (b.type === "highshelf") {
+          if (f >= b.freq) totalGainDb += b.gain;
+          else {
+            const decay = Math.exp(-Math.pow(logRatio / 0.5, 2));
+            totalGainDb += b.gain * decay;
+          }
+        }
+      }
+      return totalGainDb;
+    }
+
+    function drawEqSpline() {
+      const canvas = document.getElementById("eqCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Clear & Background Grid
+      ctx.fillStyle = "#090a0c";
+      ctx.fillRect(0, 0, w, h);
+
+      // Grid frequency lines (100Hz, 1kHz, 10kHz)
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+      [100, 1000, 10000].forEach(f => {
+        const gx = freqToX(f, w);
+        ctx.beginPath();
+        ctx.moveTo(gx, 0);
+        ctx.lineTo(gx, h);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.font = "9px var(--font-mono)";
+        ctx.fillText(f >= 1000 ? `${f/1000}k` : `${f}`, gx + 4, 12);
+      });
+
+      // Horizontal 0 dB line & +/-12dB
+      const y0 = gainToY(0, h);
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.2)";
+      ctx.beginPath();
+      ctx.moveTo(0, y0);
+      ctx.lineTo(w, y0);
+      ctx.stroke();
+
+      // Plot Combined Transfer Curve
+      ctx.beginPath();
+      for (let px = 0; px <= w; px += 2) {
+        const freq = xToFreq(px, w);
+        const gainDb = computeEqResponseAtFreq(freq);
+        const py = gainToY(gainDb, h);
+        if (px === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = "var(--accent)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Shaded area under curve
+      ctx.lineTo(w, y0);
+      ctx.lineTo(0, y0);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, "rgba(56, 189, 248, 0.25)");
+      grad.addColorStop(1, "rgba(56, 189, 248, 0.02)");
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Render Draggable Control Nodes
+      eqBands.forEach((b, i) => {
+        const bx = freqToX(b.freq, w);
+        const by = gainToY(b.gain, h);
+
+        ctx.beginPath();
+        ctx.arc(bx, by, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = draggedEqBandIdx === i ? "#ffffff" : "var(--accent)";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#090a0c";
+        ctx.stroke();
+
+        // Node Label
+        ctx.fillStyle = "var(--text-main)";
+        ctx.font = "bold 9px var(--font-mono)";
+        ctx.fillText(`B${b.id}`, bx - 5, by - 9);
+      });
+    }
+
+    function renderEqInspectors() {
+      const container = document.getElementById("eqBandInspectors");
+      if (!container) return;
+      container.innerHTML = eqBands.map((b, i) => `
+        <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); padding: 6px; border-radius: 4px; text-align: center;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--accent); font-family: var(--font-mono);">BAND ${b.id} (${b.type.toUpperCase().slice(0, 4)})</div>
+          <div style="font-size: 11px; font-weight: 700; color: #ffffff; font-family: var(--font-mono); margin: 2px 0;">${b.gain >= 0 ? '+' : ''}${b.gain.toFixed(1)} dB</div>
+          <div style="font-size: 9px; color: var(--text-faint); font-family: var(--font-mono);">${Math.round(b.freq)} Hz · Q ${b.q.toFixed(2)}</div>
+        </div>
+      `).join("");
+    }
+
+    function initEqCanvas() {
+      const canvas = document.getElementById("eqCanvas");
+      if (!canvas) return;
+      
+      const onDown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Find closest band node within 25px
+        let closestIdx = null;
+        let minD = 25;
+        eqBands.forEach((b, i) => {
+          const bx = freqToX(b.freq, w);
+          const by = gainToY(b.gain, h);
+          const d = Math.hypot(bx - mx, by - my);
+          if (d < minD) {
+            minD = d;
+            closestIdx = i;
+          }
+        });
+
+        if (closestIdx !== null) {
+          draggedEqBandIdx = closestIdx;
+          drawEqSpline();
+        }
+      };
+
+      const onMove = (e) => {
+        if (draggedEqBandIdx === null) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        const newFreq = Math.round(xToFreq(mx, w));
+        const newGain = parseFloat(yToGain(my, h).toFixed(1));
+
+        eqBands[draggedEqBandIdx].freq = newFreq;
+        eqBands[draggedEqBandIdx].gain = newGain;
+
+        drawEqSpline();
+        renderEqInspectors();
+      };
+
+      const onUp = async () => {
+        if (draggedEqBandIdx !== null) {
+          const b = eqBands[draggedEqBandIdx];
+          draggedEqBandIdx = null;
+          drawEqSpline();
+          await fetch("/api/mixer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ equalizer_band: { index: b.id - 1, freq: b.freq, gain: b.gain, q: b.q } })
+          });
+        }
+      };
+
+      const onWheel = async (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Find target band under cursor
+        let targetIdx = null;
+        eqBands.forEach((b, i) => {
+          const bx = freqToX(b.freq, w);
+          const by = gainToY(b.gain, h);
+          if (Math.hypot(bx - mx, by - my) < 30) targetIdx = i;
+        });
+
+        if (targetIdx !== null) {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 0.15 : -0.15;
+          const b = eqBands[targetIdx];
+          b.q = Math.max(0.2, Math.min(8.0, b.q + delta));
+          drawEqSpline();
+          renderEqInspectors();
+          await fetch("/api/mixer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ equalizer_band: { index: b.id - 1, q: b.q } })
+          });
+        }
+      };
+
+      canvas.onmousedown = onDown;
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      canvas.onwheel = onWheel;
+
+      drawEqSpline();
+      renderEqInspectors();
+    }
 
     // Ear Training Modal Handlers
     let activeLyricsSheet = [];

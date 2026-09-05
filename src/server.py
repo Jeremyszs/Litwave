@@ -177,6 +177,18 @@ async def api_mixer(request):
             cur_sec = sp.current_frame / float(state.audio.samplerate)
             state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
         
+    if "equalizer_band" in body:
+        b_info = body["equalizer_band"]
+        idx = int(b_info.get("index", 0))
+        freq = float(b_info["freq"]) if "freq" in b_info else None
+        gain = float(b_info["gain"]) if "gain" in b_info else None
+        q = float(b_info["q"]) if "q" in b_info else None
+        state.audio.equalizer.update_band(idx, freq=freq, gain=gain, q=q)
+    if "equalizer_enabled" in body:
+        state.audio.equalizer.enabled = bool(body["equalizer_enabled"])
+    if "equalizer_reset" in body:
+        state.audio.equalizer.reset_flat()
+        
     telem = state.audio.get_telemetry()
     telem["success"] = True
     return JSONResponse(telem)
