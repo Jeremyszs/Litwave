@@ -1326,7 +1326,7 @@
               <span class="panel-title-text" id="lyricsTitleText">Song Lyrics</span>
             </div>
             <div class="window-controls">
-              <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-faint);" id="lyricsStatusText">Static Sheet</span>
+              <button class="btn" id="toggleLyricsFollowBtn" style="padding: 2px 6px; font-size: 10px;" onclick="toggleLyricsFollow()">Follow: Off</button>
             </div>
           </div>
 
@@ -2061,14 +2061,28 @@
       }
     }
 
+    let lyricsFollowEnabled = false;
+
+    function toggleLyricsFollow() {
+      lyricsFollowEnabled = !lyricsFollowEnabled;
+      const btn = document.getElementById("toggleLyricsFollowBtn");
+      if (btn) {
+        btn.innerText = lyricsFollowEnabled ? "Follow: On" : "Follow: Off";
+        btn.classList.toggle("btn-active", lyricsFollowEnabled);
+      }
+      if (lyricsFollowEnabled && activeLyricIndex >= 0) {
+        scrollToActiveLyricLine();
+      }
+    }
+
     function updateLyricsHighlight(currentSeconds) {
       if (!activeLyricsSheet || activeLyricsSheet.length === 0) return;
 
       let currentIndex = -1;
-      // Delay transition so highlight follows sung vocal rather than rushing ahead (+0.8s vocal onset delay)
+      // Precision matching against official synchronized timestamps
       for (let i = 0; i < activeLyricsSheet.length; i++) {
         const nextTime = (i + 1 < activeLyricsSheet.length) ? activeLyricsSheet[i + 1].time : 999999.0;
-        if (currentSeconds >= (activeLyricsSheet[i].time + 0.8) && currentSeconds < (nextTime + 0.8)) {
+        if (currentSeconds >= activeLyricsSheet[i].time && currentSeconds < nextTime) {
           currentIndex = i;
           break;
         }
@@ -2100,11 +2114,13 @@
               textEl.style.color = "#ffffff";
               textEl.style.fontWeight = "700";
             }
-            // Auto scroll container smoothly to keep musician focused
-            const container = document.getElementById("lyricsContainer");
-            if (container) {
-              const topPos = curEl.offsetTop - container.offsetTop - 50;
-              container.scrollTo({ top: Math.max(0, topPos), behavior: "smooth" });
+            // Auto scroll container smoothly ONLY if user enabled Follow mode
+            if (lyricsFollowEnabled) {
+              const container = document.getElementById("lyricsContainer");
+              if (container) {
+                const topPos = curEl.offsetTop - container.offsetTop - 60;
+                container.scrollTo({ top: Math.max(0, topPos), behavior: "smooth" });
+              }
             }
           }
         }
