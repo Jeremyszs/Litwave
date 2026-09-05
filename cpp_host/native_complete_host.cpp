@@ -289,6 +289,7 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
 
 static float g_synth_out_l[1024];
 static float g_synth_out_r[1024];
+static std::atomic<float> g_synth_peak_meter{0.0f};
 
 // Lock-free Ring Buffer for Incoming Backing Track PCM Stream (from Python)
 static const int TRACK_RING_SIZE = 131072; // ~1.5s at 44.1kHz stereo
@@ -449,6 +450,16 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
 
     g_processor->process(data);
 
+    // Compute real peak for VST Synth channel
+    float synth_max = 0.0f;
+    for (ma_uint32 i = 0; i < frameCount; i++) {
+        float al = fabsf(g_synth_out_l[i]);
+        float ar = fabsf(g_synth_out_r[i]);
+        if (al > synth_max) synth_max = al;
+        if (ar > synth_max) synth_max = ar;
+    }
+    g_synth_peak_meter.store(synth_max, std::memory_order_relaxed);
+
     // Mix VST output with incoming backing track PCM frames
     int r = g_track_read_idx.load(std::memory_order_relaxed);
     int w = g_track_write_idx.load(std::memory_order_acquire);
@@ -574,6 +585,9 @@ void UdpControlServerThread() {
                         }
                         enqueue_track_audio(temp_l, temp_r, num_frames);
                     }
+                    // Echo back real Synth peak to Python so VU meter represents authentic VST audio
+                    float curPeak = g_synth_peak_meter.load(std::memory_order_relaxed);
+                    sendto(sock, (const char*)&curPeak, sizeof(float), 0, (sockaddr*)&client_addr, client_len);
                     continue;
                 }
 

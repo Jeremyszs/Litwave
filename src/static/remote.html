@@ -29,25 +29,6 @@
       --font-mono: 'Geist Mono', monospace;
     }
 
-    [data-theme="light"] {
-      --bg-base: #f8fafc;
-      --bg-surface: #ffffff;
-      --bg-panel: #f1f5f9;
-      --bg-elevated: #e2e8f0;
-      --bg-sunken: #e2e8f0;
-      --border-dim: #e2e8f0;
-      --border-subtle: #cbd5e1;
-      --border-strong: #94a3b8;
-      --text-main: #0f172a;
-      --text-dim: #475569;
-      --text-faint: #94a3b8;
-      --accent: #0f172a;
-      --accent-soft: rgba(15, 23, 42, 0.06);
-      --accent-muted: rgba(15, 23, 42, 0.08);
-      --success: #16a34a;
-      --danger: #dc2626;
-    }
-
     * {
       box-sizing: border-box;
       margin: 0;
@@ -410,14 +391,9 @@
       <span class="brand-title">Litwave Remote</span>
       <span style="font-size: 11px; color: var(--text-faint); font-weight: 500;">Practice Station</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <button class="btn" onclick="toggleRemoteStudioTheme()" style="padding: 3px 6px; font-size: 10px;" title="Toggle Light / Dark Mode">
-        Theme
-      </button>
-      <div class="status-badge">
-        <span id="connDot" class="status-dot"></span>
-        <span id="connText">Connecting</span>
-      </div>
+    <div class="status-badge">
+      <span id="connDot" class="status-dot"></span>
+      <span id="connText">Connecting</span>
     </div>
   </header>
 
@@ -1196,21 +1172,6 @@
       const sign = currentPitch > 0 ? "+" : "";
       document.getElementById("remotePitchVal").innerText = `${sign}${currentPitch} st`;
       sendTransport("pitch_shift", { semitones: val });
-    }
-
-    // Theme Toggle for Phone Remote
-    let rTheme = localStorage.getItem("litwave_remote_theme") || "dark";
-    if (rTheme === "light") {
-      document.documentElement.setAttribute("data-theme", "light");
-    }
-    function toggleRemoteStudioTheme() {
-      rTheme = rTheme === "dark" ? "light" : "dark";
-      if (rTheme === "light") {
-        document.documentElement.setAttribute("data-theme", "light");
-      } else {
-        document.documentElement.removeAttribute("data-theme");
-      }
-      localStorage.setItem("litwave_remote_theme", rTheme);
     }
 
     // Remote Lyrics Font Size Stepper

@@ -44,6 +44,7 @@ class AudioEngine:
         self.peak_left_db: float = -60.0
         self.peak_right_db: float = -60.0
         self.peak_track_db: float = -60.0
+        self.peak_synth_db: float = -60.0
         self.is_clipping: bool = False
         
         self.lock = threading.Lock()
@@ -163,6 +164,16 @@ class AudioEngine:
             header = bytes([0x41, 0, (n_frames >> 8) & 0xFF, n_frames & 0xFF])
             payload = header + interleaved[:n_frames].tobytes()
             self.udp_sock.sendto(payload, self.udp_target)
+            # Try to read peak from C++ host non-blockingly
+            self.udp_sock.setblocking(False)
+            try:
+                resp, _ = self.udp_sock.recvfrom(16)
+                if len(resp) >= 4:
+                    import struct
+                    s_peak = struct.unpack("f", resp[:4])[0]
+                    self.peak_synth_db = 20.0 * np.log10(max(1e-4, s_peak))
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -194,6 +205,7 @@ class AudioEngine:
             "vu_master_l": round(self.peak_left_db, 1),
             "vu_master_r": round(self.peak_right_db, 1),
             "vu_track": round(self.peak_track_db, 1),
+            "vu_synth": round(self.peak_synth_db, 1),
             "is_clipping": self.is_clipping,
             "metronome_bpm": self.metronome.bpm,
             "metronome_enabled": self.metronome.enabled,
