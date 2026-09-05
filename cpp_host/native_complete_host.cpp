@@ -307,6 +307,77 @@ void enqueue_track_audio(const float* l_samples, const float* r_samples, int num
     g_track_write_idx.store(w, std::memory_order_release);
 }
 
+// --- Real-time 4-Band Master Parametric Equalizer (Biquad Filter Cascade) ---
+struct BiquadFilter {
+    float b0, b1, b2, a1, a2;
+    float z1_l, z2_l;
+    float z1_r, z2_r;
+
+    BiquadFilter() : b0(1.0f), b1(0.0f), b2(0.0f), a1(0.0f), a2(0.0f),
+                     z1_l(0.0f), z2_l(0.0f), z1_r(0.0f), z2_r(0.0f) {}
+
+    void setCoeffs(float _b0, float _b1, float _b2, float _a1, float _a2) {
+        b0 = _b0; b1 = _b1; b2 = _b2; a1 = _a1; a2 = _a2;
+    }
+
+    inline void process(float in_l, float in_r, float& out_l, float& out_r) {
+        // Direct Form II Transposed
+        out_l = in_l * b0 + z1_l;
+        z1_l = in_l * b1 - out_l * a1 + z2_l;
+        z2_l = in_l * b2 - out_l * a2;
+
+        out_r = in_r * b0 + z1_r;
+        z1_r = in_r * b1 - out_r * a1 + z2_r;
+        z2_r = in_r * b2 - out_r * a2;
+    }
+};
+
+static BiquadFilter g_eq_bands[4];
+static std::atomic<bool> g_eq_enabled{true};
+
+void update_eq_band(int band_idx, int type, float f0, float gain_db, float Q, float Fs = 44100.0f) {
+    if (band_idx < 0 || band_idx >= 4) return;
+    if (fabs(gain_db) < 0.05f) {
+        g_eq_bands[band_idx].setCoeffs(1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+        return;
+    }
+
+    float A = powf(10.0f, gain_db / 40.0f);
+    float w0 = 2.0f * 3.14159265f * f0 / Fs;
+    float cos_w0 = cosf(w0);
+    float sin_w0 = sinf(w0);
+    float alpha = sin_w0 / (2.0f * Q);
+
+    float b0, b1, b2, a0, a1, a2;
+
+    if (type == 0) { // Low Shelf
+        float two_sqrtA_alpha = 2.0f * sqrtf(A) * alpha;
+        b0 = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 + two_sqrtA_alpha);
+        b1 = 2.0f * A * ((A - 1.0f) - (A + 1.0f) * cos_w0);
+        b2 = A * ((A + 1.0f) - (A - 1.0f) * cos_w0 - two_sqrtA_alpha);
+        a0 = (A + 1.0f) + (A - 1.0f) * cos_w0 + two_sqrtA_alpha;
+        a1 = -2.0f * ((A - 1.0f) + (A + 1.0f) * cos_w0);
+        a2 = (A + 1.0f) + (A - 1.0f) * cos_w0 - two_sqrtA_alpha;
+    } else if (type == 1) { // Peaking Bell
+        b0 = 1.0f + alpha * A;
+        b1 = -2.0f * cos_w0;
+        b2 = 1.0f - alpha * A;
+        a0 = 1.0f + alpha / A;
+        a1 = -2.0f * cos_w0;
+        a2 = 1.0f - alpha / A;
+    } else { // High Shelf
+        float two_sqrtA_alpha = 2.0f * sqrtf(A) * alpha;
+        b0 = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 + two_sqrtA_alpha);
+        b1 = -2.0f * A * ((A - 1.0f) + (A + 1.0f) * cos_w0);
+        b2 = A * ((A + 1.0f) + (A - 1.0f) * cos_w0 - two_sqrtA_alpha);
+        a0 = (A + 1.0f) - (A - 1.0f) * cos_w0 + two_sqrtA_alpha;
+        a1 = 2.0f * ((A - 1.0f) - (A + 1.0f) * cos_w0);
+        a2 = (A + 1.0f) - (A - 1.0f) * cos_w0 - two_sqrtA_alpha;
+    }
+
+    g_eq_bands[band_idx].setCoeffs(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
+}
+
 void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
     float* pOut = (float*)pOutput;
     memset(pOut, 0, frameCount * 2 * sizeof(float));
@@ -394,8 +465,18 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
         }
 
         // Sum VST synth and backing track into unified stereo output
-        pOut[i * 2 + 0] = g_synth_out_l[i] + track_l;
-        pOut[i * 2 + 1] = g_synth_out_r[i] + track_r;
+        float sum_l = g_synth_out_l[i] + track_l;
+        float sum_r = g_synth_out_r[i] + track_r;
+
+        // Apply Master 4-Band Parametric Equalizer across entire master mix (VST + Backing track)
+        if (g_eq_enabled.load(std::memory_order_relaxed)) {
+            for (int b = 0; b < 4; b++) {
+                g_eq_bands[b].process(sum_l, sum_r, sum_l, sum_r);
+            }
+        }
+
+        pOut[i * 2 + 0] = sum_l;
+        pOut[i * 2 + 1] = sum_r;
     }
     g_track_read_idx.store(r, std::memory_order_release);
 }
@@ -542,6 +623,15 @@ void UdpControlServerThread() {
                             g_controller->setParamNormalized(pid, normVal);
                         }
                         enqueue_param_change(pid, normVal);
+                    }
+                } else if (cmd == 0x45) { // 'E' Master Parametric Equalizer Band Update: [ 'E', bandIdx (0-3), type, pad, freq (float), gain (float), q (float) ]
+                    if (len >= 16) {
+                        int bandIdx = (int)ch;
+                        int eqType = (int)d1;
+                        float freq = *(float*)(buf + 4);
+                        float gain = *(float*)(buf + 8);
+                        float qVal = *(float*)(buf + 12);
+                        update_eq_band(bandIdx, eqType, freq, gain, qVal);
                     }
                 } else if (cmd == 0x4D) { // 'M' Master / Common Performance VST Volume Command: [ 'M', 0, value (0-127) ]
                     int val = (int)d1;

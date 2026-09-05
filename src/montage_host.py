@@ -226,6 +226,23 @@ class MontageHost:
             print(f"Failed to set master VST volume: {e}")
             return False
 
+    def update_vst_equalizer(self, band_idx: int, eq_type: int, freq: float, gain: float, q: float) -> bool:
+        """
+        Sends real-time parametric EQ updates to montage_live_engine C++ host over UDP (Port 9123).
+        Command 'E' (0x45): [ 'E', bandIdx (0-3), type (0-2), 0, freq (float32), gain (float32), q (float32) ]
+        """
+        import socket
+        import struct
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            payload = struct.pack("<BBBBfff", 0x45, band_idx & 0xFF, eq_type & 0xFF, 0, float(freq), float(gain), float(q))
+            sock.sendto(payload, ("127.0.0.1", 9123))
+            sock.close()
+            return True
+        except Exception as e:
+            print(f"Failed to send EQ update to native host: {e}")
+            return False
+
     def select_scene(self, scene_number: int) -> bool:
         """
         Switches active Scene (1-8) in Yamaha MONTAGE M via MIDI CC#92.

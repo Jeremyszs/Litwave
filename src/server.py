@@ -184,10 +184,18 @@ async def api_mixer(request):
         gain = float(b_info["gain"]) if "gain" in b_info else None
         q = float(b_info["q"]) if "q" in b_info else None
         state.audio.equalizer.update_band(idx, freq=freq, gain=gain, q=q)
+        # Simultaneously update native montage_live_engine C++ VST host
+        b_obj = state.audio.equalizer.bands[idx]
+        t_code = 0 if b_obj["type"] == "lowshelf" else (1 if b_obj["type"] == "peaking" else 2)
+        state.montage.update_vst_equalizer(idx, t_code, b_obj["freq"], b_obj["gain"], b_obj["q"])
     if "equalizer_enabled" in body:
         state.audio.equalizer.enabled = bool(body["equalizer_enabled"])
     if "equalizer_reset" in body:
         state.audio.equalizer.reset_flat()
+        for idx in range(4):
+            b_obj = state.audio.equalizer.bands[idx]
+            t_code = 0 if b_obj["type"] == "lowshelf" else (1 if b_obj["type"] == "peaking" else 2)
+            state.montage.update_vst_equalizer(idx, t_code, b_obj["freq"], 0.0, b_obj["q"])
         
     telem = state.audio.get_telemetry()
     telem["success"] = True
