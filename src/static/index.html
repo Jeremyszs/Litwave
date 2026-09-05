@@ -1343,45 +1343,79 @@
           </div>
         </section>
 
-        <!-- Dedicated Live Song Chord Tracker: Current Chord & Next Chord -->
+        <!-- Dedicated Live Song Chord Tracker: Side-by-Side Current & Next, Voicing Guide & 4-Bar Grid -->
         <section class="dockable-window" id="songChordWindow" style="display: flex; flex-direction: column; overflow: hidden; height: 100%;">
           <div class="window-titlebar">
             <div class="panel-title">
               <span class="status-dot active" style="flex-shrink: 0;"></span>
               <span class="panel-title-text">Song Progression</span>
             </div>
-            <span style="font-size: 9px; font-family: var(--font-mono); color: var(--accent); font-weight: 700;" id="progBpmKeyText">--</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 9px; font-family: var(--font-mono); color: var(--accent); font-weight: 700;" id="progBpmKeyText">--</span>
+            </div>
           </div>
 
-          <div style="flex: 1; padding: 12px; background: var(--bg-surface); display: flex; flex-direction: column; justify-content: space-between; gap: 10px;">
-            <!-- Current Active Chord in Song -->
-            <div style="display: flex; flex-direction: column; gap: 4px; background: var(--bg-sunken); padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle); box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);">
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono); letter-spacing: 0.5px;">CURRENT CHORD</span>
-                <span id="currentChordTimecode" style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim);">00:00.0</span>
+          <div style="flex: 1; padding: 10px 12px; background: var(--bg-surface); display: flex; flex-direction: column; justify-content: space-between; gap: 8px; overflow-y: auto;">
+            <!-- Side-by-Side: Current Chord (Left) & Next Chord (Right) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <!-- Current Active Chord & Piano Voicing Notes -->
+              <div style="display: flex; flex-direction: column; gap: 4px; background: var(--bg-sunken); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-subtle); box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono); letter-spacing: 0.5px;">CURRENT CHORD</span>
+                  <span id="currentChordTimecode" style="font-size: 9px; font-family: var(--font-mono); color: var(--text-dim);">00:00.0</span>
+                </div>
+                <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 1px;">
+                  <div id="liveSongCurrentChord" style="font-size: 26px; font-weight: 800; color: #ffffff; font-family: var(--font-mono); letter-spacing: -0.5px; line-height: 1;">--</div>
+                  <div id="liveSongCurrentNash" style="font-size: 13px; font-weight: 700; color: var(--accent); font-family: var(--font-mono);"></div>
+                </div>
+                <!-- Voicing Spelled-out Notes -->
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05);">
+                  <span style="font-size: 8px; font-weight: 700; color: var(--text-faint); font-family: var(--font-mono);">NOTES:</span>
+                  <div id="currentVoicingNotes" style="display: flex; gap: 3px; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--accent);">--</div>
+                </div>
               </div>
-              <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 2px;">
-                <div id="liveSongCurrentChord" style="font-size: 32px; font-weight: 800; color: #ffffff; font-family: var(--font-mono); letter-spacing: -0.5px; line-height: 1;">--</div>
-                <div id="liveSongCurrentNash" style="font-size: 15px; font-weight: 700; color: var(--accent); font-family: var(--font-mono);"></div>
+
+              <!-- Next Upcoming Chord Attention & Voice Leading Cue -->
+              <div style="display: flex; flex-direction: column; gap: 4px; background: rgba(56, 189, 248, 0.08); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.35);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--accent); font-family: var(--font-mono); letter-spacing: 0.5px;">NEXT CHORD</span>
+                  <span id="liveSongNextCountdown" style="font-size: 10px; font-family: var(--font-mono); font-weight: 700; color: var(--accent-secondary);">--</span>
+                </div>
+                <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 1px;">
+                  <div id="liveSongNextChord" style="font-size: 24px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); line-height: 1;">--</div>
+                </div>
+                <!-- Voice Leading Tip -->
+                <div style="display: flex; align-items: center; gap: 4px; margin-top: 2px; padding-top: 4px; border-top: 1px solid rgba(56, 189, 248, 0.15);">
+                  <span style="font-size: 8px; font-weight: 700; color: var(--accent-secondary); font-family: var(--font-mono);">LEAD:</span>
+                  <span id="voiceLeadingTip" style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Smooth transition</span>
+                </div>
               </div>
             </div>
 
-            <!-- Next Upcoming Chord Attention Box -->
-            <div style="display: flex; flex-direction: column; gap: 4px; background: rgba(56, 189, 248, 0.08); padding: 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.35);">
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--accent); font-family: var(--font-mono); letter-spacing: 0.5px;">NEXT CHORD</span>
-                <span id="liveSongNextCountdown" style="font-size: 11px; font-family: var(--font-mono); font-weight: 700; color: var(--accent-secondary);">--</span>
+            <!-- Full 4-Bar Harmonic Measure Grid -->
+            <div style="display: flex; flex-direction: column; gap: 4px; background: #0c0e12; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-dim);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono); letter-spacing: 0.5px;">HARMONIC MEASURE GRID (4 BARS)</span>
+                <span style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint);">1 · 2 · 3 · 4</span>
               </div>
-              <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 2px;">
-                <div id="liveSongNextChord" style="font-size: 24px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); line-height: 1;">--</div>
-              </div>
-            </div>
-
-            <!-- Harmonic Timeline Preview (Next 3 Chords) -->
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: var(--text-faint); font-family: var(--font-mono);">UPCOMING BARS</span>
-              <div id="upcomingChordsPillList" style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px;">
-                <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">No chords queued</span>
+              <div id="harmonicMeasureGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 2px;">
+                <!-- 4 Interactive Bars dynamically rendered -->
+                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
+                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 1</div>
+                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
+                </div>
+                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
+                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 2</div>
+                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
+                </div>
+                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
+                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 3</div>
+                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
+                </div>
+                <div class="measure-bar-cell" style="background: var(--bg-sunken); border: 1px solid var(--border-subtle); padding: 4px; border-radius: 4px; text-align: center;">
+                  <div style="font-size: 8px; color: var(--text-faint); font-family: var(--font-mono);">BAR 4</div>
+                  <div style="font-size: 13px; font-weight: 700; color: var(--text-dim); font-family: var(--font-mono); margin: 2px 0;">--</div>
+                </div>
               </div>
             </div>
           </div>
@@ -2007,6 +2041,42 @@
       });
     }
 
+    // Music Theory Chord Voicing Spellings
+    const CHORD_SPELLINGS = {
+      "C": ["C", "E", "G"], "Cm": ["C", "Eb", "G"], "C7": ["C", "E", "G", "Bb"], "CMaj7": ["C", "E", "G", "B"], "Cm7": ["C", "Eb", "G", "Bb"],
+      "C#": ["C#", "F", "G#"], "C#m": ["C#", "E", "G#"], "C#7": ["C#", "F", "G#", "B"], "C#Maj7": ["C#", "F", "G#", "C"], "C#m7": ["C#", "E", "G#", "B"],
+      "D": ["D", "F#", "A"], "Dm": ["D", "F", "A"], "D7": ["D", "F#", "A", "C"], "DMaj7": ["D", "F#", "A", "C#"], "Dm7": ["D", "F", "A", "C"], "Dsus2": ["D", "E", "A"], "Dsus4": ["D", "G", "A"],
+      "D#": ["Eb", "G", "Bb"], "D#m": ["Eb", "Gb", "Bb"], "Eb": ["Eb", "G", "Bb"], "Ebm": ["Eb", "Gb", "Bb"], "EbMaj7": ["Eb", "G", "Bb", "D"], "Ebm7": ["Eb", "Gb", "Bb", "Db"],
+      "E": ["E", "G#", "B"], "Em": ["E", "G", "B"], "E7": ["E", "G#", "B", "D"], "EMaj7": ["E", "G#", "B", "D#"], "Em7": ["E", "G", "B", "D"], "Esus4": ["E", "A", "B"],
+      "F": ["F", "A", "C"], "Fm": ["F", "Ab", "C"], "F7": ["F", "A", "C", "Eb"], "FMaj7": ["F", "A", "C", "E"], "Fm7": ["F", "Ab", "C", "Eb"],
+      "F#": ["F#", "A#", "C#"], "F#m": ["F#", "A", "C#"], "F#7": ["F#", "A#", "C#", "E"], "F#Maj7": ["F#", "A#", "C#", "F"], "F#m7": ["F#", "A", "C#", "E"],
+      "G": ["G", "B", "D"], "Gm": ["G", "Bb", "D"], "G7": ["G", "B", "D", "F"], "GMaj7": ["G", "B", "D", "F#"], "Gm7": ["G", "Bb", "D", "F"], "Gsus4": ["G", "C", "D"],
+      "G#": ["Ab", "C", "Eb"], "G#m": ["G#", "B", "D#"], "G#Maj7": ["Ab", "C", "Eb", "G"], "G#m7": ["G#", "B", "D#", "F#"], "Ab": ["Ab", "C", "Eb"],
+      "A": ["A", "C#", "E"], "Am": ["A", "C", "E"], "A7": ["A", "C#", "E", "G"], "AMaj7": ["A", "C#", "E", "G#"], "Am7": ["A", "C", "E", "G"], "Asus4": ["A", "D", "E"], "Amaj6": ["A", "C#", "E", "F#"],
+      "A#": ["Bb", "D", "F"], "A#m": ["Bb", "Db", "F"], "Bb": ["Bb", "D", "F"], "Bbm": ["Bb", "Db", "F"], "BbMaj7": ["Bb", "D", "F", "A"], "Bbm7": ["Bb", "Db", "F", "Ab"], "A#Maj7": ["Bb", "D", "F", "A"],
+      "B": ["B", "D#", "F#"], "Bm": ["B", "D", "F#"], "B7": ["B", "D#", "F#", "A"], "BMaj7": ["B", "D#", "F#", "A#"], "Bm7": ["B", "D", "F#", "A"], "Bsus4": ["B", "E", "F#"]
+    };
+
+    function getChordNotes(chordName) {
+      if (!chordName || chordName === "--") return [];
+      const clean = chordName.split("/")[0].trim();
+      if (CHORD_SPELLINGS[clean]) return CHORD_SPELLINGS[clean];
+      // Basic root lookup fallback
+      const root = clean.length > 1 && (clean[1] === "#" || clean[1] === "b") ? clean.slice(0, 2) : clean.slice(0, 1);
+      return [root];
+    }
+
+    function calculateVoiceLeading(fromChord, toChord) {
+      if (!fromChord || !toChord || fromChord === "--" || toChord === "--") return "Smooth step";
+      const notes1 = getChordNotes(fromChord);
+      const notes2 = getChordNotes(toChord);
+      const common = notes1.filter(n => notes2.includes(n));
+      if (common.length > 0) {
+        return `Hold [${common.join(", ")}]`;
+      }
+      return `Step ${fromChord} → ${toChord}`;
+    }
+
     function updateSongChordTracker(currentSeconds) {
       if (!activeChordChart || activeChordChart.length === 0) return;
 
@@ -2027,43 +2097,66 @@
       const curNameEl = document.getElementById("liveSongCurrentChord");
       const curNashEl = document.getElementById("liveSongCurrentNash");
       const curTimeEl = document.getElementById("currentChordTimecode");
+      const curNotesEl = document.getElementById("currentVoicingNotes");
       if (curChord) {
         if (curNameEl) curNameEl.innerText = curChord.chord;
         if (curNashEl) curNashEl.innerText = curChord.nashville ? `[${curChord.nashville}]` : '';
         if (curTimeEl) curTimeEl.innerText = formatTime(curChord.time);
+        if (curNotesEl) {
+          const notes = getChordNotes(curChord.chord);
+          curNotesEl.innerHTML = notes.map(n => `<span style="background: rgba(56, 189, 248, 0.15); padding: 1px 4px; border-radius: 2px;">${n}</span>`).join("");
+        }
       } else {
         if (curNameEl) curNameEl.innerText = "--";
         if (curNashEl) curNashEl.innerText = "";
         if (curTimeEl) curTimeEl.innerText = formatTime(currentSeconds);
+        if (curNotesEl) curNotesEl.innerText = "--";
       }
 
       // 2. Find Next Chord and Countdown
       const nextChord = activeChordChart.find(c => c.time > (currentSeconds + 0.1));
       const nextNameEl = document.getElementById("liveSongNextChord");
       const nextCdEl = document.getElementById("liveSongNextCountdown");
+      const leadTipEl = document.getElementById("voiceLeadingTip");
       if (nextChord) {
         const diff = (nextChord.time - currentSeconds).toFixed(1);
         if (nextNameEl) nextNameEl.innerText = `${nextChord.chord}`;
         if (nextCdEl) nextCdEl.innerText = `in ${diff}s`;
+        if (leadTipEl && curChord) {
+          leadTipEl.innerText = calculateVoiceLeading(curChord.chord, nextChord.chord);
+        }
       } else {
         if (nextNameEl) nextNameEl.innerText = "--";
         if (nextCdEl) nextCdEl.innerText = "--";
+        if (leadTipEl) leadTipEl.innerText = "End of track";
       }
 
-      // 3. Render Upcoming Chords Pills
-      const pillList = document.getElementById("upcomingChordsPillList");
-      if (pillList && curIdx >= 0) {
-        const upcoming = activeChordChart.slice(curIdx + 1, curIdx + 5);
-        if (upcoming.length > 0) {
-          pillList.innerHTML = upcoming.map(c => `
-            <div style="background: var(--bg-sunken); border: 1px solid var(--border-dim); padding: 2px 6px; border-radius: 4px; display: flex; align-items: baseline; gap: 4px; flex-shrink: 0;">
-              <span style="font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--accent);">${c.chord}</span>
-              <span style="font-family: var(--font-mono); font-size: 9px; color: var(--text-faint);">${formatTime(c.time)}</span>
+      // 3. Render 4-Bar Harmonic Measure Grid
+      const grid = document.getElementById("harmonicMeasureGrid");
+      if (grid && curIdx >= 0) {
+        const barChords = activeChordChart.slice(Math.max(0, curIdx), Math.max(0, curIdx) + 4);
+        let html = "";
+        for (let b = 0; b < 4; b++) {
+          const item = barChords[b];
+          const isNow = (b === 0);
+          const isNext = (b === 1);
+          const bg = isNow ? "rgba(56, 189, 248, 0.15)" : (isNext ? "rgba(56, 189, 248, 0.08)" : "var(--bg-sunken)");
+          const border = isNow ? "var(--accent)" : (isNext ? "rgba(56, 189, 248, 0.4)" : "var(--border-subtle)");
+          const title = isNow ? "NOW" : (isNext ? "NEXT" : `BAR +${b}`);
+          const cText = item ? item.chord : "--";
+          const nash = item && item.nashville ? `[${item.nashville}]` : "";
+          const tCode = item ? formatTime(item.time) : "--:--";
+
+          html += `
+            <div class="measure-bar-cell" style="background: ${bg}; border: 1px solid ${border}; padding: 4px 6px; border-radius: 4px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 8px; font-weight: 700; color: ${isNow ? 'var(--accent)' : 'var(--text-faint)'}; font-family: var(--font-mono);">${title}</div>
+              <div style="font-size: 14px; font-weight: 800; color: ${isNow ? '#ffffff' : (item ? 'var(--text-main)' : 'var(--text-faint)')}; font-family: var(--font-mono); margin: 2px 0;">${cText}</div>
+              <div style="font-size: 8px; font-family: var(--font-mono); color: var(--accent-secondary);">${nash}</div>
+              <div style="font-size: 8px; font-family: var(--font-mono); color: var(--text-faint); margin-top: 2px;">${tCode}</div>
             </div>
-          `).join("");
-        } else {
-          pillList.innerHTML = `<span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">End of song</span>`;
+          `;
         }
+        grid.innerHTML = html;
       }
     }
 
