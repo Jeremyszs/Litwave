@@ -386,19 +386,19 @@
       <div>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
           <span class="util-label">Live Chord</span>
-          <select id="remoteNashvilleKeySelect" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 3px; padding: 1px 4px; outline: none;" onchange="onRemoteNashvilleKeyChange(this.value)">
-            <option value="C">Key: C</option>
-            <option value="C#">Key: C# / Db</option>
-            <option value="D">Key: D</option>
-            <option value="D#">Key: D# / Eb</option>
-            <option value="E">Key: E</option>
-            <option value="F">Key: F</option>
-            <option value="F#">Key: F# / Gb</option>
-            <option value="G">Key: G</option>
-            <option value="G#">Key: G# / Ab</option>
-            <option value="A">Key: A</option>
-            <option value="A#">Key: A# / Bb</option>
-            <option value="B">Key: B</option>
+          <select id="remoteNashvilleKeySelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; outline: none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);" onchange="onRemoteNashvilleKeyChange(this.value)">
+            <option value="C" style="background: #111317; color: var(--text-main);">Key: C</option>
+            <option value="C#" style="background: #111317; color: var(--text-main);">Key: C# / Db</option>
+            <option value="D" style="background: #111317; color: var(--text-main);">Key: D</option>
+            <option value="D#" style="background: #111317; color: var(--text-main);">Key: D# / Eb</option>
+            <option value="E" style="background: #111317; color: var(--text-main);">Key: E</option>
+            <option value="F" style="background: #111317; color: var(--text-main);">Key: F</option>
+            <option value="F#" style="background: #111317; color: var(--text-main);">Key: F# / Gb</option>
+            <option value="G" style="background: #111317; color: var(--text-main);">Key: G</option>
+            <option value="G#" style="background: #111317; color: var(--text-main);">Key: G# / Ab</option>
+            <option value="A" style="background: #111317; color: var(--text-main);">Key: A</option>
+            <option value="A#" style="background: #111317; color: var(--text-main);">Key: A# / Bb</option>
+            <option value="B" style="background: #111317; color: var(--text-main);">Key: B</option>
           </select>
         </div>
         <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 2px;">
@@ -536,7 +536,12 @@
             <span id="remoteMetroStatusText">Click [Off]</span>
           </button>
           <div style="display: flex; align-items: center; gap: 4px;">
-            <select id="remoteTimeSigSelect" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 3px; padding: 3px 4px; outline: none;" onchange="handleRemoteTimeSigChange(this.value)">
+            <select id="remoteMetroSoundSelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 4px; outline: none;" onchange="handleRemoteMetroSoundChange(this.value)">
+              <option value="treble">Treble</option>
+              <option value="woodblock">Woodblock</option>
+              <option value="beep">Beep</option>
+            </select>
+            <select id="remoteTimeSigSelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 4px; outline: none;" onchange="handleRemoteTimeSigChange(this.value)">
               <option value="4">4/4</option>
               <option value="3">3/4</option>
               <option value="6">6/8</option>
@@ -1150,6 +1155,14 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ metronome_time_sig: parseInt(val) })
+      }).catch(console.error);
+    }
+
+    function handleRemoteMetroSoundChange(val) {
+      fetch("/api/mixer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metronome_profile: val })
       }).catch(console.error);
     }
 

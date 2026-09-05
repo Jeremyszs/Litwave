@@ -52,7 +52,63 @@
 
     button, input, select { font-family: inherit; }
 
-    /* Custom Precision Audio Fader */
+    .custom-select-dark {
+      background-color: var(--bg-sunken);
+      color: var(--accent);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      outline: none;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .custom-select-dark option {
+      background-color: #111317;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Custom Rectangular Faders for Sliders */
+    .slider-rect-wrap {
+      position: relative;
+      height: 18px;
+      background: var(--bg-sunken);
+      border: 1px solid var(--border-dim);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    }
+    .slider-rect-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.25), rgba(56, 189, 248, 0.55));
+      border-right: 2px solid var(--accent);
+      pointer-events: none;
+    }
+    .slider-rect-fill.secondary {
+      background: linear-gradient(90deg, rgba(96, 165, 250, 0.25), rgba(96, 165, 250, 0.55));
+      border-right: 2px solid var(--accent-secondary);
+    }
+    .slider-rect-thumb {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 10px;
+      margin-left: -5px;
+      background: #ffffff;
+      border-radius: 1px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+
     .fader-track-wrap {
       position: relative;
       width: 14px;
@@ -1147,9 +1203,9 @@
             <span class="panel-title-text">Input Telemetry</span>
           </div>
           <div class="window-controls">
-            <div style="display: flex; align-items: center; gap: 4px; background: var(--bg-sunken); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-dim); margin-right: 4px;">
-              <span style="font-size: 9px; font-weight: 600; color: var(--text-faint); font-family: var(--font-mono);">KEY:</span>
-              <select id="nashvilleKeySelect" style="background: transparent; border: none; color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; cursor: pointer; outline: none;" onchange="onNashvilleKeyChange(this.value)">
+            <div style="display: flex; align-items: center; gap: 6px; background: #0c0e12; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 1px 3px rgba(0,0,0,0.5); margin-right: 6px;">
+              <span style="font-size: 10px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); letter-spacing: 0.5px;">ROOT:</span>
+              <select id="nashvilleKeySelect" class="custom-select-dark" style="padding: 1px 4px; font-size: 11px; height: 22px;" onchange="onNashvilleKeyChange(this.value)">
                 <option value="C">C</option>
                 <option value="C#">C# / Db</option>
                 <option value="D">D</option>
@@ -1343,7 +1399,12 @@
               <button id="tapTempoBtn" class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 500;" onclick="handleTapTempo()">Tap</button>
             </div>
             <div style="display: flex; align-items: center; gap: 4px;">
-              <select id="timeSigSelect" style="background: var(--bg-sunken); border: 1px solid var(--border-dim); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 3px; padding: 1px 3px; outline: none;" onchange="handleTimeSigChange(this.value)" title="Metronome Time Signature">
+              <select id="metroSoundSelect" class="custom-select-dark" style="padding: 1px 4px; font-size: 10px; height: 22px;" onchange="handleMetroSoundChange(this.value)" title="Metronome Sound Profile">
+                <option value="treble">Treble Studio Click</option>
+                <option value="woodblock">Woodblock / Perc</option>
+                <option value="beep">Digital Beep</option>
+              </select>
+              <select id="timeSigSelect" class="custom-select-dark" style="padding: 1px 4px; font-size: 10px; height: 22px;" onchange="handleTimeSigChange(this.value)" title="Metronome Time Signature">
                 <option value="4">4/4</option>
                 <option value="3">3/4</option>
                 <option value="6">6/8</option>
@@ -1357,12 +1418,16 @@
           </div>
 
           <!-- Metronome Volume Fader (With up to +6dB / 2.0x High Boost) -->
-          <div style="display: flex; flex-direction: column; gap: 3px; padding-top: 4px; border-top: 1px solid var(--border-dim);">
+          <div style="display: flex; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px solid var(--border-dim);">
             <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); font-weight: 600; text-transform: uppercase;">
               <span>Click Level</span>
               <span id="metroVolText" style="font-family: var(--font-mono); color: var(--accent);">Boost 100%</span>
             </div>
-            <input type="range" id="metroVolRange" min="0" max="2.0" step="0.05" value="1.0" style="width: 100%; accent-color: var(--accent); cursor: pointer;" oninput="handleMetroVolChange(this.value)">
+            <div class="slider-rect-wrap" id="metroVolWrap" style="height: 18px;" onmousedown="startMetroFaderDrag(event)">
+              <div class="slider-rect-fill" id="metroVolFill" style="width: 50%;"></div>
+              <div class="slider-rect-thumb" id="metroVolThumb" style="left: 50%;"></div>
+            </div>
+            <input type="hidden" id="metroVolRange" value="1.0">
           </div>
 
           <!-- Yamaha MONTAGE M Scene Selector Strip (Scenes 1 - 8) -->
@@ -1511,13 +1576,13 @@
           <img id="qrImg" width="180" height="180" alt="Remote QR Code" style="display: block; image-rendering: pixelated;">
         </div>
 
-        <div style="width: 100%; display: flex; flex-direction: column; gap: 6px; text-align: left;">
-          <label class="pref-label">Direct URL (Local Network / Tunnel)</label>
-          <div style="display: flex; gap: 6px; align-items: center;">
-            <input type="text" id="remoteUrlInput" class="modal-input" readonly style="font-family: var(--font-mono); font-size: 11px; cursor: pointer;" onclick="this.select()">
-            <button class="btn" onclick="copyRemoteUrl()">Copy</button>
+        <div style="width: 100%; display: flex; flex-direction: column; gap: 8px; text-align: center; align-items: center;">
+          <label class="pref-label" style="text-align: center; width: 100%;">Direct URL (Local Network / Tunnel)</label>
+          <div style="display: flex; gap: 6px; align-items: center; width: 100%; justify-content: center;">
+            <input type="text" id="remoteUrlInput" class="modal-input" readonly style="font-family: var(--font-mono); font-size: 11px; text-align: center; cursor: pointer; flex: 1; max-width: 280px;" onclick="this.select()">
+            <button class="btn" style="border-color: var(--accent); color: var(--accent); font-weight: 600;" onclick="copyRemoteUrl()">Copy</button>
           </div>
-          <div id="copyNotice" style="font-size: 10px; color: var(--success); height: 14px; opacity: 0; transition: opacity 0.2s ease;">Copied to clipboard!</div>
+          <div id="copyNotice" style="font-size: 11px; color: var(--accent); height: 14px; opacity: 0; transition: opacity 0.2s ease; text-align: center; font-weight: 600;">Copied to clipboard!</div>
         </div>
       </div>
     </div>
@@ -1759,6 +1824,10 @@
       updateMixer("metronome_time_sig", parseInt(val));
     }
 
+    function handleMetroSoundChange(val) {
+      updateMixer("metronome_profile", val);
+    }
+
     // Chord Progression Recording State
     let isRecordingChords = false;
     let activeChordChart = [];
@@ -1961,12 +2030,18 @@
 
           <div style="display: flex; align-items: center; gap: 12px; opacity: ${p.mute ? '0.4' : '1.0'};">
             <span style="font-size: 9px; font-weight: 600; font-family: var(--font-mono); color: var(--text-faint); width: 26px;">VOL</span>
-            <input type="range" min="0" max="127" value="${p.val}" style="flex: 1; accent-color: var(--accent); cursor: pointer;" oninput="onDesktopVolChange(${p.part}, this.value)">
+            <div class="slider-rect-wrap" id="dtVolWrap_${p.part}" style="flex: 1; height: 20px;" onmousedown="startDesktopPartFaderDrag(${p.part}, 'vol', event)">
+              <div class="slider-rect-fill" id="dtVolFill_${p.part}" style="width: ${pctVol}%;"></div>
+              <div class="slider-rect-thumb" id="dtVolThumb_${p.part}" style="left: ${pctVol}%;"></div>
+            </div>
           </div>
 
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 9px; font-weight: 600; font-family: var(--font-mono); color: var(--text-faint); width: 26px;">REV</span>
-            <input type="range" min="0" max="127" value="${p.rev || 40}" style="flex: 1; accent-color: var(--accent-secondary); cursor: pointer;" oninput="onDesktopRevChange(${p.part}, this.value)">
+            <div class="slider-rect-wrap" id="dtRevWrap_${p.part}" style="flex: 1; height: 16px;" onmousedown="startDesktopPartFaderDrag(${p.part}, 'rev', event)">
+              <div class="slider-rect-fill secondary" id="dtRevFill_${p.part}" style="width: ${pctRev}%;"></div>
+              <div class="slider-rect-thumb" id="dtRevThumb_${p.part}" style="left: ${pctRev}%;"></div>
+            </div>
           </div>
         `;
         container.appendChild(row);
@@ -1977,6 +2052,11 @@
       desktopPartsState[partNum - 1].val = parseInt(val);
       const text = document.getElementById(`dtPartVal_${partNum}`);
       if (text) text.innerText = `Volume: ${val}`;
+      const pct = (parseInt(val) / 127) * 100;
+      const fill = document.getElementById(`dtVolFill_${partNum}`);
+      const thumb = document.getElementById(`dtVolThumb_${partNum}`);
+      if (fill) fill.style.width = `${pct}%`;
+      if (thumb) thumb.style.left = `${pct}%`;
       await fetch("/api/montage/volume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1988,11 +2068,37 @@
       desktopPartsState[partNum - 1].rev = parseInt(val);
       const text = document.getElementById(`dtPartRev_${partNum}`);
       if (text) text.innerText = `Reverb: ${val}`;
-      await fetch("/api/montage/volume", {
+      const pct = (parseInt(val) / 127) * 100;
+      const fill = document.getElementById(`dtRevFill_${partNum}`);
+      const thumb = document.getElementById(`dtRevThumb_${partNum}`);
+      if (fill) fill.style.width = `${pct}%`;
+      if (thumb) thumb.style.left = `${pct}%`;
+      await fetch("/api/montage/reverb", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ part: partNum, reverb: parseInt(val) })
       });
+    }
+
+    function startDesktopPartFaderDrag(partNum, type, e) {
+      const wrapId = type === 'vol' ? `dtVolWrap_${partNum}` : `dtRevWrap_${partNum}`;
+      const wrap = document.getElementById(wrapId);
+      if (!wrap) return;
+      const onMove = (ev) => {
+        const rect = wrap.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        const val = Math.round(ratio * 127);
+        if (type === 'vol') onDesktopVolChange(partNum, val);
+        else onDesktopRevChange(partNum, val);
+      };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      onMove(e);
+      e.preventDefault();
     }
 
     async function toggleDesktopMute(partNum) {
@@ -2170,10 +2276,34 @@
     }
 
     function handleMetroVolChange(val) {
-      const num = parseFloat(val);
+      const num = Math.max(0, Math.min(2.0, parseFloat(val)));
       const pct = Math.round(num * 100);
       document.getElementById("metroVolText").innerText = num > 1.0 ? `Boost ${pct}%` : `${pct}%`;
+      const fillPct = (num / 2.0) * 100;
+      const fill = document.getElementById("metroVolFill");
+      const thumb = document.getElementById("metroVolThumb");
+      if (fill) fill.style.width = `${fillPct}%`;
+      if (thumb) thumb.style.left = `${fillPct}%`;
       updateMixer('metronome_volume', num);
+    }
+
+    function startMetroFaderDrag(e) {
+      const wrap = document.getElementById("metroVolWrap");
+      if (!wrap) return;
+      const onMove = (ev) => {
+        const rect = wrap.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        const val = ratio * 2.0;
+        handleMetroVolChange(val);
+      };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      onMove(e);
+      e.preventDefault();
     }
 
     function bindTitlebarDrag(titlebar, win) {

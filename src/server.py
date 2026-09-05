@@ -145,6 +145,8 @@ async def api_mixer(request):
         state.audio.song_player.set_volume(v)
     if "metronome_volume" in body:
         state.audio.metronome_volume = float(body["metronome_volume"])
+    if "metronome_profile" in body:
+        state.audio.metronome.set_sound_profile(str(body["metronome_profile"]))
     if "metronome_bpm" in body:
         state.audio.metronome.set_bpm(float(body["metronome_bpm"]))
     if "metronome_time_sig" in body:

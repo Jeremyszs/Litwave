@@ -1,30 +1,47 @@
 """
-Metronome Click Generator
-Generates high-precision accented click sounds (high pitch on downbeat, low pitch on upbeats)
+Metronome Click Generator with Selectable Sound Profiles
+Includes high-treble studio rimshot/woodblock and sharp impulse click
+that effortlessly cuts through loud backing tracks and piano monitors.
 """
 
 import numpy as np
 
 class Metronome:
+    CLICK_PROFILES = {
+        "treble": {"name": "Studio Treble Click", "high_freq": 2800.0, "low_freq": 1600.0, "transient_freq": 4800.0},
+        "woodblock": {"name": "Acoustic Woodblock", "high_freq": 1800.0, "low_freq": 1050.0, "transient_freq": 3200.0},
+        "beep": {"name": "Digital Beep", "high_freq": 2000.0, "low_freq": 1000.0, "transient_freq": 0.0},
+    }
+
     def __init__(self, samplerate: int = 48000):
         self.samplerate = samplerate
         self.enabled = False
         self.bpm = 120.0
         self.time_sig_num = 4
-        self.volume = 0.5
+        self.volume = 1.0
+        self.sound_profile = "treble"
         
         # Audio frame state
         self.sample_interval = int((60.0 / self.bpm) * self.samplerate)
         self.current_beat = 0
         self.frame_counter = 0
         
-        # Pre-synthesize click tones (8ms decayed sine bursts)
-        self.click_high = self._generate_click(1500.0, 0.015)
-        self.click_low = self._generate_click(800.0, 0.012)
+        # Pre-synthesize default clicks
+        self._refresh_clicks()
         
         self.active_click = None
         self.click_pos = 0
         self.phase_offset_frames = 0
+
+    def set_sound_profile(self, profile: str):
+        if profile in self.CLICK_PROFILES:
+            self.sound_profile = profile
+            self._refresh_clicks()
+
+    def _refresh_clicks(self):
+        cfg = self.CLICK_PROFILES.get(self.sound_profile, self.CLICK_PROFILES["treble"])
+        self.click_high = self._generate_click(cfg["high_freq"], 0.018, cfg["transient_freq"])
+        self.click_low = self._generate_click(cfg["low_freq"], 0.014, cfg["transient_freq"] * 0.75)
 
     def sync_to_playhead(self, playhead_seconds: float, first_downbeat_sec: float = 0.0):
         """
@@ -46,21 +63,27 @@ class Metronome:
             total_beats = int(rel_time / beat_interval_sec)
             self.current_beat = total_beats % self.time_sig_num
             phase_within_beat = rel_time % beat_interval_sec
-            # If we are right at the beat boundary (< 20ms), trigger click now
             time_to_next_beat = beat_interval_sec - phase_within_beat
             self.frame_counter = int(time_to_next_beat * self.samplerate) % self.sample_interval
 
-    def _generate_click(self, freq: float, duration: float) -> np.ndarray:
+    def _generate_click(self, freq: float, duration: float, transient_freq: float = 4800.0) -> np.ndarray:
         frames = int(duration * self.samplerate)
         t = np.linspace(0, duration, frames, endpoint=False)
-        envelope = np.exp(-t * 220) # Exponential decay with punchy transient
+        # Fast exponential decay for punchy cut
+        envelope = np.exp(-t * 260.0)
         sine = np.sin(2 * np.pi * freq * t) * envelope
-        # Add high-frequency attack tick for stage/monitor cut-through
-        attack_transient = np.sin(2 * np.pi * 3200.0 * t[:min(frames, 48)]) * 0.5
-        sine[:len(attack_transient)] += attack_transient
-        # Peak normalize to prevent clipping at unity
+        
+        # Add piercing high-treble transient spike (first 1.5ms) for monitor clarity
+        if transient_freq > 0:
+            tr_len = min(frames, int(0.0015 * self.samplerate))
+            t_tr = t[:tr_len]
+            attack_transient = np.sin(2 * np.pi * transient_freq * t_tr) * np.exp(-t_tr * 800.0) * 0.7
+            sine[:tr_len] += attack_transient
+            
+        # Peak normalize to prevent clipping
         peak = np.max(np.abs(sine))
-        if peak > 0: sine /= peak
+        if peak > 0:
+            sine /= peak
         return sine.astype(np.float32)
 
     def set_bpm(self, bpm: float):
