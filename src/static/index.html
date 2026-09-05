@@ -685,7 +685,8 @@
     }
 
     .mixer-deck.is-minimized .mixer-body,
-    .mixer-deck.is-minimized .mixer-eq-section {
+    .mixer-deck.is-minimized .mixer-eq-section,
+    .mixer-deck.is-minimized .stage-warmth-strip {
       max-height: 0 !important;
       padding: 0 !important;
       opacity: 0;
@@ -1638,7 +1639,7 @@
         </div>
 
         <!-- Stage Warmth Strip: Analog Soft-Saturation for In-Ear & Stage Rig -->
-        <div class="stage-warmth-strip" id="stageWarmthSection" style="padding: 6px 8px 8px 8px; border-top: 1px solid var(--border-dim); background: var(--bg-sunken); display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; width: 100%; overflow: hidden;">
+        <div class="stage-warmth-strip" id="stageWarmthSection" style="padding: 6px 8px 8px 8px; border-top: 1px solid var(--border-dim); background: var(--bg-sunken); display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; width: 100%; overflow: hidden; transition: all 0.2s ease;">
           <!-- Header & Readouts -->
           <div style="display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; width: 100%;">
             <div style="display: flex; align-items: center; gap: 5px;">
