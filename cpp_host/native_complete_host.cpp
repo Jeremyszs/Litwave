@@ -812,7 +812,7 @@ void UdpControlServerThread() {
                 } else if (cmd == 0x48) { // 'H': Spectrum analyzer enable.
                     g_analyzer_enabled.store(buf[1] != 0, std::memory_order_relaxed);
                     continue;
-                } else if (cmd == 0x57) { // 'W': Stage Warmth config: [ 'W', enabled (0/1), mode (0/1), 0, drive (float) ]
+                } else if (cmd == 0x77) { // 'w': Stage Warmth config: [ 'w', enabled (0/1), mode (0/1), 0, drive (float) ]
                     if (len >= 8) {
                         g_warmth_enabled.store(buf[1] != 0, std::memory_order_relaxed);
                         g_warmth_mode.store((int)buf[2], std::memory_order_relaxed);
@@ -962,7 +962,14 @@ void UdpControlServerThread() {
     WSACleanup();
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    bool startHidden = false;
+    for (int i = 1; i < argc; i++) {
+        if (std::string(argv[i]) == "--hidden" || std::string(argv[i]) == "-h") {
+            startHidden = true;
+        }
+    }
+
     // Enforce strict Single Instance via Named Mutex
     HANDLE hSingleMutex = CreateMutexW(NULL, TRUE, L"Local\\YamahaMontageMLiveEngine_SingleInstance");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
@@ -1053,6 +1060,8 @@ int main() {
 
     g_comp->setActive(true);
     g_processor->setProcessing(true);
+    // Explicit initial state sync & panic reset to guarantee audio buffers are active
+    add_panic_events_to_current_block();
     std::cout << "[OK] Yamaha MONTAGE M Audio & DSP Engine Activated (44.1kHz/256)" << std::endl;
 
     // --- STEP 2: OPEN SOUNDCARD AUDIO OUTPUT (Target Soundcard specifically) ---
@@ -1140,19 +1149,24 @@ int main() {
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     RegisterClassW(&wc);
 
+    DWORD windowStyle = WS_OVERLAPPEDWINDOW | (startHidden ? 0 : WS_VISIBLE);
     HWND hwnd = CreateWindowExW(
         0,
         L"YamahaMontageMLiveHost",
         L"YAMAHA MONTAGE M (Native VST3 Studio Host)",
-        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+        windowStyle,
         CW_USEDEFAULT, CW_USEDEFAULT,
         width + 16, height + 39,
         NULL, NULL, GetModuleHandle(NULL), NULL
     );
     g_hwnd = hwnd;
 
-    if (view) view->attached((void*)hwnd, kPlatformTypeHWND);
-    std::cout << "[OK] Native GUI attached and displayed." << std::endl;
+    if (view) {
+        view->attached((void*)hwnd, kPlatformTypeHWND);
+        // Wakeup/Idle trigger to ensure VST3 processor pipeline runs immediately
+        view->onFocus(true);
+    }
+    std::cout << "[OK] Native GUI attached " << (startHidden ? "(running hidden in background)" : "and displayed.") << std::endl;
 
     // Start UDP server thread
     g_udp_running.store(true);

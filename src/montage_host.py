@@ -102,7 +102,8 @@ class MontageHost:
         if mode is not None:
             self.warmth_mode = 1 if int(mode) == 1 else 0
         self._persist_dsp_settings()
-        payload = struct.pack("<BBBBf", 0x57, int(self.warmth_enabled), self.warmth_mode, 0, self.warmth_drive)
+        # Command 'w' (0x77): Stage Warmth config: [ 'w', enabled, mode, 0, drive (float) ]
+        payload = struct.pack("<BBBBf", 0x77, int(self.warmth_enabled), self.warmth_mode, 0, self.warmth_drive)
         self._send_udp(payload)
         return True
 
@@ -355,17 +356,20 @@ class MontageHost:
             print(f"Failed to send VST window action: {e}")
             return False
 
-    def open_vst_editor(self) -> bool:
+    def open_vst_editor(self, hidden: bool = False) -> bool:
         """Launch the exact native Yamaha MONTAGE M GUI window directly (Single Instance Enforcement)"""
         # If already running, do not spawn another instance
         if self.is_engine_running():
-            self.toggle_vst_window("show")
+            self.toggle_vst_window("hide" if hidden else "show")
             return True
 
         if os.path.exists(MONTAGE_ENGINE_EXE):
             try:
+                cmd = [MONTAGE_ENGINE_EXE]
+                if hidden:
+                    cmd.append("--hidden")
                 subprocess.Popen(
-                    [MONTAGE_ENGINE_EXE],
+                    cmd,
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,

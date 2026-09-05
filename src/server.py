@@ -343,12 +343,13 @@ async def api_open_editor(request):
         elif action in ("hide", "show", "minimize"):
             # Check if running first
             if not state.montage.is_engine_running():
-                ok = state.montage.open_vst_editor()
+                ok = state.montage.open_vst_editor(hidden=(action == "hide"))
                 return JSONResponse({"success": ok, "action": "started_fresh"})
             ok = state.montage.toggle_vst_window(action)
             return JSONResponse({"success": ok, "action": action})
         elif action == "start":
-            ok = state.montage.open_vst_editor()
+            hidden = bool(data.get("hidden", True))
+            ok = state.montage.open_vst_editor(hidden=hidden)
             return JSONResponse({"success": ok, "action": "started"})
     except Exception:
         pass

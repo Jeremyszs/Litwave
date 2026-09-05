@@ -71,7 +71,7 @@ def test_warmth_and_analyzer_settings_are_persisted():
         assert host.warmth_enabled is True
         assert host.warmth_drive == 1.8
         assert host.warmth_mode == 1
-        assert sent[-1][0] == 0x57
+        assert sent[-1][0] == 0x77
 
         host.set_analyzer_enabled(False)
         assert sent[-1] == bytes([0x48, 0, 0, 0])

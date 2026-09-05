@@ -4814,19 +4814,12 @@
 
     async function openSynthEditor() {
       if (vstGuiCycleState === 0) {
-        // Start engine and hide window (runs purely in background)
+        // Start engine directly hidden in background without race condition
         await fetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "start" })
+          body: JSON.stringify({ action: "start", hidden: true })
         });
-        setTimeout(async () => {
-          await fetch("/api/montage/editor", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "hide" })
-          });
-        }, 800);
         vstGuiCycleState = 1;
         showAppToast("Yamaha VST running in background");
       } else if (vstGuiCycleState === 1) {

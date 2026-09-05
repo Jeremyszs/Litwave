@@ -1718,15 +1718,8 @@
         await fetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "start" })
+          body: JSON.stringify({ action: "start", hidden: true })
         });
-        setTimeout(async () => {
-          await fetch("/api/montage/editor", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "hide" })
-          });
-        }, 800);
         rVstCycleState = 1;
         if (txt) txt.innerText = "Show GUI";
         showRemoteToast("Yamaha VST running in background");
