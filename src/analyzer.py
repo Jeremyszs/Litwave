@@ -219,7 +219,7 @@ def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict
     else:
         tempo = round(tempo, 1)
 
-    beat_times = librosa.frames_to_time(beats, sr=sr).tolist()
+    beat_times = [round(float(t), 3) for t in librosa.frames_to_time(beats, sr=sr).tolist()]
     first_downbeat = float(beat_times[0]) if len(beat_times) > 0 else 0.0
 
     # 2. Key Estimation
@@ -293,6 +293,7 @@ def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict
         "key": root_key,
         "time_sig": time_sig,
         "first_downbeat_seconds": round(first_downbeat, 3),
+        "beat_times": beat_times,
         "total_chords": len(chord_chart),
         "chords": chord_chart
     }

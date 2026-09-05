@@ -95,15 +95,13 @@ class Metronome:
 
     def toggle(self):
         self.enabled = not self.enabled
-        if not self.enabled:
-            self.active_click = None
-            self.click_pos = 0
+        self.active_click = None
+        self.click_pos = 0
 
     def get_audio_block(self, num_frames: int) -> np.ndarray:
+        # Always advance frame_counter so the metronome clock never loses time
         output = np.zeros((num_frames, 2), dtype=np.float32)
-        if not self.enabled:
-            return output
-            
+        
         for i in range(num_frames):
             if self.frame_counter == 0:
                 # Trigger click
@@ -116,10 +114,13 @@ class Metronome:
                 
             self.frame_counter = (self.frame_counter + 1) % self.sample_interval
             
-            if self.active_click is not None and self.click_pos < len(self.active_click):
+            # Synthesize audio only when enabled
+            if self.enabled and self.active_click is not None and self.click_pos < len(self.active_click):
                 val = self.active_click[self.click_pos] * self.volume
                 output[i, 0] += val
                 output[i, 1] += val
+                self.click_pos += 1
+            elif not self.enabled and self.active_click is not None:
                 self.click_pos += 1
                 
         return output

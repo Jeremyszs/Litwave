@@ -169,6 +169,12 @@ async def api_mixer(request):
         state.audio.metronome.set_time_sig(int(body["metronome_time_sig"]))
     if "toggle_metronome" in body:
         state.audio.metronome.toggle()
+        # Immediately lock phase to backing track if song is playing
+        if state.audio.metronome.enabled and state.audio.song_player.is_playing:
+            sp = state.audio.song_player
+            downbeat = float(sp.analysis_data.get("first_downbeat_seconds", 0.0)) if sp.analysis_data else 0.0
+            cur_sec = sp.current_frame / float(state.audio.samplerate)
+            state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
         
     telem = state.audio.get_telemetry()
     telem["success"] = True
