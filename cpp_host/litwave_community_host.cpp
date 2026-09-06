@@ -410,6 +410,10 @@ void set_part_sustain(int partIdx, int isSustainOn) {
     }
 }
 
+// Part 8 is reserved for the Continuous Ambient Drone Pad
+// It is triggered exclusively via UDP and isolated from keyboard keys and keyboard sustain pedal
+static std::atomic<bool> g_drone_isolation{true};
+
 void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
     if (wMsg == MIM_DATA) {
         unsigned char status = (unsigned char)(dwParam1 & 0xFF);
@@ -417,29 +421,31 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
         unsigned char data2 = (unsigned char)((dwParam1 >> 16) & 0xFF);
         unsigned char type = status & 0xF0;
 
+        int maxKeyboardPart = g_drone_isolation.load(std::memory_order_relaxed) ? 7 : 8; // Parts 1-7 respond to hands; Part 8 is drone
+
         if (type == 0x90) {
             float vel = (float)data2 / 127.0f;
             if (data2 > 0) {
-                // Part 1 is always active; only trigger active/unmuted parts
-                for (int p = 0; p < 8; p++) {
+                // Trigger active/unmuted keyboard parts (isolated from Part 8 drone)
+                for (int p = 0; p < maxKeyboardPart; p++) {
                     if (!g_part_mutes[p].load(std::memory_order_relaxed) && g_part_volumes[p].load(std::memory_order_relaxed) > 0.001f) {
                         trigger_note_on(p, data1, vel);
                     }
                 }
             } else {
-                for (int p = 0; p < 8; p++) {
+                for (int p = 0; p < maxKeyboardPart; p++) {
                     trigger_note_off(p, data1);
                 }
             }
         } else if (type == 0x80) {
-            for (int p = 0; p < 8; p++) {
+            for (int p = 0; p < maxKeyboardPart; p++) {
                 trigger_note_off(p, data1);
             }
         } else if (type == 0xB0) {
             // Control Change (e.g. Sustain Pedal CC#64)
             if (data1 == 64) {
                 int isSustain = (data2 >= 64) ? 1 : 0;
-                for (int p = 0; p < 8; p++) {
+                for (int p = 0; p < maxKeyboardPart; p++) {
                     set_part_sustain(p, isSustain);
                 }
             }
