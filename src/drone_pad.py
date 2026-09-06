@@ -72,12 +72,15 @@ class DronePadManager:
             # Send note offs for any lingering pitches
             for p in self.active_pitches:
                 self.host.send_note_off(self.drone_part - 1, p)
+                self.host.send_note_off(self.drone_part, p)
             self.active_pitches = []
 
             # Trigger fresh root chord
             notes = self._get_drone_notes(self.current_root)
             for note in notes:
+                # Send to both index 7 (0-indexed) and 8 (1-indexed) so engine always catches it
                 self.host.send_note_on(self.drone_part - 1, note, velocity=85)
+                self.host.send_note_on(self.drone_part, note, velocity=85)
             self.active_pitches = notes
 
     def stop_drone(self):
@@ -85,6 +88,7 @@ class DronePadManager:
             self.is_active = False
             for p in self.active_pitches:
                 self.host.send_note_off(self.drone_part - 1, p)
+                self.host.send_note_off(self.drone_part, p)
             self.active_pitches = []
             # Release Part 8 isolation so it returns to being a normal playable keyboard part
             self.host.set_drone_isolation(False)
@@ -108,6 +112,7 @@ class DronePadManager:
             # 1. Trigger new notes at low velocity and swell
             for note in new_pitches:
                 self.host.send_note_on(self.drone_part - 1, note, velocity=75)
+                self.host.send_note_on(self.drone_part, note, velocity=75)
             with self._lock:
                 self.active_pitches = new_pitches
 
@@ -117,6 +122,7 @@ class DronePadManager:
             # 3. Release old notes
             for note in old_pitches:
                 self.host.send_note_off(self.drone_part - 1, note)
+                self.host.send_note_off(self.drone_part, note)
 
         t = threading.Thread(target=_crossfade, daemon=True)
         t.start()

@@ -962,12 +962,17 @@ void UdpControlServerThread() {
                     }
                 } else if (cmd == 0x90) { // Note On
                     float vel = (float)d2 / 127.0f;
-                    // Support both 0-indexed and 1-indexed part channels (Channel 7 or Channel 8 for Part 8)
                     int targetCh = (ch == 8) ? 7 : (int)ch;
-                    enqueue_midi_note(Event::kNoteOnEvent, targetCh, (int16)d1, vel);
+                    if (targetCh >= 0 && targetCh < 16) {
+                        g_active_plugin_notes[targetCh][d1].store(vel > 0.0f, std::memory_order_relaxed);
+                        enqueue_midi_note(Event::kNoteOnEvent, targetCh, (int16)d1, vel);
+                    }
                 } else if (cmd == 0x80) { // Note Off
                     int targetCh = (ch == 8) ? 7 : (int)ch;
-                    enqueue_midi_note(Event::kNoteOffEvent, targetCh, (int16)d1, 0.0f);
+                    if (targetCh >= 0 && targetCh < 16) {
+                        g_active_plugin_notes[targetCh][d1].store(false, std::memory_order_relaxed);
+                        enqueue_midi_note(Event::kNoteOffEvent, targetCh, (int16)d1, 0.0f);
+                    }
                 } else if (cmd == 0xF0) { // System Exclusive Packet
                     enqueue_sysex((const uint8*)buf, (uint32)len);
                 }
