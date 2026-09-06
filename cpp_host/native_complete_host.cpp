@@ -280,6 +280,8 @@ public:
     virtual uint32 PLUGIN_API release() SMTG_OVERRIDE { return 1; }
 };
 
+static std::atomic<bool> g_drone_isolation{false};
+
 void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
     if (wMsg == MIM_DATA) {
         unsigned char status = (unsigned char)(dwParam1 & 0xFF);
@@ -287,6 +289,11 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
         unsigned char data2 = (unsigned char)((dwParam1 >> 16) & 0xFF);
         unsigned char type = status & 0xF0;
         unsigned char channel = status & 0x0F;
+
+        // If drone isolation is active and event is directed at Part 8 (channel index 7), block physical keyboard from overriding it
+        if (g_drone_isolation.load(std::memory_order_relaxed) && channel == 7) {
+            return;
+        }
 
         if (type == 0x90) {
             float vel = (float)data2 / 127.0f;
@@ -851,7 +858,14 @@ void UdpControlServerThread() {
                 unsigned char d1 = (unsigned char)buf[2];
                 unsigned char d2 = (unsigned char)buf[3];
 
-                if (cmd == 0xB0) { // Control Change
+                if (cmd == 0x4B) { // 'K': Voice assignment ignored in Yamaha host (managed inside VST3 UI)
+                    // No-op for safety; acknowledges packet
+                    continue;
+                } else if (cmd == 0x44) { // 'D': Drone Pad Isolation Toggle: [ 'D', isIsolated (0 or 1), 0, 0 ]
+                    int iso = (int)ch;
+                    g_drone_isolation.store(iso != 0, std::memory_order_relaxed);
+                    continue;
+                } else if (cmd == 0xB0) { // Control Change
                     // If CC#7 (Channel Volume)
                     if (d1 == 7) {
                         float normVal = (float)d2 / 127.0f;

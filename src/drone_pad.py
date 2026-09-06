@@ -63,6 +63,8 @@ class DronePadManager:
             if root:
                 self.current_root = root
             self.is_active = True
+            # Engage Part 8 hardware isolation so keybed and sustain pedal do not override Part 8
+            self.host.set_drone_isolation(True)
             # Set dedicated Part 8 volume and cutoff
             self.host.set_part_volume(self.drone_part, self.volume)
             self.host.send_part_cc(self.drone_part, 74, self.cutoff) # CC 74 Brightness / Cutoff
@@ -84,6 +86,8 @@ class DronePadManager:
             for p in self.active_pitches:
                 self.host.send_note_off(self.drone_part - 1, p)
             self.active_pitches = []
+            # Release Part 8 isolation so it returns to being a normal playable keyboard part
+            self.host.set_drone_isolation(False)
 
     def set_root(self, root: str):
         with self._lock:

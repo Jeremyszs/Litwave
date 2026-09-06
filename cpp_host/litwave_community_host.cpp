@@ -617,6 +617,9 @@ void UdpControlServerThread() {
                         float gVal = *(float*)(buf + 4);
                         g_master_gain.store(gVal, std::memory_order_relaxed);
                     }
+                } else if (cmd == 0x44) { // 'D': Drone Pad Isolation Toggle: [ 'D', isIsolated (0 or 1), 0, 0 ]
+                    int iso = (int)ch;
+                    g_drone_isolation.store(iso != 0, std::memory_order_relaxed);
                 } else if (cmd == 0x4B) { // 'K': Assign Voice: [ 'K', partNum (1-8), bankIdx, presetIdx ]
  int p = (int)ch - 1;
  int bank = (int)d1;

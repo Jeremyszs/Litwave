@@ -455,6 +455,17 @@ class MontageHost:
             print(f"Failed to send Note Off: {e}")
             return False
 
+    def set_drone_isolation(self, is_isolated: bool) -> bool:
+        """Toggle Part 8 isolation over UDP command 'D' (0x44)"""
+        try:
+            val = 1 if is_isolated else 0
+            packet = bytes([0x44, val, 0, 0])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to send Drone Isolation: {e}")
+            return False
+
     def assign_part_voice(self, part_num: int, bank_idx: int, preset_idx: int) -> bool:
         """Assign voice preset to a part over UDP command 'K' (0x4B)"""
         try:
