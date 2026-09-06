@@ -717,6 +717,11 @@ async def api_drone_pad(request):
         elif action == "set_cutoff":
             cutoff = data.get("cutoff", 68)
             state.drone_pad.set_cutoff(cutoff)
+        elif action == "set_voice":
+            vid = data.get("voice_id", "")
+            bank = data.get("bank", 6)
+            preset = data.get("preset", 4)
+            state.drone_pad.set_voice(vid, bank, preset)
         return JSONResponse({"success": True, "drone_pad": state.drone_pad.get_status()})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)

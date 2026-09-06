@@ -625,6 +625,37 @@ void UdpControlServerThread() {
                     trigger_note_on(7, d1, vel);
                 } else if (cmd == 0x88) { // 0x88: Dedicated Drone Note Off (routes to Part 8, index 7)
                     trigger_note_off(7, d1);
+                } else if (cmd == 0x99) { // 0x99: Drone Voice Preset Change: [ 0x99, bankIdx, presetIdx, 0 ]
+                    // In Community engine, Part 8 is the drone part, so map to command 'K' on part 8
+                    int bank = (int)ch;
+                    int preset = (int)d1;
+                    tsf* targetBank = bank_gu;
+                    if (bank == 1) targetBank = bank_sy22;
+                    else if (bank == 2) targetBank = bank_roland;
+                    else if (bank == 5) targetBank = bank_yamaha_c5;
+                    else if (bank == 6) targetBank = bank_chateau;
+                    else if (bank == 10) targetBank = bank_nord_grand;
+                    else if (bank == 14) targetBank = bank_roland_rd;
+                    else if (bank == 16) targetBank = bank_rhodes_plus;
+                    else if (bank == 17) targetBank = bank_zenology;
+                    if (targetBank) {
+                        std::lock_guard<std::mutex> lock(g_synth_mutex);
+                        if (g_part_synths[7]) tsf_close(g_part_synths[7]);
+                        g_part_synths[7] = tsf_copy(targetBank);
+                        g_part_bank_indices[7] = bank;
+                        g_part_preset_indices[7] = preset;
+                        tsf_channel_set_presetindex(g_part_synths[7], 0, preset);
+                        float gainDb = get_calibrated_preset_gain_db(bank, preset);
+                        tsf_set_output(g_part_synths[7], TSF_STEREO_INTERLEAVED, 44100, gainDb);
+                        save_current_session_state();
+                    }
+                } else if (cmd == 0x97) { // 0x97: Drone Volume Update: [ 0x97, vol (0-127), 0, 0 ]
+                    g_part_volumes[7].store((float)ch / 127.0f, std::memory_order_relaxed);
+                } else if (cmd == 0x96) { // 0x96: Drone Cutoff: [ 0x96, cutoffVal (0-127), 0, 0 ]
+                    if (g_part_synths[7]) {
+                        std::lock_guard<std::mutex> lock(g_synth_mutex);
+                        tsf_channel_midi_control(g_part_synths[7], 0, 74, (int)ch);
+                    }
                 } else if (cmd == 0x4B) { // 'K': Assign Voice: [ 'K', partNum (1-8), bankIdx, presetIdx ]
  int p = (int)ch - 1;
  int bank = (int)d1;

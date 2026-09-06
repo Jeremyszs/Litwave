@@ -529,6 +529,21 @@
       <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;" id="rDroneRootsGrid">
         <!-- Root keys rendered dynamically -->
       </div>
+      <!-- Drone Voice Dropdown on Mobile -->
+      <div style="display: flex; flex-direction: column; gap: 4px; background: var(--bg-panel); padding: 8px; border-radius: 6px; border: 1px solid var(--border-dim);">
+        <span style="font-size: 10px; font-weight: 600; color: var(--text-dim);">PAD VOICE</span>
+        <select id="rDroneVoiceSelect" class="custom-select-dark" style="width: 100%; height: 26px; font-size: 10px;" onchange="changeDroneVoiceRemote(this.value)">
+          <option value="6:4">Chateau Ultra-Soft Ambient Pad</option>
+          <option value="2:89">Roland Warm Analog Pad</option>
+          <option value="2:91">Roland Soft Choir Pad</option>
+          <option value="2:92">Bowed Silk String Pad</option>
+          <option value="1:11">Yamaha DynaPad Warm</option>
+          <option value="1:56">Yamaha Atmosphere Wash</option>
+          <option value="0:94">Halo Ethereal Soft Wash</option>
+          <option value="0:189">Orchestral Warm Ambient Pad</option>
+          <option value="17:90">Roland Zenology Polysynth Anthem</option>
+        </select>
+      </div>
       <!-- Drone Volume & Cutoff on Mobile -->
       <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; background: var(--bg-panel); padding: 8px; border-radius: 6px; border: 1px solid var(--border-dim);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1956,6 +1971,17 @@
         vSlider.value = g_rDroneState.volume;
       }
       renderRemoteDroneRoots();
+    }
+
+    function changeDroneVoiceRemote(val) {
+      const parts = val.split(":");
+      const bank = parseInt(parts[0]);
+      const preset = parseInt(parts[1]);
+      fetch("/api/drone-pad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_voice", bank: bank, preset: preset })
+      }).catch(e => console.error("Remote drone voice error:", e));
     }
 
     function setDroneVolumeRemote(val) {

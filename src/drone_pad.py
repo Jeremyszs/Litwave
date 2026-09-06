@@ -37,6 +37,9 @@ class DronePadManager:
         self.drone_part = 8 # Part 8 (channel index 7) is dedicated for Ambient Drone Pad
         self.is_active = False
         self.current_root = "C"
+        self.current_voice_id = "chateau_warm_pad_lush"
+        self.current_bank = 6
+        self.current_preset = 4
         self.volume = 95 # 0-127
         self.cutoff = 68 # 0-127 (smooth warm filter)
         self.active_pitches: List[int] = []
@@ -47,6 +50,9 @@ class DronePadManager:
         return {
             "active": self.is_active,
             "root": self.current_root,
+            "voice_id": self.current_voice_id,
+            "bank": self.current_bank,
+            "preset": self.current_preset,
             "volume": self.volume,
             "cutoff": self.cutoff,
             "part": self.drone_part,
@@ -63,11 +69,10 @@ class DronePadManager:
             if root:
                 self.current_root = root
             self.is_active = True
-            # Engage Part 8 hardware isolation so keybed and sustain pedal do not override Part 8
-            self.host.set_drone_isolation(True)
-            # Set dedicated Part 8 volume and cutoff
-            self.host.set_part_volume(self.drone_part, self.volume)
-            self.host.send_part_cc(self.drone_part, 74, self.cutoff) # CC 74 Brightness / Cutoff
+            # Configure dedicated Drone Synth parameters over UDP
+            self.host.set_drone_voice(self.current_bank, self.current_preset)
+            self.host.set_drone_volume(self.volume)
+            self.host.set_drone_cutoff(self.cutoff)
             
             # Send note offs for any lingering pitches
             for p in self.active_pitches:
@@ -86,8 +91,28 @@ class DronePadManager:
             for p in self.active_pitches:
                 self.host.send_drone_note_off(p)
             self.active_pitches = []
-            # Release Part 8 isolation so it returns to being a normal playable keyboard part
-            self.host.set_drone_isolation(False)
+
+    def set_voice(self, voice_id: str, bank: int, preset: int):
+        with self._lock:
+            self.current_voice_id = voice_id
+            self.current_bank = int(bank)
+            self.current_preset = int(preset)
+            self.host.set_drone_voice(self.current_bank, self.current_preset)
+            if self.is_active:
+                # Re-trigger current active chord with the newly selected voice
+                notes = list(self.active_pitches)
+                for note in notes:
+                    self.host.send_drone_note_on(note, velocity=90)
+
+    def set_volume(self, vol: int):
+        vol = max(0, min(127, int(vol)))
+        self.volume = vol
+        self.host.set_drone_volume(vol)
+
+    def set_cutoff(self, cutoff: int):
+        cutoff = max(0, min(127, int(cutoff)))
+        self.cutoff = cutoff
+        self.host.set_drone_cutoff(cutoff)
 
     def set_root(self, root: str):
         with self._lock:

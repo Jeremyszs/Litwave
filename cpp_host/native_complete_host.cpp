@@ -13,6 +13,10 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <mutex>
+
+#define TSF_IMPLEMENTATION
+#include "tsf.h"
 
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
@@ -290,11 +294,6 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
         unsigned char type = status & 0xF0;
         unsigned char channel = status & 0x0F;
 
-        // If drone isolation is active and event is directed at Part 8 (channel index 7), block physical keyboard from overriding it
-        if (g_drone_isolation.load(std::memory_order_relaxed) && channel == 7) {
-            return;
-        }
-
         if (type == 0x90) {
             float vel = (float)data2 / 127.0f;
             if (data2 > 0) {
@@ -327,6 +326,12 @@ static StageWarmth g_stage_warmth(44100.0f);
 static CallbackPerformanceMonitor g_callback_monitor;
 static std::atomic<bool> g_analyzer_enabled{true};
 static std::atomic<bool> g_warmth_enabled{true};
+
+// Dedicated Isolated Ambient Worship Drone Pad Synthesizer (Zero Interference with Yamaha VST)
+static tsf* g_drone_synth = nullptr;
+static std::mutex g_drone_mutex;
+static std::atomic<float> g_drone_volume{0.75f};
+static float g_drone_audio_buf[1024];
 static std::atomic<float> g_warmth_drive{1.2f};
 static std::atomic<int> g_warmth_mode{0}; // 0: Tape Warmth, 1: Crisp Stage
 static std::atomic<float> g_warmth_meter{0.0f};
@@ -571,6 +576,17 @@ void audio_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
     data.outputs = &outBus;
 
     g_processor->process(data);
+
+    // Mix in Dedicated Isolated Ambient Drone Pad audio
+    float droneVol = g_drone_volume.load(std::memory_order_relaxed);
+    if (g_drone_synth && droneVol > 0.001f && frameCount <= 512) {
+        std::lock_guard<std::mutex> lock(g_drone_mutex);
+        tsf_render_float(g_drone_synth, g_drone_audio_buf, (int)frameCount, 0);
+        for (ma_uint32 f = 0; f < frameCount; f++) {
+            g_synth_out_l[f] += g_drone_audio_buf[f * 2 + 0] * droneVol;
+            g_synth_out_r[f] += g_drone_audio_buf[f * 2 + 1] * droneVol;
+        }
+    }
 
     // Compute real peak for VST Synth channel
     float synth_max = 0.0f;
@@ -865,13 +881,41 @@ void UdpControlServerThread() {
                     int iso = (int)ch;
                     g_drone_isolation.store(iso != 0, std::memory_order_relaxed);
                     continue;
-                } else if (cmd == 0x98) { // 0x98: Dedicated Drone Note On directly to Yamaha Part 8 voice bus (Channel 0, isolated from hands)
+                } else if (cmd == 0x98) { // 0x98: Dedicated Drone Note On (routes to isolated SoundFont drone synth)
                     float vel = (float)d2 / 127.0f;
-                    g_active_plugin_notes[0][d1].store(vel > 0.0f, std::memory_order_relaxed);
-                    enqueue_midi_note(Event::kNoteOnEvent, 0, (int16)d1, vel);
+                    if (g_drone_synth) {
+                        std::lock_guard<std::mutex> lock(g_drone_mutex);
+                        tsf_channel_note_on(g_drone_synth, 0, (int)d1, vel);
+                    }
                 } else if (cmd == 0x88) { // 0x88: Dedicated Drone Note Off
-                    g_active_plugin_notes[0][d1].store(false, std::memory_order_relaxed);
-                    enqueue_midi_note(Event::kNoteOffEvent, 0, (int16)d1, 0.0f);
+                    if (g_drone_synth) {
+                        std::lock_guard<std::mutex> lock(g_drone_mutex);
+                        tsf_channel_note_off(g_drone_synth, 0, (int)d1);
+                    }
+                } else if (cmd == 0x99) { // 0x99: Drone Voice Preset Change: [ 0x99, bankIdx, presetIdx, 0 ]
+                    int bank = (int)ch;
+                    int preset = (int)d1;
+                    const char* sfPath = "soundfonts/Chateau_Grand_v2.2.sf2";
+                    if (bank == 0) sfPath = "soundfonts/GeneralUser-GS.sf2";
+                    else if (bank == 1) sfPath = "soundfonts/Yamaha-SY22.sf2";
+                    else if (bank == 2) sfPath = "soundfonts/Roland_SC-88.sf2";
+                    else if (bank == 6) sfPath = "soundfonts/Chateau_Grand_v2.2.sf2";
+                    else if (bank == 17) sfPath = "soundfonts/Roland_Zenology_LiveHQ.sf2";
+
+                    std::lock_guard<std::mutex> lock(g_drone_mutex);
+                    if (g_drone_synth) tsf_close(g_drone_synth);
+                    g_drone_synth = tsf_load_filename(sfPath);
+                    if (g_drone_synth) {
+                        tsf_channel_set_presetindex(g_drone_synth, 0, preset);
+                        tsf_set_output(g_drone_synth, TSF_STEREO_INTERLEAVED, 44100, 3.5f);
+                    }
+                } else if (cmd == 0x97) { // 0x97: Drone Volume Update: [ 0x97, vol (0-127), 0, 0 ]
+                    g_drone_volume.store((float)ch / 127.0f, std::memory_order_relaxed);
+                } else if (cmd == 0x96) { // 0x96: Drone Cutoff/Warmth CC: [ 0x96, cutoffVal (0-127), 0, 0 ]
+                    if (g_drone_synth) {
+                        std::lock_guard<std::mutex> lock(g_drone_mutex);
+                        tsf_channel_midi_control(g_drone_synth, 0, 74, (int)ch);
+                    }
                 } else if (cmd == 0xB0) { // Control Change
                     // If CC#7 (Channel Volume)
                     if (d1 == 7) {
@@ -1041,6 +1085,23 @@ int main(int argc, char* argv[]) {
     DummyComponentHandler handler;
     g_controller->setComponentHandler(&handler);
 
+    // Dump parameter IDs to a local file for inspection
+    {
+        std::ofstream pOut("montage_all_params.txt");
+        int numP = g_controller->getParameterCount();
+        pOut << "Total parameters: " << numP << std::endl;
+        ParameterInfo pInfo;
+        for (int i = 0; i < numP; i++) {
+            if (g_controller->getParameterInfo(i, pInfo) == kResultOk) {
+                std::wstring wTitle((wchar_t*)pInfo.title);
+                std::string sTitle(wTitle.begin(), wTitle.end());
+                pOut << "Tag: " << pInfo.id << " | Title: " << sTitle << " | Steps: " << pInfo.stepCount << std::endl;
+            }
+        }
+        pOut.close();
+        std::cout << "[OK] Exported " << numP << " MONTAGE M parameter tags to montage_all_params.txt" << std::endl;
+    }
+
     IConnectionPoint* cpComp = nullptr;
     IConnectionPoint* cpCtrl = nullptr;
     g_comp->queryInterface(IConnectionPoint::iid, (void**)&cpComp);
@@ -1092,6 +1153,18 @@ int main(int argc, char* argv[]) {
     // Explicit initial state sync & panic reset to guarantee audio buffers are active
     add_panic_events_to_current_block();
     std::cout << "[OK] Yamaha MONTAGE M Audio & DSP Engine Activated (44.1kHz/256)" << std::endl;
+
+    // Pre-initialize default warm ambient drone synth
+    {
+        std::lock_guard<std::mutex> lock(g_drone_mutex);
+        g_drone_synth = tsf_load_filename("soundfonts/Chateau_Grand_v2.2.sf2");
+        if (!g_drone_synth) g_drone_synth = tsf_load_filename("soundfonts/Yamaha-SY22.sf2");
+        if (g_drone_synth) {
+            tsf_channel_set_presetindex(g_drone_synth, 0, 4); // Chateau Ultra-Soft Ambient Pad
+            tsf_set_output(g_drone_synth, TSF_STEREO_INTERLEAVED, 44100, 3.5f);
+            std::cout << "[OK] Dedicated Ambient Drone Pad Engine Activated (Isolated Background Bus)" << std::endl;
+        }
+    }
 
     // --- STEP 2: OPEN SOUNDCARD AUDIO OUTPUT (Target Soundcard specifically) ---
     ma_context context;

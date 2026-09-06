@@ -455,6 +455,38 @@ class MontageHost:
             print(f"Failed to send Drone Note Off: {e}")
             return False
 
+    def set_drone_voice(self, bank_idx: int, preset_idx: int) -> bool:
+        """Assign voice preset to dedicated Drone Synth over UDP command 0x99"""
+        try:
+            packet = bytes([0x99, bank_idx & 0xFF, preset_idx & 0xFF, 0])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to set Drone voice: {e}")
+            return False
+
+    def set_drone_volume(self, vol: int) -> bool:
+        """Set dedicated Drone volume over UDP command 0x97"""
+        try:
+            vol = max(0, min(127, int(vol)))
+            packet = bytes([0x97, vol & 0x7F, 0, 0])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to set Drone volume: {e}")
+            return False
+
+    def set_drone_cutoff(self, cutoff: int) -> bool:
+        """Set dedicated Drone cutoff filter over UDP command 0x96"""
+        try:
+            cutoff = max(0, min(127, int(cutoff)))
+            packet = bytes([0x96, cutoff & 0x7F, 0, 0])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to set Drone cutoff: {e}")
+            return False
+
     def send_note_on(self, channel: int, note: int, velocity: int = 80) -> bool:
         """Send Note On: [ 0x90, channel (0-15), note (0-127), velocity (0-127) ]"""
         try:
