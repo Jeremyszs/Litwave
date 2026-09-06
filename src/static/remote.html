@@ -392,6 +392,9 @@
       <span style="font-size: 11px; color: var(--text-faint); font-weight: 500;">Practice Station</span>
     </div>
     <div style="display: flex; align-items: center; gap: 6px;">
+      <button id="remoteStageModeBtn" class="btn" style="padding: 3px 8px; font-size: 10px; font-weight: 700; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleStageView()">
+        STAGE
+      </button>
       <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="openRemoteEngineModal()" title="VST Engine Manager">
         <span id="remoteVstCycleText">VST Engine</span>
       </button>
@@ -478,6 +481,53 @@
       <div style="text-align: right;">
         <div class="util-label">Active Notes</div>
         <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);" id="remoteLastNote">READY</div>
+      </div>
+    </div>
+
+    <!-- Fullscreen High-Contrast Stage View Overlay -->
+    <div id="remoteStageOverlay" style="display: none; position: fixed; inset: 0; background: #000000; z-index: 99999; flex-direction: column; padding: 16px; justify-content: space-between;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 8px;">
+        <span style="font-size: 11px; font-weight: 700; color: #666; letter-spacing: 1px;">STAGE VIEW</span>
+        <button class="btn" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" onclick="toggleStageView()">EXIT</button>
+      </div>
+
+      <!-- Center Big Chord Display -->
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; my: auto; flex: 1;">
+        <span style="font-size: 14px; font-weight: 600; color: #888; font-family: var(--font-mono);">PLAYING CHORD</span>
+        <div id="stageLiveChord" style="font-size: 72px; font-weight: 900; color: #ffffff; font-family: var(--font-mono); line-height: 1;">--</div>
+        <div id="stageLiveNash" style="font-size: 28px; font-weight: 800; color: var(--accent); font-family: var(--font-mono);">[ - ]</div>
+
+        <!-- Next upcoming chord -->
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 16px; background: #111; padding: 10px 20px; border-radius: 8px; border: 1px solid #333;">
+          <span style="font-size: 12px; font-weight: 700; color: #888;">NEXT</span>
+          <span id="stageNextChord" style="font-size: 24px; font-weight: 800; color: var(--accent);">--</span>
+          <span id="stageNextCountdown" style="font-size: 13px; font-family: var(--font-mono); color: #888;"></span>
+        </div>
+      </div>
+
+      <!-- Bottom Ambient Pad Root Quick Switcher -->
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #0a0a0a; padding: 12px; border-radius: 8px; border: 1px solid #222;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11px; font-weight: 700; color: #888;">AMBIENT DRONE PAD</span>
+          <button id="stageDronePadToggleBtn" class="btn" style="padding: 2px 8px; font-size: 10px;" onclick="toggleDroneActiveRemote()">START</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;" id="stageDroneRoots">
+          <!-- C, Db, D, Eb, E, F, Gb, G, Ab, A, Bb, B -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Ambient Worship Drone Pad (Mobile Card) -->
+    <div class="card" style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span id="rDroneDot" class="status-dot" style="background: var(--text-muted);"></span>
+          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Ambient Worship Pad</span>
+        </div>
+        <button id="rDroneToggleBtn" class="btn btn-primary" style="padding: 2px 8px; font-size: 10px;" onclick="toggleDroneActiveRemote()">START</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;" id="rDroneRootsGrid">
+        <!-- Root keys rendered dynamically -->
       </div>
     </div>
 
@@ -1824,6 +1874,109 @@
       if (modal) modal.style.display = "none";
     }
 
+    // ==========================================
+    // Mobile Stage View & Ambient Pad Handlers
+    // ==========================================
+    const REMOTE_DRONE_KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    let g_rDroneState = { active: false, root: "C", volume: 95, cutoff: 68 };
+    let g_isStageViewOpen = false;
+
+    function toggleStageView() {
+      g_isStageViewOpen = !g_isStageViewOpen;
+      const overlay = document.getElementById("remoteStageOverlay");
+      const btn = document.getElementById("remoteStageModeBtn");
+      if (overlay) overlay.style.display = g_isStageViewOpen ? "flex" : "none";
+      if (btn) btn.classList.toggle("btn-active", g_isStageViewOpen);
+      if (g_isStageViewOpen) {
+        renderRemoteDroneRoots();
+        syncStageChordDisplays();
+      }
+    }
+
+    function renderRemoteDroneRoots() {
+      const grids = [document.getElementById("rDroneRootsGrid"), document.getElementById("stageDroneRoots")];
+      grids.forEach(grid => {
+        if (!grid) return;
+        grid.innerHTML = REMOTE_DRONE_KEYS.map(k => `
+          <button class="btn ${g_rDroneState.root === k ? 'btn-active' : ''}" 
+                  style="padding: 6px 2px; font-weight: 700; font-size: 11px; font-family: var(--font-mono); border: 1px solid ${g_rDroneState.root === k ? 'var(--accent)' : 'var(--border-dim)'};"
+                  onclick="selectDroneRootRemote('${k}')">
+            ${k}
+          </button>
+        `).join("");
+      });
+    }
+
+    function syncRemoteDroneUI() {
+      const dot = document.getElementById("rDroneDot");
+      const btn = document.getElementById("rDroneToggleBtn");
+      const stBtn = document.getElementById("stageDronePadToggleBtn");
+      if (dot) dot.style.background = g_rDroneState.active ? "var(--success)" : "var(--text-muted)";
+      if (btn) {
+        btn.innerText = g_rDroneState.active ? `STOP (${g_rDroneState.root})` : "START";
+        btn.className = g_rDroneState.active ? "btn btn-danger" : "btn btn-primary";
+      }
+      if (stBtn) {
+        stBtn.innerText = g_rDroneState.active ? `STOP (${g_rDroneState.root})` : "START";
+        stBtn.className = g_rDroneState.active ? "btn btn-danger" : "btn btn-primary";
+      }
+      renderRemoteDroneRoots();
+    }
+
+    async function toggleDroneActiveRemote() {
+      const action = g_rDroneState.active ? "stop" : "start";
+      try {
+        const res = await fetch("/api/drone-pad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: action, root: g_rDroneState.root })
+        });
+        const data = await res.json();
+        if (data.drone_pad) {
+          g_rDroneState = data.drone_pad;
+          syncRemoteDroneUI();
+        }
+      } catch (e) {
+        console.error("Failed to toggle drone:", e);
+      }
+    }
+
+    async function selectDroneRootRemote(k) {
+      g_rDroneState.root = k;
+      renderRemoteDroneRoots();
+      try {
+        const res = await fetch("/api/drone-pad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_root", root: k })
+        });
+        const data = await res.json();
+        if (data.drone_pad) {
+          g_rDroneState = data.drone_pad;
+          syncRemoteDroneUI();
+        }
+      } catch (e) {
+        console.error("Failed to set drone root:", e);
+      }
+    }
+
+    function syncStageChordDisplays() {
+      const curTxt = document.getElementById("remoteChordText")?.innerText || "--";
+      const nashTxt = document.getElementById("remoteNashvilleText")?.innerText || "";
+      const nxtTxt = document.getElementById("rLiveNextChord")?.innerText || "--";
+      const nxtCd = document.getElementById("rLiveNextCount")?.innerText || "";
+
+      const sLive = document.getElementById("stageLiveChord");
+      const sNash = document.getElementById("stageLiveNash");
+      const sNxt = document.getElementById("stageNextChord");
+      const sCd = document.getElementById("stageNextCountdown");
+
+      if (sLive) sLive.innerText = curTxt;
+      if (sNash) sNash.innerText = nashTxt || "[ - ]";
+      if (sNxt) sNxt.innerText = nxtTxt;
+      if (sCd) sCd.innerText = nxtCd;
+    }
+
     function chooseRemoteEngine(eng) {
       remotePendingEngine = eng;
       updateRemoteEngineModalUI();
@@ -2124,6 +2277,7 @@
               } else {
                 document.getElementById("remoteLastNote").innerText = "READY";
               }
+              if (g_isStageViewOpen) syncStageChordDisplays();
             }
             return;
           }
@@ -2264,6 +2418,10 @@
           // 4. Bidirectional Mixer Volume Telemetry (From Desktop / Engine to Remote)
           const audio = msg.audio;
           const montage = msg.montage;
+          if (msg.drone_pad) {
+            g_rDroneState = msg.drone_pad;
+            syncRemoteDroneUI();
+          }
           if (audio) {
             if (activeMixerDrag !== 'track' && audio.track_volume !== undefined) {
               const pct = (audio.track_volume / 1.0) * 100;

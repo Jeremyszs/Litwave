@@ -1172,6 +1172,14 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
         <span>Parts Mixer</span>
       </button>
+      <button class="btn-header-action" id="dronePadHeaderBtn" onclick="toggleDronePadModal()" title="Continuous Ambient Worship Drone Pad (Root + 5th)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span id="dronePadBtnLabel">Drone Pad</span>
+      </button>
+      <button class="btn-header-action" onclick="openSetlistModal()" title="Setlist & Patch Snapshot Manager">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span>Setlists</span>
+      </button>
       <button class="btn-header-action" onclick="openPlaylistModal()" title="View and switch songs in practice playlist">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
         Playlist
@@ -1995,6 +2003,72 @@
         <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px;">
           <button class="btn" onclick="closeRenameSceneModal()">Cancel</button>
           <button class="btn btn-primary" onclick="confirmRenameScene()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Continuous Ambient Worship Drone Pad Modal -->
+  <div class="modal-backdrop" id="dronePadModal" style="display: none;">
+    <div class="modal-window" style="width: 440px; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span id="droneModalStatusDot" class="status-dot" style="background: var(--text-muted);"></span>
+          <span>Ambient Worship Drone Pad (Root + 5th)</span>
+        </div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="toggleDronePadModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 11px; color: var(--text-dim);">
+          Drives continuous root-5th background pad (Part 8) with smooth 2-second crossfades between keys.
+        </div>
+
+        <!-- 12 Root Key Buttons -->
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;" id="droneKeysGrid">
+          <!-- C, Db, D, Eb, E, F, Gb, G, Ab, A, Bb, B -->
+        </div>
+
+        <!-- Volume & Filter Controls -->
+        <div style="display: flex; flex-direction: column; gap: 10px; background: var(--bg-panel); padding: 10px; border-radius: 6px; border: 1px solid var(--border-dim);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-main);">DRONE VOLUME</span>
+            <span id="droneVolValue" style="font-size: 11px; color: var(--accent); font-family: monospace;">75%</span>
+          </div>
+          <input type="range" id="droneVolSlider" min="0" max="127" value="95" style="width: 100%; accent-color: var(--accent);" oninput="setDroneVolume(this.value)">
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-main);">WARMTH / CUTOFF</span>
+            <span id="droneCutoffValue" style="font-size: 11px; color: var(--accent); font-family: monospace;">54%</span>
+          </div>
+          <input type="range" id="droneCutoffSlider" min="0" max="127" value="68" style="width: 100%; accent-color: var(--accent);" oninput="setDroneCutoff(this.value)">
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+          <button id="dronePadToggleActionBtn" class="btn btn-primary" style="flex: 1; padding: 6px 12px;" onclick="toggleDroneActiveState()">Start Ambient Pad</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setlist & Patch Manager Modal -->
+  <div class="modal-backdrop" id="setlistModal" style="display: none;">
+    <div class="modal-window" style="width: 480px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title">Live Setlist & Patch Manager</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSetlistModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <select id="setlistSelectDropdown" class="custom-select-dark" style="flex: 1; height: 30px;" onchange="onSelectSetlist(this.value)"></select>
+          <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="promptNewSetlist()">+ New</button>
+          <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="promptAddCurrentSongToSetlist()">+ Add Song</button>
+        </div>
+        <div id="setlistSongsList" style="display: flex; flex-direction: column; gap: 6px;">
+          <!-- Loaded dynamically -->
         </div>
       </div>
     </div>
@@ -3701,6 +3775,287 @@
       document.getElementById("playlistModal").style.display = "none";
     }
 
+    // ==========================================
+    // Continuous Worship Drone Pad Controller
+    // ==========================================
+    const DRONE_ROOT_KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    let g_dronePadState = { active: false, root: "C", volume: 95, cutoff: 68 };
+
+    function toggleDronePadModal() {
+      const modal = document.getElementById("dronePadModal");
+      const isVisible = (modal.style.display === "flex");
+      modal.style.display = isVisible ? "none" : "flex";
+      if (!isVisible) {
+        renderDroneKeys();
+        syncDroneModalUi();
+      }
+    }
+
+    function renderDroneKeys() {
+      const grid = document.getElementById("droneKeysGrid");
+      if (!grid) return;
+      grid.innerHTML = DRONE_ROOT_KEYS.map(k => `
+        <button class="btn ${g_dronePadState.root === k ? 'btn-active' : ''}" 
+                style="padding: 8px 4px; font-weight: 600; font-size: 12px; font-family: var(--font-mono); border: 1px solid ${g_dronePadState.root === k ? 'var(--accent)' : 'var(--border-dim)'};"
+                onclick="selectDroneRoot('${k}')">
+          ${k}
+        </button>
+      `).join("");
+    }
+
+    function syncDroneModalUi() {
+      const dot = document.getElementById("droneModalStatusDot");
+      const btn = document.getElementById("dronePadToggleActionBtn");
+      const label = document.getElementById("dronePadBtnLabel");
+      const hdrBtn = document.getElementById("dronePadHeaderBtn");
+      if (dot) dot.style.background = g_dronePadState.active ? "var(--success)" : "var(--text-muted)";
+      if (btn) {
+        btn.innerText = g_dronePadState.active ? `Stop Pad (${g_dronePadState.root})` : "Start Ambient Pad";
+        btn.className = g_dronePadState.active ? "btn btn-danger" : "btn btn-primary";
+      }
+      if (hdrBtn) hdrBtn.classList.toggle("btn-active", g_dronePadState.active);
+      if (label) label.innerText = g_dronePadState.active ? `Pad: ${g_dronePadState.root}` : "Drone Pad";
+
+      const volVal = document.getElementById("droneVolValue");
+      const volSlider = document.getElementById("droneVolSlider");
+      if (volVal && volSlider) {
+        volVal.innerText = `${Math.round((g_dronePadState.volume / 127) * 100)}%`;
+        volSlider.value = g_dronePadState.volume;
+      }
+
+      const cutVal = document.getElementById("droneCutoffValue");
+      const cutSlider = document.getElementById("droneCutoffSlider");
+      if (cutVal && cutSlider) {
+        cutVal.innerText = `${Math.round((g_dronePadState.cutoff / 127) * 100)}%`;
+        cutSlider.value = g_dronePadState.cutoff;
+      }
+      renderDroneKeys();
+    }
+
+    async function toggleDroneActiveState() {
+      const action = g_dronePadState.active ? "stop" : "start";
+      try {
+        const res = await fetch("/api/drone-pad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: action, root: g_dronePadState.root })
+        });
+        const data = await res.json();
+        if (data.drone_pad) {
+          g_dronePadState = data.drone_pad;
+          syncDroneModalUi();
+        }
+      } catch (e) {
+        console.error("Drone toggle failed:", e);
+      }
+    }
+
+    async function selectDroneRoot(key) {
+      g_dronePadState.root = key;
+      renderDroneKeys();
+      try {
+        const res = await fetch("/api/drone-pad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_root", root: key })
+        });
+        const data = await res.json();
+        if (data.drone_pad) {
+          g_dronePadState = data.drone_pad;
+          syncDroneModalUi();
+        }
+      } catch (e) {
+        console.error("Drone root change failed:", e);
+      }
+    }
+
+    async function setDroneVolume(val) {
+      g_dronePadState.volume = parseInt(val);
+      document.getElementById("droneVolValue").innerText = `${Math.round((val / 127) * 100)}%`;
+      fetch("/api/drone-pad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_volume", volume: parseInt(val) })
+      }).catch(() => {});
+    }
+
+    async function setDroneCutoff(val) {
+      g_dronePadState.cutoff = parseInt(val);
+      document.getElementById("droneCutoffValue").innerText = `${Math.round((val / 127) * 100)}%`;
+      fetch("/api/drone-pad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_cutoff", cutoff: parseInt(val) })
+      }).catch(() => {});
+    }
+
+    // ==========================================
+    // Setlist & Patch Manager Handlers
+    // ==========================================
+    let g_allSetlists = [];
+    let g_activeSetlistId = "sunday_morning";
+
+    async function openSetlistModal() {
+      document.getElementById("setlistModal").style.display = "flex";
+      await refreshSetlistsUI();
+    }
+
+    function closeSetlistModal() {
+      document.getElementById("setlistModal").style.display = "none";
+    }
+
+    async function refreshSetlistsUI() {
+      try {
+        const res = await fetch("/api/setlist");
+        const data = await res.json();
+        if (data.setlists) {
+          g_allSetlists = data.setlists;
+          renderSetlistDropdown();
+          renderActiveSetlistSongs();
+        }
+      } catch (e) {
+        console.error("Failed to load setlists:", e);
+      }
+    }
+
+    function renderSetlistDropdown() {
+      const dd = document.getElementById("setlistSelectDropdown");
+      if (!dd) return;
+      dd.innerHTML = g_allSetlists.map(s => `
+        <option value="${s.id}" ${s.id === g_activeSetlistId ? 'selected' : ''}>${s.name} (${(s.songs || []).length} songs)</option>
+      `).join("");
+    }
+
+    function onSelectSetlist(id) {
+      g_activeSetlistId = id;
+      renderActiveSetlistSongs();
+    }
+
+    function renderActiveSetlistSongs() {
+      const container = document.getElementById("setlistSongsList");
+      if (!container) return;
+      const cur = g_allSetlists.find(s => s.id === g_activeSetlistId);
+      if (!cur || !cur.songs || cur.songs.length === 0) {
+        container.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">No songs in this setlist yet. Click "+ Add Song" to bundle the current track & VST sound patch.</div>';
+        return;
+      }
+      container.innerHTML = cur.songs.map((song, idx) => `
+        <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; cursor: pointer;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">
+            <span style="font-size: 12px; font-weight: 700; color: var(--accent); width: 18px;">${idx + 1}</span>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-main);">${song.title || song.filename}</span>
+              <span style="font-size: 10px; color: var(--text-dim);">
+                Key: <b style="color: var(--accent);">${song.key || '--'}</b> · Pad: <b style="color: var(--text-main);">${song.patch_snapshot?.drone_root || '--'}</b> · Engine: ${song.patch_snapshot?.engine_type || 'yamaha'}
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <button class="btn btn-primary" style="padding: 2px 6px; font-size: 10px;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">Load</button>
+            <button class="btn" style="padding: 2px 4px; color: var(--danger); font-size: 10px;" onclick="removeSongFromSetlist('${cur.id}', '${song.id}')" title="Remove">✕</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function promptNewSetlist() {
+      const name = prompt("Enter new setlist name:", "Sunday Evening Rehearsal");
+      if (!name) return;
+      try {
+        const res = await fetch("/api/setlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "create_setlist", name: name })
+        });
+        const data = await res.json();
+        if (data.setlist) {
+          g_activeSetlistId = data.setlist.id;
+          await refreshSetlistsUI();
+        }
+      } catch (e) {
+        alert("Failed to create setlist: " + e);
+      }
+    }
+
+    async function promptAddCurrentSongToSetlist() {
+      const songTitle = document.getElementById("songFilename")?.innerText || "Current Song";
+      const keyVal = document.getElementById("songKeyDisplay")?.innerText || "C";
+      const songData = {
+        title: songTitle,
+        filename: songTitle,
+        key: keyVal
+      };
+      try {
+        const res = await fetch("/api/setlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add_song",
+            setlist_id: g_activeSetlistId,
+            song_data: songData
+          })
+        });
+        const data = await res.json();
+        if (data.setlists) {
+          g_allSetlists = data.setlists;
+          renderActiveSetlistSongs();
+        }
+      } catch (e) {
+        alert("Failed to add song to setlist: " + e);
+      }
+    }
+
+    async function removeSongFromSetlist(setlistId, songId) {
+      if (!confirm("Remove song from setlist?")) return;
+      try {
+        const res = await fetch("/api/setlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "remove_song",
+            setlist_id: setlistId,
+            song_id: songId
+          })
+        });
+        const data = await res.json();
+        if (data.setlists) {
+          g_allSetlists = data.setlists;
+          renderActiveSetlistSongs();
+        }
+      } catch (e) {
+        alert("Failed to remove song: " + e);
+      }
+    }
+
+    async function loadAndApplySetlistSong(setlistId, songId) {
+      const cur = g_allSetlists.find(s => s.id === setlistId);
+      if (!cur) return;
+      const song = (cur.songs || []).find(s => s.id === songId);
+      if (!song) return;
+
+      // 1. Load backing track if filename matches
+      if (song.filename) {
+        loadPlaylistTrack(song.filename);
+      }
+
+      // 2. Apply VST patch snapshot & ambient pad root
+      if (song.patch_snapshot) {
+        try {
+          await fetch("/api/setlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "apply_song_patch",
+              patch_snapshot: song.patch_snapshot
+            })
+          });
+        } catch (e) {
+          console.error("Failed to apply patch:", e);
+        }
+      }
+      closeSetlistModal();
+    }
+
     async function refreshPlaylistUI() {
       const listEl = document.getElementById("playlistTracksList");
       listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">Loading library...</div>';
@@ -4064,6 +4419,10 @@
           stageWarmthSettings.mode = Number(data.engine.warmth.mode);
           applyWarmthDomState();
         }
+      }
+      if (data.drone_pad) {
+        g_dronePadState = data.drone_pad;
+        syncDroneModalUi();
       }
       updateEngineStatusUi();
 

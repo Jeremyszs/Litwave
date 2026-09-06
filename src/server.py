@@ -19,6 +19,8 @@ from src.audio_engine import AudioEngine
 from src.midi_manager import MidiManager
 from src.montage_host import MontageHost
 from src.ear_training import EarTrainingManager
+from src.drone_pad import DronePadManager
+from src.setlist_manager import SetlistManager
 from src.analyzer import analyze_track
 from src.lyrics import fetch_synced_lyrics
 from src.async_worker import run_in_executor
@@ -31,6 +33,8 @@ class AppState:
         self.audio = AudioEngine()
         self.midi = MidiManager(on_event_callback=self._on_midi_event)
         self.montage = MontageHost()
+        self.drone_pad = DronePadManager(self.montage)
+        self.setlist = SetlistManager()
         self.ear_training = EarTrainingManager()
         self.ws_clients: List[WebSocket] = []
         self._loop: asyncio.AbstractEventLoop = None
@@ -334,7 +338,8 @@ async def ws_telemetry(websocket: WebSocket):
                     "part_releases": state.montage.part_releases,
                     "part_chorus": state.montage.part_chorus,
                     "current_scene": state.montage.current_scene
-                }
+                },
+                "drone_pad": state.drone_pad.get_status()
             }
             if include_devices:
                 telemetry["devices"] = {
@@ -400,7 +405,7 @@ async def api_assign_voice(request):
         ok = state.montage.assign_part_voice(part, bank, preset)
         if name:
             state.montage.part_names[part] = name
-            state.montage._save_custom_names()
+            state.montage.save_custom_names()
         return JSONResponse({"success": ok, "part": part, "bank": bank, "preset": preset, "name": name})
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -687,6 +692,95 @@ async def api_analyze_song(request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+async def api_drone_pad(request):
+    """Ambient Worship Drone Pad API"""
+    try:
+        data = await request.json()
+        action = data.get("action")
+        if action == "start":
+            root = data.get("root")
+            state.drone_pad.start_drone(root)
+        elif action == "stop":
+            state.drone_pad.stop_drone()
+        elif action == "toggle":
+            if state.drone_pad.is_active:
+                state.drone_pad.stop_drone()
+            else:
+                root = data.get("root")
+                state.drone_pad.start_drone(root)
+        elif action == "set_root":
+            root = data.get("root", "C")
+            state.drone_pad.set_root(root)
+        elif action == "set_volume":
+            vol = data.get("volume", 95)
+            state.drone_pad.set_volume(vol)
+        elif action == "set_cutoff":
+            cutoff = data.get("cutoff", 68)
+            state.drone_pad.set_cutoff(cutoff)
+        return JSONResponse({"success": True, "drone_pad": state.drone_pad.get_status()})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+async def api_setlist(request):
+    """Setlist and Patch Management API"""
+    try:
+        if request.method == "GET":
+            return JSONResponse({"success": True, "setlists": state.setlist.get_setlists()})
+        data = await request.json()
+        action = data.get("action")
+        if action == "create_setlist":
+            name = data.get("name", "New Setlist")
+            item = state.setlist.create_setlist(name)
+            return JSONResponse({"success": True, "setlist": item})
+        elif action == "delete_setlist":
+            sid = data.get("setlist_id")
+            ok = state.setlist.delete_setlist(sid)
+            return JSONResponse({"success": ok})
+        elif action == "add_song":
+            sid = data.get("setlist_id")
+            song = data.get("song_data", {})
+            # Include current patch snapshot
+            patch_snapshot = {
+                "engine_type": state.montage.engine_type,
+                "part_volumes": dict(state.montage.part_volumes),
+                "part_reverbs": dict(state.montage.part_reverbs),
+                "part_mutes": dict(state.montage.part_mutes),
+                "part_names": dict(state.montage.part_names),
+                "drone_root": state.drone_pad.current_root
+            }
+            song["patch_snapshot"] = patch_snapshot
+            ok = state.setlist.add_song_to_setlist(sid, song)
+            return JSONResponse({"success": ok, "setlists": state.setlist.get_setlists()})
+        elif action == "remove_song":
+            sid = data.get("setlist_id")
+            song_id = data.get("song_id")
+            ok = state.setlist.remove_song_from_setlist(sid, song_id)
+            return JSONResponse({"success": ok, "setlists": state.setlist.get_setlists()})
+        elif action == "apply_song_patch":
+            patch = data.get("patch_snapshot", {})
+            # 1. Switch engine if needed
+            req_engine = patch.get("engine_type")
+            if req_engine and req_engine != state.montage.engine_type:
+                state.montage.kill_vst_engine()
+                state.montage.open_vst_editor(hidden=False, engine=req_engine)
+            # 2. Apply part volumes, reverbs, mutes
+            vols = patch.get("part_volumes", {})
+            for p_str, v in vols.items():
+                state.montage.set_part_volume(int(p_str), int(v))
+            revs = patch.get("part_reverbs", {})
+            for p_str, r in revs.items():
+                state.montage.set_part_reverb(int(p_str), int(r))
+            mutes = patch.get("part_mutes", {})
+            for p_str, m in mutes.items():
+                state.montage.set_part_mute(int(p_str), bool(m))
+            # 3. Update drone root if specified
+            if "drone_root" in patch:
+                state.drone_pad.set_root(patch["drone_root"])
+            return JSONResponse({"success": True, "applied": True})
+        return JSONResponse({"success": False, "error": "Unknown action"}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
 routes = [
     Route("/", index),
     Route("/remote", remote_page),
@@ -709,6 +803,8 @@ routes = [
     Route("/api/montage/audition", api_play_voicing, methods=["POST"]),
     Route("/api/midi/panic", api_midi_panic, methods=["POST"]),
     Route("/api/master/dsp", api_master_dsp, methods=["POST"]),
+    Route("/api/drone-pad", api_drone_pad, methods=["POST"]),
+    Route("/api/setlist", api_setlist, methods=["GET", "POST"]),
     Route("/api/ear-training", api_ear_exercise, methods=["GET", "POST"]),
     Route("/api/montage/license", api_launch_license_manager, methods=["POST"]),
     WebSocketRoute("/ws", ws_telemetry),

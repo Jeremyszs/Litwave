@@ -435,6 +435,26 @@ class MontageHost:
             print(f"Failed to send UDP MIDI CC: {e}")
             return False
 
+    def send_note_on(self, channel: int, note: int, velocity: int = 80) -> bool:
+        """Send Note On: [ 0x90, channel (0-15), note (0-127), velocity (0-127) ]"""
+        try:
+            packet = bytes([0x90, channel & 0x0F, note & 0x7F, velocity & 0x7F])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to send Note On: {e}")
+            return False
+
+    def send_note_off(self, channel: int, note: int) -> bool:
+        """Send Note Off: [ 0x80, channel (0-15), note (0-127), 0 ]"""
+        try:
+            packet = bytes([0x80, channel & 0x0F, note & 0x7F, 0])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to send Note Off: {e}")
+            return False
+
     def assign_part_voice(self, part_num: int, bank_idx: int, preset_idx: int) -> bool:
         """Assign voice preset to a part over UDP command 'K' (0x4B)"""
         try:
