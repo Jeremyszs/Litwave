@@ -435,6 +435,26 @@ class MontageHost:
             print(f"Failed to send UDP MIDI CC: {e}")
             return False
 
+    def send_drone_note_on(self, note: int, velocity: int = 85) -> bool:
+        """Send dedicated drone Note On (cmd 0x98) - isolated and recognized across both Yamaha & Community"""
+        try:
+            packet = bytes([0x98, 0, note & 0x7F, velocity & 0x7F])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to send Drone Note On: {e}")
+            return False
+
+    def send_drone_note_off(self, note: int) -> bool:
+        """Send dedicated drone Note Off (cmd 0x88) - isolated and recognized across both Yamaha & Community"""
+        try:
+            packet = bytes([0x88, 0, note & 0x7F, 0])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to send Drone Note Off: {e}")
+            return False
+
     def send_note_on(self, channel: int, note: int, velocity: int = 80) -> bool:
         """Send Note On: [ 0x90, channel (0-15), note (0-127), velocity (0-127) ]"""
         try:

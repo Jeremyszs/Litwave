@@ -865,6 +865,13 @@ void UdpControlServerThread() {
                     int iso = (int)ch;
                     g_drone_isolation.store(iso != 0, std::memory_order_relaxed);
                     continue;
+                } else if (cmd == 0x98) { // 0x98: Dedicated Drone Note On directly to Yamaha Part 8 voice bus (Channel 0, isolated from hands)
+                    float vel = (float)d2 / 127.0f;
+                    g_active_plugin_notes[0][d1].store(vel > 0.0f, std::memory_order_relaxed);
+                    enqueue_midi_note(Event::kNoteOnEvent, 0, (int16)d1, vel);
+                } else if (cmd == 0x88) { // 0x88: Dedicated Drone Note Off
+                    g_active_plugin_notes[0][d1].store(false, std::memory_order_relaxed);
+                    enqueue_midi_note(Event::kNoteOffEvent, 0, (int16)d1, 0.0f);
                 } else if (cmd == 0xB0) { // Control Change
                     // If CC#7 (Channel Volume)
                     if (d1 == 7) {
