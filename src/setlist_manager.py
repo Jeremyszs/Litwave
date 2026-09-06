@@ -64,6 +64,24 @@ class SetlistManager:
         initial_len = len(self.setlists)
         self.setlists = [s for s in self.setlists if s.get("id") != setlist_id]
         if len(self.setlists) < initial_len:
+            if not self.setlists:
+                self.create_setlist("Main Setlist")
+            self._save()
+            return True
+        return False
+
+    def move_song(self, setlist_id: str, song_id: str, direction: str) -> bool:
+        # ponytail: simple index swap; add drag-and-drop ordering when requested
+        s = self.get_setlist(setlist_id)
+        if not s:
+            return False
+        songs = s.get("songs", [])
+        idx = next((i for i, item in enumerate(songs) if item.get("id") == song_id), -1)
+        if idx == -1:
+            return False
+        target = idx - 1 if direction == "up" else idx + 1
+        if 0 <= target < len(songs):
+            songs[idx], songs[target] = songs[target], songs[idx]
             self._save()
             return True
         return False

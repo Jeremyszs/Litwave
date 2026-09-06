@@ -21,6 +21,7 @@ from src.montage_host import MontageHost
 from src.ear_training import EarTrainingManager
 from src.drone_pad import DronePadManager
 from src.setlist_manager import SetlistManager
+from src.playlist_manager import PlaylistManager
 from src.analyzer import analyze_track
 from src.lyrics import fetch_synced_lyrics
 from src.async_worker import run_in_executor
@@ -35,6 +36,7 @@ class AppState:
         self.montage = MontageHost()
         self.drone_pad = DronePadManager(self.montage)
         self.setlist = SetlistManager()
+        self.playlist = PlaylistManager()
         self.ear_training = EarTrainingManager()
         self.ws_clients: List[WebSocket] = []
         self._loop: asyncio.AbstractEventLoop = None
@@ -274,6 +276,8 @@ async def api_upload_song(request):
         f.write(contents)
         
     ok = state.audio.song_player.load_file(dest_path)
+    if ok:
+        state.playlist.record_song(file.filename)
     return JSONResponse({
         "success": ok,
         "filename": file.filename,
@@ -618,22 +622,13 @@ async def api_ear_exercise(request):
         return JSONResponse({"error": str(e)}, status_code=400)
 
 async def api_playlist(request):
-    """List all audio files present in uploads/ library for instant one-click switching"""
-    upload_dir = os.path.join(STATIC_DIR, "uploads")
-    os.makedirs(upload_dir, exist_ok=True)
-    files = []
-    for f in os.listdir(upload_dir):
-        if f.lower().endswith(('.mp3', '.wav', '.flac', '.ogg', '.m4a')):
-            fpath = os.path.join(upload_dir, f)
-            files.append({
-                "filename": f,
-                "size_mb": round(os.path.getsize(fpath) / (1024 * 1024), 2),
-                "is_current": (state.audio.song_player.filename == f)
-            })
-    return JSONResponse({"tracks": sorted(files, key=lambda x: x["filename"])})
+    """List all audio files saved in the DAW playlist for instant switching and setlist queuing"""
+    current_fn = state.audio.song_player.filename
+    tracks = state.playlist.get_tracks(current_filename=current_fn)
+    return JSONResponse({"tracks": tracks})
 
 async def api_playlist_select(request):
-    """Load a song from the library into the active song player"""
+    """Load a song from the library into the active song player and record in playlist"""
     data = await request.json()
     filename = data.get("filename")
     if not filename:
@@ -643,6 +638,8 @@ async def api_playlist_select(request):
     if not os.path.exists(fpath):
         return JSONResponse({"error": "File not found"}, status_code=404)
     ok = state.audio.song_player.load_file(fpath)
+    if ok:
+        state.playlist.record_song(filename)
     return JSONResponse({"success": ok, "filename": filename, "song": state.audio.song_player.get_telemetry()})
 
 async def api_analyze_song(request):
@@ -687,6 +684,9 @@ async def api_analyze_song(request):
             return JSONResponse({"error": "Failed to save analysis; existing chart preserved"}, status_code=500)
         if res.get("bpm"):
             state.audio.metronome.set_bpm(float(res["bpm"]))
+
+        # Record detected key/BPM to playlist library
+        state.playlist.record_song(raw_name, key=res.get("key"), bpm=res.get("bpm"))
 
         return JSONResponse({"success": True, "result": res, "song": sp.get_telemetry()})
     except Exception as e:
@@ -740,7 +740,13 @@ async def api_setlist(request):
         elif action == "delete_setlist":
             sid = data.get("setlist_id")
             ok = state.setlist.delete_setlist(sid)
-            return JSONResponse({"success": ok})
+            return JSONResponse({"success": ok, "setlists": state.setlist.get_setlists()})
+        elif action == "move_song":
+            sid = data.get("setlist_id")
+            song_id = data.get("song_id")
+            direction = data.get("direction", "up")
+            ok = state.setlist.move_song(sid, song_id, direction)
+            return JSONResponse({"success": ok, "setlists": state.setlist.get_setlists()})
         elif action == "add_song":
             sid = data.get("setlist_id")
             song = data.get("song_data", {})

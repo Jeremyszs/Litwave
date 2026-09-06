@@ -38,15 +38,17 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      background-color: var(--bg-base);
+    html, body {
+      background-color: #000000;
       color: var(--text-main);
       font-family: var(--font-sans);
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100%;
       height: 100dvh;
       overflow: hidden;
+      margin: 0;
+      padding: 0;
     }
 
     /* Custom Dark Scrollbar */
@@ -322,10 +324,11 @@
       background: var(--bg-panel);
       border: 1px solid var(--border-dim);
       border-radius: 6px;
-      padding: 8px 10px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 10px;
+      margin-bottom: 8px;
     }
 
     .part-info {
@@ -351,10 +354,11 @@
     /* Custom Mobile Slider */
     .part-slider-wrap {
       position: relative;
-      height: 28px;
+      height: 32px;
+      margin: 3px 0;
       background: var(--bg-sunken);
       border: 1px solid var(--border-dim);
-      border-radius: 4px;
+      border-radius: 5px;
       display: flex;
       align-items: center;
       overflow: hidden;
@@ -383,28 +387,85 @@
       box-shadow: 0 0 8px rgba(0,0,0,0.5);
       pointer-events: none;
     }
+
+    /* Scroll Safe Handle Area for Faders */
+    .part-scroll-handle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px;
+      margin: -2px 0 2px 0;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      cursor: grab;
+      touch-action: pan-y;
+    }
+    .part-scroll-handle:active {
+      cursor: grabbing;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Stage Carousel and Paging */
+    .stage-carousel-wrapper {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .stage-carousel-track {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      width: 400%;
+      height: 100%;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+
+    .stage-page {
+      width: 25%;
+      min-width: 25%;
+      max-width: 25%;
+      flex: 0 0 25%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 10px;
+      box-sizing: border-box;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stage-nav-btn {
+      background: rgba(22, 24, 30, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-dim);
+      color: var(--accent);
+      border-radius: 6px;
+      width: 34px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+    .stage-nav-btn:active {
+      transform: scale(0.92);
+      background: var(--bg-surface);
+      border-color: var(--accent);
+    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <span class="brand-title">Litwave Remote</span>
-      <span style="font-size: 11px; color: var(--text-faint); font-weight: 500;">Practice Station</span>
-    </div>
-    <div style="display: flex; align-items: center; gap: 6px;">
-      <button id="remoteStageModeBtn" class="btn" style="padding: 3px 8px; font-size: 10px; font-weight: 700; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleStageView()">
-        STAGE
-      </button>
-      <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="openRemoteEngineModal()" title="VST Engine Manager">
-        <span id="remoteVstCycleText">VST Engine</span>
-      </button>
-      <div class="status-badge">
-        <span id="connDot" class="status-dot"></span>
-        <span id="connText">Connecting</span>
-      </div>
-    </div>
-  </header>
-
   <!-- Remote VST Engine Selection & Control Modal -->
   <div class="modal-backdrop" id="remoteEngineModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; align-items: center; justify-content: center; padding: 14px;">
     <div class="card" style="width: 100%; max-width: 380px; background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
@@ -412,11 +473,9 @@
         <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">VST Sound Engine</span>
         <button class="btn" style="padding: 2px 6px; font-size: 11px;" onclick="closeRemoteEngineModal()">✕</button>
       </div>
-
       <div style="font-size: 11px; color: var(--text-dim);">
         Choose active synthesizer engine for phone remote & keyboard:
       </div>
-
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <div id="rOptYamaha" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px; cursor: pointer; background: var(--bg-panel);" onclick="chooseRemoteEngine('yamaha')">
           <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -428,7 +487,6 @@
           </div>
           <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; margin-left: 20px;">Official Yamaha VST3 host</div>
         </div>
-
         <div id="rOptCommunity" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px; cursor: pointer; background: var(--bg-panel);" onclick="chooseRemoteEngine('community')">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -440,11 +498,9 @@
           <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; margin-left: 20px;">Nord Romantic, Roland RD, Chateau & Synths</div>
         </div>
       </div>
-
       <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-dim); padding-top: 10px; margin-top: 2px;">
         <span id="rEngineStatusText" style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">Status: Checking...</span>
       </div>
-
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
         <button class="btn btn-primary" onclick="remoteVstActionOpen()" style="padding: 8px; font-size: 11px; font-weight: 700;">Launch Engine</button>
         <button class="btn btn-danger" onclick="remoteVstActionKill()" style="padding: 8px; font-size: 11px; font-weight: 700;">Kill Process</button>
@@ -452,395 +508,393 @@
     </div>
   </div>
 
-  <div class="remote-content">
-    <!-- Live Chord Recognition Display from MIDI Keyboard -->
-    <div class="chord-display-box">
-      <div>
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-          <span class="util-label">Live Chord</span>
-          <select id="remoteNashvilleKeySelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; outline: none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);" onchange="onRemoteNashvilleKeyChange(this.value)">
-            <option value="C" style="background: #111317; color: var(--text-main);">Key: C</option>
-            <option value="C#" style="background: #111317; color: var(--text-main);">Key: C# / Db</option>
-            <option value="D" style="background: #111317; color: var(--text-main);">Key: D</option>
-            <option value="D#" style="background: #111317; color: var(--text-main);">Key: D# / Eb</option>
-            <option value="E" style="background: #111317; color: var(--text-main);">Key: E</option>
-            <option value="F" style="background: #111317; color: var(--text-main);">Key: F</option>
-            <option value="F#" style="background: #111317; color: var(--text-main);">Key: F# / Gb</option>
-            <option value="G" style="background: #111317; color: var(--text-main);">Key: G</option>
-            <option value="G#" style="background: #111317; color: var(--text-main);">Key: G# / Ab</option>
-            <option value="A" style="background: #111317; color: var(--text-main);">Key: A</option>
-            <option value="A#" style="background: #111317; color: var(--text-main);">Key: A# / Bb</option>
-            <option value="B" style="background: #111317; color: var(--text-main);">Key: B</option>
-          </select>
-        </div>
-        <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 2px;">
-          <div class="chord-name" id="remoteChordText">--</div>
-          <div id="remoteNashvilleText" style="font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent);"></div>
-        </div>
-      </div>
-      <div style="text-align: right;">
-        <div class="util-label">Active Notes</div>
-        <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);" id="remoteLastNote">READY</div>
-      </div>
-    </div>
-
-    <!-- Fullscreen High-Contrast Stage View Overlay -->
-    <div id="remoteStageOverlay" style="display: none; position: fixed; inset: 0; background: #000000; z-index: 99999; flex-direction: column; padding: 16px; justify-content: space-between;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 8px;">
-        <span style="font-size: 11px; font-weight: 700; color: #666; letter-spacing: 1px;">STAGE VIEW</span>
-        <button class="btn" style="padding: 4px 10px; font-size: 11px; font-weight: 700;" onclick="toggleStageView()">EXIT</button>
-      </div>
-
-      <!-- Center Big Chord Display -->
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; my: auto; flex: 1;">
-        <span style="font-size: 14px; font-weight: 600; color: #888; font-family: var(--font-mono);">PLAYING CHORD</span>
-        <div id="stageLiveChord" style="font-size: 72px; font-weight: 900; color: #ffffff; font-family: var(--font-mono); line-height: 1;">--</div>
-        <div id="stageLiveNash" style="font-size: 28px; font-weight: 800; color: var(--accent); font-family: var(--font-mono);">[ - ]</div>
-
-        <!-- Next upcoming chord -->
-        <div style="display: flex; align-items: center; gap: 12px; margin-top: 16px; background: #111; padding: 10px 20px; border-radius: 8px; border: 1px solid #333;">
-          <span style="font-size: 12px; font-weight: 700; color: #888;">NEXT</span>
-          <span id="stageNextChord" style="font-size: 24px; font-weight: 800; color: var(--accent);">--</span>
-          <span id="stageNextCountdown" style="font-size: 13px; font-family: var(--font-mono); color: #888;"></span>
-        </div>
-      </div>
-
-      <!-- Bottom Ambient Pad Root Quick Switcher -->
-      <div style="display: flex; flex-direction: column; gap: 8px; background: #0a0a0a; padding: 12px; border-radius: 8px; border: 1px solid #222;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 11px; font-weight: 700; color: #888;">AMBIENT DRONE PAD</span>
-          <button id="stageDronePadToggleBtn" class="btn" style="padding: 2px 8px; font-size: 10px;" onclick="toggleDroneActiveRemote()">START</button>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;" id="stageDroneRoots">
-          <!-- C, Db, D, Eb, E, F, Gb, G, Ab, A, Bb, B -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Ambient Worship Drone Pad (Mobile Card) -->
-    <div class="card" style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px;">
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span id="rDroneDot" class="status-dot" style="background: var(--text-muted);"></span>
-          <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Ambient Worship Pad</span>
-        </div>
-        <button id="rDroneToggleBtn" class="btn btn-primary" style="padding: 2px 8px; font-size: 10px;" onclick="toggleDroneActiveRemote()">START</button>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;" id="rDroneRootsGrid">
-        <!-- Root keys rendered dynamically -->
-      </div>
-      <!-- Drone Voice Dropdown on Mobile -->
-      <div style="display: flex; flex-direction: column; gap: 4px; background: var(--bg-panel); padding: 8px; border-radius: 6px; border: 1px solid var(--border-dim);">
-        <span style="font-size: 10px; font-weight: 600; color: var(--text-dim);">PAD VOICE</span>
-        <select id="rDroneVoiceSelect" class="custom-select-dark" style="width: 100%; height: 26px; font-size: 10px;" onchange="changeDroneVoiceRemote(this.value)">
-          <option value="6:4" selected>Chateau Ultra-Soft Ambient Pad</option>
-          <option value="17:89">Roland Zenology Pure Warm Pad</option>
-          <option value="17:94">Roland Zenology Halo Pad</option>
-          <option value="17:49">Roland Zenology Slow Swell Strings</option>
-          <option value="17:53">Roland Zenology Choir Oohs</option>
-          <option value="2:89">Roland SC-88 Warm Analog Pad</option>
-          <option value="2:91">Roland Soft Choir Pad</option>
-          <option value="2:92">Bowed Silk String Pad</option>
-          <option value="1:11">Yamaha DynaPad Soft</option>
-          <option value="1:56">Yamaha Atmosphere Wash</option>
-        </select>
-      </div>
-      <!-- Drone Volume & Cutoff on Mobile -->
-      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; background: var(--bg-panel); padding: 8px; border-radius: 6px; border: 1px solid var(--border-dim);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 10px; font-weight: 600; color: var(--text-dim);">PAD VOLUME</span>
-          <span id="rDroneVolText" style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">75%</span>
-        </div>
-        <input type="range" id="rDroneVolSlider" min="0" max="127" value="95" style="width: 100%; accent-color: var(--accent);" oninput="setDroneVolumeRemote(this.value)">
-      </div>
-    </div>
-
-    <!-- Live Song Chord Tracker Card (Current & Next Chord) -->
-    <div class="card" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px;">
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Song Chords</span>
-        <span id="remoteCurrentChordTime" style="font-size: 10px; font-family: var(--font-mono); color: var(--text-faint);">00:00.0</span>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <!-- Current Chord -->
-        <div style="background: var(--bg-sunken); padding: 8px; border-radius: 6px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 2px;">
-          <span style="font-size: 9px; font-weight: 700; color: var(--text-faint); font-family: var(--font-mono);">CURRENT</span>
-          <div id="rLiveCurrentChord" style="font-size: 26px; font-weight: 800; color: #ffffff; font-family: var(--font-mono); line-height: 1.1;">--</div>
-        </div>
-        <!-- Next Chord -->
-        <div style="background: rgba(56, 189, 248, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.35); display: flex; flex-direction: column; gap: 2px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 9px; font-weight: 700; color: var(--accent); font-family: var(--font-mono);">NEXT</span>
-            <span id="rLiveNextCount" style="font-size: 10px; font-family: var(--font-mono); font-weight: 700; color: var(--accent-secondary);">--</span>
-          </div>
-          <div id="rLiveNextChord" style="font-size: 20px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); line-height: 1.1;">--</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Static Song Lyrics View (Mobile) -->
-    <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; max-height: 180px;">
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Song Lyrics</span>
-        <div style="display: flex; align-items: center; gap: 4px;">
-          <!-- Font Size Controls for Phone Lyrics -->
-          <div style="display: flex; align-items: center; gap: 2px; background: var(--bg-sunken); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border-dim);">
-            <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeRemoteLyricsFontSize(-1)">-</button>
-            <span id="remoteLyricsFontText" style="font-family: var(--font-mono); font-size: 10px; min-width: 24px; text-align: center; color: var(--accent);">13px</span>
-            <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeRemoteLyricsFontSize(1)">+</button>
-          </div>
-          <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">Static</span>
-        </div>
-      </div>
-      <div id="remoteStaticLyricsContainer" style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-dim); max-height: 130px; line-height: 1.35;">
-        Tap Analyze to load song lyrics...
-      </div>
-    </div>
-
-    <!-- Backing Track Playback Controller -->
-    <div class="card">
-      <div class="card-title">
-        <span>Backing Track</span>
-        <span id="remoteTimeText" class="time-display">00:00 / 00:00</span>
-      </div>
-
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-        <div style="font-size: 11px; font-weight: 500; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="remoteSongTitle">
-          No Track Loaded
-        </div>
-        <div style="display: flex; align-items: center; gap: 4px;">
-          <button class="btn" id="remoteAnalyzeBtn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="triggerRemoteAnalyze()" title="AI Chord, Key & Lyrics Analysis">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
-            <span id="remoteAnalyzeText">Analyze</span>
-          </button>
-          <button class="btn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemoteEarModal()" title="Ear training practice">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
-            <span>Ear</span>
-          </button>
-          <button class="btn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemotePlaylistModal()" title="Select song from library">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            <span>Library</span>
-          </button>
-          <button class="btn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-dim);" onclick="openRemoteSetlistModal()" title="Setlists">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-            <span>Setlist</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="seek-bar-wrap" id="seekWrap" onclick="handleSeekTap(event)">
-        <div class="seek-bar-fill" id="seekFill"></div>
-      </div>
-
-      <div class="transport-row">
-        <button class="btn" onclick="sendTransport('stop')" title="Stop and rewind to start">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-          <span>Stop</span>
+  <!-- Persistent Fullscreen Stage View Shell -->
+  <div id="remoteStageOverlay" style="display: flex; width: 100%; height: 100%; flex-direction: column; padding: 10px 12px; justify-content: space-between; overflow: hidden; background: #000000;">
+    <!-- Universal Top Navigation Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e222a; padding-bottom: 8px; flex-shrink: 0; z-index: 10;">
+      <!-- Left: Prev Page & Page Header Title -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="stage-nav-btn" onclick="prevStagePage()" title="Previous Stage Page" id="stagePrevBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <button class="btn btn-play" id="remotePlayBtn" onclick="togglePlay()" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-          <span id="remotePlayIconSlot" style="display: inline-flex; align-items: center;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </span>
-          <span id="remotePlayText">Play</span>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 11px; font-weight: 800; color: #fff; letter-spacing: 0.8px;" id="stageViewPageTitle">STAGE: CHORDS & PAD</span>
+          <div style="display: flex; gap: 4px; margin-top: 2px;">
+            <span id="stageDot1" style="width: 14px; height: 3px; border-radius: 2px; background: var(--accent);"></span>
+            <span id="stageDot2" style="width: 14px; height: 3px; border-radius: 2px; background: #333;"></span>
+            <span id="stageDot3" style="width: 14px; height: 3px; border-radius: 2px; background: #333;"></span>
+            <span id="stageDot4" style="width: 14px; height: 3px; border-radius: 2px; background: #333;"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Action Buttons & Next Page -->
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="openRemoteEngineModal()" title="VST Engine Manager">
+          <span id="remoteVstCycleText">VST</span>
         </button>
-        <button class="btn" id="remoteLoopBtn" onclick="sendTransport('toggle_loop')" title="Toggle A-B loop">
-          <span id="loopText">Loop [Off]</span>
+        <button class="stage-nav-btn" onclick="togglePhoneFullscreen()" title="Toggle Phone Fullscreen" style="width: 32px; height: 28px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
-      </div>
-
-      <!-- Practice Section Bookmarks -->
-      <div id="markersSection" style="display: none; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-dim);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span class="util-label" style="margin-bottom: 0;">Jump to Section</span>
-          <button class="btn" style="padding: 2px 7px; font-size: 10px; font-weight: 600;" onclick="openRemoteMarkerModal()">+ Bookmark</button>
-        </div>
-        <div class="markers-pill-container" id="markersContainer"></div>
-      </div>
-
-      <!-- Pitch Shifter Stepper -->
-      <div class="util-row">
-        <span class="util-label">Track Key Shift</span>
-        <div class="stepper-wrap">
-          <button class="btn-mini" onclick="stepPitch(-1)">-</button>
-          <span class="stepper-val" id="remotePitchVal">0 st</span>
-          <button class="btn-mini" onclick="stepPitch(+1)">+</button>
-          <button class="btn-mini" style="font-size: 9px; color: var(--text-dim);" onclick="setPitch(0)">Reset</button>
+        <button class="stage-nav-btn" onclick="nextStagePage()" title="Next Stage Page" id="stageNextBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="status-badge" style="padding: 2px 6px;">
+          <span id="connDot" class="status-dot"></span>
+          <span id="connText" style="display: none;">Live</span>
         </div>
       </div>
     </div>
 
-    <!-- Output Mixer: Backing Track, Synth, and Master Volumes & Master EQ -->
-    <div class="card">
-      <div class="card-title">
-        <span>Output Levels & Master EQ</span>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="btn" style="padding: 2px 6px; font-size: 9px; font-weight: 700;" onclick="resetRemoteEqFlat()">EQ Flat</button>
-          <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">Mixer</span>
-        </div>
-      </div>
+    <!-- 4-Page Swipe / Slide Carousel Wrapper -->
+    <div class="stage-carousel-wrapper">
+      <div class="stage-carousel-track" id="stageCarouselTrack">
 
-      <div class="parts-grid">
-        <!-- Backing Track Volume -->
-        <div class="part-row">
-          <div class="part-info">
-            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Track Volume</span>
-            <span class="part-val" id="remoteTrackVolText">-1.9 dB</span>
-          </div>
-          <div class="part-slider-wrap" id="sliderWrap_track">
-            <div class="part-slider-fill" id="sliderFill_track" style="width: 80%;"></div>
-            <div class="part-slider-thumb" id="sliderThumb_track" style="left: 80%;"></div>
-          </div>
-        </div>
-
-        <!-- Synth Master Volume -->
-        <div class="part-row">
-          <div class="part-info">
-            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Synth Master</span>
-            <span class="part-val" id="remoteSynthVolText">0.0 dB</span>
-          </div>
-          <div class="part-slider-wrap" id="sliderWrap_synth">
-            <div class="part-slider-fill" id="sliderFill_synth" style="width: 100%;"></div>
-            <div class="part-slider-thumb" id="sliderThumb_synth" style="left: 100%;"></div>
-          </div>
-        </div>
-
-        <!-- Master DAW Volume -->
-        <div class="part-row">
-          <div class="part-info">
-            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Master Out</span>
-            <span class="part-val" id="remoteMasterVolText">0.0 dB</span>
-          </div>
-          <div class="part-slider-wrap" id="sliderWrap_master">
-            <div class="part-slider-fill" id="sliderFill_master" style="width: 83.3%;"></div>
-            <div class="part-slider-thumb" id="sliderThumb_master" style="left: 83.3%;"></div>
-          </div>
-        </div>
-
-        <!-- Metronome Boost Volume & Click Switch -->
-        <div class="part-row">
-          <div class="part-info">
-            <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Click Level</span>
-            <span class="part-val" id="remoteMetroVolText" style="color: var(--accent);">Boost 100%</span>
-          </div>
-          <div class="part-slider-wrap" id="sliderWrap_metro">
-            <div class="part-slider-fill" id="sliderFill_metro" style="width: 50%;"></div>
-            <div class="part-slider-thumb" id="sliderThumb_metro" style="left: 50%;"></div>
-          </div>
-        </div>
-
-        <!-- Metronome Playback Toggle & BPM Bar -->
-        <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border-dim); gap: 6px;">
-          <button class="btn" id="remoteMetroToggleBtn" onclick="toggleRemoteMetronome()" style="font-size: 11px; padding: 5px 8px; display: inline-flex; align-items: center; gap: 4px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-            <span id="remoteMetroStatusText">Click [Off]</span>
-          </button>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <select id="remoteMetroSoundSelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 4px; outline: none;" onchange="handleRemoteMetroSoundChange(this.value)">
-              <option value="treble">Treble</option>
-              <option value="woodblock">Woodblock</option>
-              <option value="beep">Beep</option>
-            </select>
-            <select id="remoteTimeSigSelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 4px; outline: none;" onchange="handleRemoteTimeSigChange(this.value)">
-              <option value="4">4/4</option>
-              <option value="3">3/4</option>
-              <option value="6">6/8</option>
-              <option value="5">5/4</option>
-              <option value="7">7/8</option>
-              <option value="2">2/4</option>
-            </select>
-            <button class="btn" style="padding: 5px 7px; font-size: 11px; font-weight: 600;" onclick="handleRemoteTapTempo()">Tap</button>
-            <span style="font-size: 11px; font-family: var(--font-mono); font-weight: 600; color: var(--accent);" id="remoteBpmText">120 BPM</span>
-          </div>
-        </div>
-
-        <!-- 4-Band Master Parametric Equalizer Strip on Remote -->
-        <div style="padding-top: 8px; margin-top: 6px; border-top: 1px solid var(--border-dim); display: flex; flex-direction: column; gap: 6px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 10px; font-weight: 700; color: var(--text-main); font-family: var(--font-mono);">4-BAND MASTER EQ</span>
-            <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">±18 dB</span>
+        <!-- ============================================== -->
+        <!-- PAGE 1: Big Live Chords, Key & Ambient Drone   -->
+        <!-- ============================================== -->
+        <div class="stage-page" id="stagePage1">
+          <!-- Live Key & Chord Tracker Box -->
+          <div style="background: #090a0c; border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="util-label" style="margin: 0;">Song Key</span>
+              <select id="remoteNashvilleKeySelect" style="background: #111317; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; outline: none;" onchange="onRemoteNashvilleKeyChange(this.value)">
+                <option value="C">Key: C</option>
+                <option value="C#">Key: C# / Db</option>
+                <option value="D">Key: D</option>
+                <option value="D#">Key: D# / Eb</option>
+                <option value="E">Key: E</option>
+                <option value="F">Key: F</option>
+                <option value="F#">Key: F# / Gb</option>
+                <option value="G">Key: G</option>
+                <option value="G#">Key: G# / Ab</option>
+                <option value="A">Key: A</option>
+                <option value="A#">Key: A# / Bb</option>
+                <option value="B">Key: B</option>
+              </select>
+            </div>
+            <div style="text-align: right;">
+              <div class="util-label" style="margin: 0;">MIDI Input</div>
+              <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim);" id="remoteLastNote">READY</div>
+            </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
-            <!-- Band 1: Low Shelf (100Hz) -->
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
-                <span>LOW</span><span id="remoteEqB1Val" style="color: var(--accent);">0.0</span>
+          <!-- Giant Playing Chord & Next Chord Readout -->
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; my: auto; flex: 1; padding: 14px 0;">
+            <span style="font-size: 12px; font-weight: 700; color: #888; font-family: var(--font-mono); letter-spacing: 0.5px;">PLAYING CHORD</span>
+            <div id="stageLiveChord" style="font-size: 78px; font-weight: 900; color: #ffffff; font-family: var(--font-mono); line-height: 1;">--</div>
+            <div id="stageLiveNash" style="font-size: 28px; font-weight: 800; color: var(--accent); font-family: var(--font-mono);">[ - ]</div>
+
+            <!-- Next upcoming chord queue -->
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 14px; background: #0c0e12; padding: 8px 18px; border-radius: 8px; border: 1px solid #222;">
+              <span style="font-size: 11px; font-weight: 700; color: #888;">NEXT</span>
+              <span id="stageNextChord" style="font-size: 22px; font-weight: 800; color: var(--accent);">--</span>
+              <span id="stageNextCountdown" style="font-size: 12px; font-family: var(--font-mono); color: #888;"></span>
+            </div>
+          </div>
+
+          <!-- Ambient Worship Drone Pad Section -->
+          <div style="display: flex; flex-direction: column; gap: 8px; background: #0c0e12; padding: 10px 12px; border-radius: 8px; border: 1px solid #1e222a; margin-top: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="rDroneDot" class="status-dot" style="background: var(--text-muted);"></span>
+                <span style="font-size: 10px; font-weight: 700; color: #888; letter-spacing: 0.5px;">AMBIENT DRONE PAD</span>
               </div>
-              <div class="part-slider-wrap" id="remoteEqB1Wrap" style="height: 14px; background: var(--bg-sunken);">
-                <div class="part-slider-fill" id="remoteEqB1Fill" style="width: 50%;"></div>
-                <div class="part-slider-thumb" id="remoteEqB1Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+              <button id="stageDronePadToggleBtn" class="btn btn-primary" style="padding: 2px 8px; font-size: 10px;" onclick="toggleDroneActiveRemote()">START</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;" id="stageDroneRoots">
+              <!-- C, Db, D, Eb, E, F, Gb, G, Ab, A, Bb, B -->
+            </div>
+            <!-- Drone Voice & Vol Controls -->
+            <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
+              <select id="rDroneVoiceSelect" class="custom-select-dark" style="flex: 1; height: 26px; font-size: 10px;" onchange="changeDroneVoiceRemote(this.value)">
+                <option value="6:4" selected>Chateau Ultra-Soft Ambient Pad</option>
+                <option value="17:89">Roland Zenology Pure Warm Pad</option>
+                <option value="17:94">Roland Zenology Halo Pad</option>
+                <option value="17:49">Roland Zenology Slow Swell Strings</option>
+                <option value="17:53">Roland Zenology Choir Oohs</option>
+                <option value="2:89">Roland SC-88 Warm Analog Pad</option>
+                <option value="2:91">Roland Soft Choir Pad</option>
+                <option value="2:92">Bowed Silk String Pad</option>
+                <option value="1:11">Yamaha DynaPad Soft</option>
+                <option value="1:56">Yamaha Atmosphere Wash</option>
+              </select>
+              <span id="rDroneVolText" style="font-size: 10px; font-family: var(--font-mono); color: var(--accent); min-width: 32px; text-align: right;">75%</span>
+            </div>
+            <input type="range" id="rDroneVolSlider" min="0" max="127" value="95" style="width: 100%; accent-color: var(--accent);" oninput="setDroneVolumeRemote(this.value)">
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- PAGE 2: Parts 1-8 Faders & Scene Selector Bar -->
+        <!-- ============================================== -->
+        <div class="stage-page" id="stagePage2">
+          <!-- Scene Selector Strip -->
+          <div style="background: #0c0e12; border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">SCENE SELECT</span>
+                <span id="stageActiveSceneText" style="font-size: 10px; color: var(--accent); font-family: var(--font-mono);">Scene 1</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button class="btn" id="remoteSaveSceneBtn" style="padding: 2px 7px; font-size: 9px; font-weight: 700;" onclick="saveRemoteCurrentScene()">Save Mix</button>
+                <button class="btn" style="padding: 2px 7px; font-size: 9px; font-weight: 700;" onclick="openRemoteRenameSceneModal()">Rename</button>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="stageScenesGrid">
+              <!-- Scenes 1 to 8 rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Faders Header -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 2px 4px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 12px; font-weight: 800; color: var(--text-main); font-family: var(--font-mono);">PART 1-8 FADERS</span>
+              <span style="font-size: 10px; color: var(--text-dim);" id="stagePartsEngineBadge">MONTAGE M</span>
+            </div>
+            <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">Touch card header to scroll</span>
+          </div>
+
+          <!-- Parts 1-8 Matrix Container -->
+          <div class="parts-grid" id="stagePartsGrid">
+            <!-- Dynamically populated parts -->
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- PAGE 3: Backing Track Player & Lyrics View     -->
+        <!-- ============================================== -->
+        <div class="stage-page" id="stagePage3">
+          <!-- Backing Track Controller Card -->
+          <div class="card" style="margin-bottom: 10px;">
+            <div class="card-title">
+              <span>Backing Track</span>
+              <span id="remoteTimeText" class="time-display">00:00 / 00:00</span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+              <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" id="remoteSongTitle">
+                No Track Loaded
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <button class="btn" id="remoteAnalyzeBtn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="triggerRemoteAnalyze()" title="AI Chord, Key & Lyrics Analysis">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+                  <span id="remoteAnalyzeText">Analyze</span>
+                </button>
+                <button class="btn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemoteEarModal()" title="Ear training practice">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
+                  <span>Ear</span>
+                </button>
+                <button class="btn" style="padding: 2px 7px; font-size: 10px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-dim);" onclick="openRemoteSetlistModal('setlist')" title="Live Setlist & Practice Library">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  <span>Setlist</span>
+                </button>
               </div>
             </div>
 
-            <!-- Band 2: Low Mid (500Hz) -->
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
-                <span>L-MID</span><span id="remoteEqB2Val" style="color: var(--accent);">0.0</span>
-              </div>
-              <div class="part-slider-wrap" id="remoteEqB2Wrap" style="height: 14px; background: var(--bg-sunken);">
-                <div class="part-slider-fill" id="remoteEqB2Fill" style="width: 50%;"></div>
-                <div class="part-slider-thumb" id="remoteEqB2Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
-              </div>
+            <div class="seek-bar-wrap" id="seekWrap" onclick="handleSeekTap(event)">
+              <div class="seek-bar-fill" id="seekFill"></div>
             </div>
 
-            <!-- Band 3: High Mid (2.5kHz) -->
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
-                <span>H-MID</span><span id="remoteEqB3Val" style="color: var(--accent);">0.0</span>
-              </div>
-              <div class="part-slider-wrap" id="remoteEqB3Wrap" style="height: 14px; background: var(--bg-sunken);">
-                <div class="part-slider-fill" id="remoteEqB3Fill" style="width: 50%;"></div>
-                <div class="part-slider-thumb" id="remoteEqB3Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
-              </div>
+            <div class="transport-row">
+              <button class="btn" onclick="sendTransport('stop')" title="Stop and rewind to start">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                <span>Stop</span>
+              </button>
+              <button class="btn btn-play" id="remotePlayBtn" onclick="togglePlay()" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                <span id="remotePlayIconSlot" style="display: inline-flex; align-items: center;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </span>
+                <span id="remotePlayText">Play</span>
+              </button>
+              <button class="btn" id="remoteLoopBtn" onclick="sendTransport('toggle_loop')" title="Toggle A-B loop">
+                <span id="loopText">Loop [Off]</span>
+              </button>
             </div>
 
-            <!-- Band 4: High Shelf (8kHz) -->
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
-                <span>HIGH</span><span id="remoteEqB4Val" style="color: var(--accent);">0.0</span>
+            <!-- Practice Section Bookmarks -->
+            <div id="markersSection" style="display: none; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-dim); margin-top: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="util-label" style="margin-bottom: 0;">Jump to Section</span>
+                <button class="btn" style="padding: 2px 7px; font-size: 10px; font-weight: 600;" onclick="openRemoteMarkerModal()">+ Bookmark</button>
               </div>
-              <div class="part-slider-wrap" id="remoteEqB4Wrap" style="height: 14px; background: var(--bg-sunken);">
-                <div class="part-slider-fill" id="remoteEqB4Fill" style="width: 50%;"></div>
-                <div class="part-slider-thumb" id="remoteEqB4Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+              <div class="markers-pill-container" id="markersContainer"></div>
+            </div>
+
+            <!-- Pitch Shifter Stepper -->
+            <div class="util-row" style="margin-top: 6px;">
+              <span class="util-label">Track Key Shift</span>
+              <div class="stepper-wrap">
+                <button class="btn-mini" onclick="stepPitch(-1)">-</button>
+                <span class="stepper-val" id="remotePitchVal">0 st</span>
+                <button class="btn-mini" onclick="stepPitch(+1)">+</button>
+                <button class="btn-mini" style="font-size: 9px; color: var(--text-dim);" onclick="setPitch(0)">Reset</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lyrics Display Card -->
+          <div class="card" id="remoteLyricsCard" style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 180px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px;">Song Lyrics</span>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 2px; background: var(--bg-sunken); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border-dim);">
+                  <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeRemoteLyricsFontSize(-1)">-</button>
+                  <span id="remoteLyricsFontText" style="font-family: var(--font-mono); font-size: 10px; min-width: 24px; text-align: center; color: var(--accent);">13px</span>
+                  <button class="btn" style="padding: 0 4px; font-size: 10px; height: 18px; line-height: 1;" onclick="changeRemoteLyricsFontSize(1)">+</button>
+                </div>
+              </div>
+            </div>
+            <div id="remoteStaticLyricsContainer" style="overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-dim); flex: 1; line-height: 1.4;">
+              Tap Analyze to load song lyrics...
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- PAGE 4: Output Mixer, Metronome & Master EQ    -->
+        <!-- ============================================== -->
+        <div class="stage-page" id="stagePage4">
+          <div class="card" style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="card-title">
+              <span>Output Levels & Master EQ</span>
+              <button class="btn" style="padding: 2px 6px; font-size: 9px; font-weight: 700;" onclick="resetRemoteEqFlat()">EQ Flat</button>
+            </div>
+
+            <div class="parts-grid">
+              <!-- Backing Track Volume -->
+              <div class="part-row">
+                <div class="part-info">
+                  <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Track Volume</span>
+                  <span class="part-val" id="remoteTrackVolText">-1.9 dB</span>
+                </div>
+                <div class="part-slider-wrap" id="sliderWrap_track">
+                  <div class="part-slider-fill" id="sliderFill_track" style="width: 80%;"></div>
+                  <div class="part-slider-thumb" id="sliderThumb_track" style="left: 80%;"></div>
+                </div>
+              </div>
+
+              <!-- Synth Master Volume -->
+              <div class="part-row">
+                <div class="part-info">
+                  <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Synth Master</span>
+                  <span class="part-val" id="remoteSynthVolText">0.0 dB</span>
+                </div>
+                <div class="part-slider-wrap" id="sliderWrap_synth">
+                  <div class="part-slider-fill" id="sliderFill_synth" style="width: 100%;"></div>
+                  <div class="part-slider-thumb" id="sliderThumb_synth" style="left: 100%;"></div>
+                </div>
+              </div>
+
+              <!-- Master DAW Volume -->
+              <div class="part-row">
+                <div class="part-info">
+                  <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Master Out</span>
+                  <span class="part-val" id="remoteMasterVolText">0.0 dB</span>
+                </div>
+                <div class="part-slider-wrap" id="sliderWrap_master">
+                  <div class="part-slider-fill" id="sliderFill_master" style="width: 83.3%;"></div>
+                  <div class="part-slider-thumb" id="sliderThumb_master" style="left: 83.3%;"></div>
+                </div>
+              </div>
+
+              <!-- Metronome Boost Volume & Click Switch -->
+              <div class="part-row">
+                <div class="part-info">
+                  <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">Click Level</span>
+                  <span class="part-val" id="remoteMetroVolText" style="color: var(--accent);">Boost 100%</span>
+                </div>
+                <div class="part-slider-wrap" id="sliderWrap_metro">
+                  <div class="part-slider-fill" id="sliderFill_metro" style="width: 50%;"></div>
+                  <div class="part-slider-thumb" id="sliderThumb_metro" style="left: 50%;"></div>
+                </div>
+              </div>
+
+              <!-- Metronome Playback Toggle & BPM Bar -->
+              <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border-dim); gap: 6px;">
+                <button class="btn" id="remoteMetroToggleBtn" onclick="toggleRemoteMetronome()" style="font-size: 11px; padding: 5px 8px; display: inline-flex; align-items: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                  <span id="remoteMetroStatusText">Click [Off]</span>
+                </button>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <select id="remoteMetroSoundSelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 4px; outline: none;" onchange="handleRemoteMetroSoundChange(this.value)">
+                    <option value="treble">Treble</option>
+                    <option value="woodblock">Woodblock</option>
+                    <option value="beep">Beep</option>
+                  </select>
+                  <select id="remoteTimeSigSelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 4px; outline: none;" onchange="handleRemoteTimeSigChange(this.value)">
+                    <option value="4">4/4</option>
+                    <option value="3">3/4</option>
+                    <option value="6">6/8</option>
+                    <option value="5">5/4</option>
+                    <option value="7">7/8</option>
+                    <option value="2">2/4</option>
+                  </select>
+                  <button class="btn" style="padding: 5px 7px; font-size: 11px; font-weight: 600;" onclick="handleRemoteTapTempo()">Tap</button>
+                  <span style="font-size: 11px; font-family: var(--font-mono); font-weight: 600; color: var(--accent);" id="remoteBpmText">120 BPM</span>
+                </div>
+              </div>
+
+              <!-- 4-Band Master Parametric Equalizer Strip on Remote -->
+              <div style="padding-top: 8px; margin-top: 6px; border-top: 1px solid var(--border-dim); display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 10px; font-weight: 700; color: var(--text-main); font-family: var(--font-mono);">4-BAND MASTER EQ</span>
+                  <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">±18 dB</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+                  <!-- Band 1: Low Shelf (100Hz) -->
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                      <span>LOW</span><span id="remoteEqB1Val" style="color: var(--accent);">0.0</span>
+                    </div>
+                    <div class="part-slider-wrap" id="remoteEqB1Wrap" style="height: 14px; background: var(--bg-sunken);">
+                      <div class="part-slider-fill" id="remoteEqB1Fill" style="width: 50%;"></div>
+                      <div class="part-slider-thumb" id="remoteEqB1Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Band 2: Low Mid (500Hz) -->
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                      <span>L-MID</span><span id="remoteEqB2Val" style="color: var(--accent);">0.0</span>
+                    </div>
+                    <div class="part-slider-wrap" id="remoteEqB2Wrap" style="height: 14px; background: var(--bg-sunken);">
+                      <div class="part-slider-fill" id="remoteEqB2Fill" style="width: 50%;"></div>
+                      <div class="part-slider-thumb" id="remoteEqB2Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Band 3: High Mid (2.5kHz) -->
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                      <span>H-MID</span><span id="remoteEqB3Val" style="color: var(--accent);">0.0</span>
+                    </div>
+                    <div class="part-slider-wrap" id="remoteEqB3Wrap" style="height: 14px; background: var(--bg-sunken);">
+                      <div class="part-slider-fill" id="remoteEqB3Fill" style="width: 50%;"></div>
+                      <div class="part-slider-thumb" id="remoteEqB3Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Band 4: High Shelf (8kHz) -->
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 8px; font-family: var(--font-mono); color: var(--text-main); font-weight: 700;">
+                      <span>HIGH</span><span id="remoteEqB4Val" style="color: var(--accent);">0.0</span>
+                    </div>
+                    <div class="part-slider-wrap" id="remoteEqB4Wrap" style="height: 14px; background: var(--bg-sunken);">
+                      <div class="part-slider-fill" id="remoteEqB4Fill" style="width: 50%;"></div>
+                      <div class="part-slider-thumb" id="remoteEqB4Thumb" style="left: 50%; width: 10px; height: 10px; top: -1px;"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Yamaha MONTAGE M Scene Selector (Scenes 1 - 8) -->
-    <div class="card">
-      <div class="card-title">
-        <span>MONTAGE M Scene</span>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span id="remoteActiveSceneText" style="font-size: 10px; color: var(--accent); font-family: var(--font-mono);">Scene 1</span>
-          <button class="btn" style="padding: 2px 6px; font-size: 9px; font-weight: 700;" onclick="openRemoteRenameSceneModal()">Rename</button>
-        </div>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;" id="remoteScenesGrid">
-        <!-- Scenes 1 to 8 rendered dynamically -->
-      </div>
-      <button class="btn" id="remoteSaveSceneBtn" style="padding: 8px; font-size: 11px; font-weight: 600; justify-content: center; margin-top: 4px;" onclick="saveRemoteCurrentScene()">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Save Current Mix to Scene
-      </button>
-    </div>
-
-    <!-- Yamaha MONTAGE M Part Faders (CC#7 Injection) -->
-    <div class="card">
-      <div class="card-title">
-        <span>Yamaha MONTAGE M Part Faders</span>
-        <span style="font-size: 10px; color: var(--text-faint); font-family: var(--font-mono);">Voice Levels</span>
-      </div>
-
-      <div class="parts-grid" id="partsGrid">
-        <!-- Render 8 parts dynamically -->
       </div>
     </div>
   </div>
-
   <!-- Mobile Custom Bookmark Modal -->
   <div id="remoteBookmarkModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
     <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 320px; display: flex; flex-direction: column; overflow: hidden;">
@@ -917,20 +971,6 @@
     </div>
   </div>
 
-  <!-- Mobile Practice Song Library Modal -->
-  <div id="remotePlaylistModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
-    <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 400px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;">
-      <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
-        <span style="font-size: 13px; font-weight: 600;">Practice Song Library</span>
-        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemotePlaylistModal()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div style="padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;" id="remotePlaylistTracksList">
-        <!-- Dynamic tracks list -->
-      </div>
-    </div>
-  </div>
 
   <!-- Mobile Live Setlist Modal -->
   <div id="remoteSetlistModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
@@ -941,8 +981,21 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div style="padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+      <!-- Tab Navigation inside Mobile Setlist -->
+      <div style="display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--border-dim); background: var(--bg-panel);">
+        <button class="btn btn-active" id="rSetlistTab_songs" onclick="switchRemoteSetlistTab('setlist')" style="flex: 1; font-size: 10px; padding: 4px;">Setlist</button>
+        <button class="btn" id="rSetlistTab_library" onclick="switchRemoteSetlistTab('library')" style="flex: 1; font-size: 10px; padding: 4px;">Library</button>
+      </div>
+      <!-- Setlist Selector & Items Pane -->
+      <div id="rSetlistPane_songs" style="padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+        <select id="remoteSetlistDropdown" class="custom-select-dark" style="width: 100%; height: 28px; font-size: 11px;" onchange="onSelectRemoteSetlist(this.value)"></select>
         <div id="remoteSetlistItemsList" style="display: flex; flex-direction: column; gap: 6px;">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+      <!-- Library Pane -->
+      <div id="rSetlistPane_library" style="display: none; padding: 12px; overflow-y: auto; flex-direction: column; gap: 6px;">
+        <div id="remoteSetlistLibList" style="display: flex; flex-direction: column; gap: 6px;">
           <!-- Loaded dynamically -->
         </div>
       </div>
@@ -1194,33 +1247,35 @@
     let remoteSceneNames = { 1: "Scene 1", 2: "Scene 2", 3: "Scene 3", 4: "Scene 4", 5: "Scene 5", 6: "Scene 6", 7: "Scene 7", 8: "Scene 8" };
 
     function renderRemoteScenes() {
-      const grid = document.getElementById("remoteScenesGrid");
-      if (!grid) return;
-      grid.innerHTML = "";
+      const el = document.getElementById("stageScenesGrid");
+      if (!el) return;
+      el.innerHTML = "";
       for (let s = 1; s <= 8; s++) {
         const name = remoteSceneNames[s] || `Scene ${s}`;
         const btn = document.createElement("button");
         btn.className = `btn ${s === remoteActiveScene ? 'is-active-loop' : ''}`;
-        btn.style.padding = "8px 4px";
+        btn.style.padding = "6px 4px";
         btn.style.fontSize = "11px";
-        btn.style.fontWeight = "600";
+        btn.style.fontWeight = "700";
         btn.style.overflow = "hidden";
         btn.style.textOverflow = "ellipsis";
         btn.style.whiteSpace = "nowrap";
         btn.innerText = name;
-        btn.id = `remoteSceneBtn_${s}`;
+        btn.id = `stageSceneBtn_${s}`;
         btn.onclick = () => selectRemoteScene(s);
-        grid.appendChild(btn);
+        el.appendChild(btn);
       }
     }
 
     async function selectRemoteScene(sceneNum) {
       remoteActiveScene = sceneNum;
       const sName = remoteSceneNames[sceneNum] || `Scene ${sceneNum}`;
-      document.getElementById("remoteActiveSceneText").innerText = sName;
+      const sText = document.getElementById("stageActiveSceneText");
+      if (sText) sText.innerText = sName;
+
       for (let s = 1; s <= 8; s++) {
-        const b = document.getElementById(`remoteSceneBtn_${s}`);
-        if (b) b.classList.toggle("is-active-loop", s === sceneNum);
+        const sb = document.getElementById(`stageSceneBtn_${s}`);
+        if (sb) sb.classList.toggle("is-active-loop", s === sceneNum);
       }
       try {
         await fetch("/api/montage/scene", {
@@ -1464,7 +1519,8 @@
       closeRemoteRenameSceneModal();
       remoteSceneNames[remoteActiveScene] = newName;
       renderRemoteScenes();
-      document.getElementById("remoteActiveSceneText").innerText = newName;
+      const sText = document.getElementById("stageActiveSceneText");
+      if (sText) sText.innerText = newName;
       await fetch("/api/montage/names", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1495,24 +1551,19 @@
 
     // Render Parts
     function renderParts() {
-      const container = document.getElementById("partsGrid");
-      container.innerHTML = "";
-
       const isCommunity = (remoteActiveEngine === "community");
-      const titleEl = document.querySelector("#partsSectionTitle");
-      if (titleEl) {
-        titleEl.innerText = isCommunity ? "Community VST Parts (1–8)" : "MONTAGE M Parts (1–8)";
+      const stageBadge = document.getElementById("stagePartsEngineBadge");
+      if (stageBadge) {
+        stageBadge.innerText = isCommunity ? "Community VST" : "MONTAGE M";
       }
+
+      const container = document.getElementById("stagePartsGrid");
+      if (!container) return;
+      container.innerHTML = "";
 
       partsState.forEach((p) => {
         const pctVol = ((p.val / 127) * 100).toFixed(1);
         const pctRev = (((p.rev || 40) / 127) * 100).toFixed(1);
-        const row = document.createElement("div");
-        row.className = "part-row";
-        row.style.flexDirection = "column";
-        row.style.gap = "6px";
-        row.style.padding = "8px 0";
-        row.style.borderBottom = "1px solid var(--border-dim)";
 
         let voiceSelectorHtml = "";
         if (isCommunity && window.g_remoteVoices) {
@@ -1536,7 +1587,23 @@
           `;
         }
 
+        const row = document.createElement("div");
+        row.className = "part-row";
+        row.style.flexDirection = "column";
+        row.style.gap = "6px";
+        row.style.padding = "8px 0";
+        row.style.borderBottom = "1px solid var(--border-dim)";
+
         row.innerHTML = `
+          <!-- Safe Touch-Scroll Handle (Prevents Accidental Fader Drag) -->
+          <div class="part-scroll-handle" title="Touch and drag here to scroll page">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.5;"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-faint); letter-spacing: 0.5px;">SCROLL AREA</span>
+            </div>
+            <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">PART ${p.part}</span>
+          </div>
+
           <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span class="part-num" style="font-size: 13px; font-weight: 700; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemoteRenamePartModal(${p.part})" title="Tap to rename part">
@@ -1631,6 +1698,7 @@
             </div>
           </div>
         `;
+
         container.appendChild(row);
 
         const wrapVol = row.querySelector(`#sliderWrap_${p.part}`);
@@ -1639,7 +1707,6 @@
         const wrapRev = row.querySelector(`#reverbWrap_${p.part}`);
         bindReverbSliderDrag(wrapRev, p.part);
 
-        // Bind extended touch dragging for phone remote
         ['pan', 'cut', 'res', 'att', 'rel', 'cho'].forEach((paramShort) => {
           const mapParam = { pan: 'pan', cut: 'cutoff', res: 'resonance', att: 'attack', rel: 'release', cho: 'chorus' };
           const pName = mapParam[paramShort];
@@ -1661,13 +1728,14 @@
         partsState[partNum - 1][paramName] = val;
         const pct = (ratio * 100).toFixed(1);
         const pCap = paramShort.charAt(0).toUpperCase() + paramShort.slice(1);
-        const fill = document.getElementById(`remote${pCap}Fill_${partNum}`);
-        const thumb = document.getElementById(`remote${pCap}Thumb_${partNum}`);
-        const text = document.getElementById(`remote${pCap}Val_${partNum}`);
-
-        if (fill) fill.style.width = pct + "%";
-        if (thumb) thumb.style.left = pct + "%";
-        if (text) text.innerText = val;
+        ['', 'stage_'].forEach(prefix => {
+          const fill = document.getElementById(`${prefix}remote${pCap}Fill_${partNum}`);
+          const thumb = document.getElementById(`${prefix}remote${pCap}Thumb_${partNum}`);
+          const text = document.getElementById(`${prefix}remote${pCap}Val_${partNum}`);
+          if (fill) fill.style.width = pct + "%";
+          if (thumb) thumb.style.left = pct + "%";
+          if (text) text.innerText = val;
+        });
 
         fetch("/api/montage/volume", {
           method: "POST",
@@ -1708,13 +1776,14 @@
         partsState[partNum - 1].rev = val;
 
         const pct = (ratio * 100).toFixed(1);
-        const fill = document.getElementById(`reverbFill_${partNum}`);
-        const thumb = document.getElementById(`reverbThumb_${partNum}`);
-        const text = document.getElementById(`partRevText_${partNum}`);
-
-        if (fill) fill.style.width = pct + "%";
-        if (thumb) thumb.style.left = pct + "%";
-        if (text) text.innerText = `Rev: ${val}`;
+        ['', 'stage_'].forEach(prefix => {
+          const fill = document.getElementById(`${prefix}reverbFill_${partNum}`);
+          const thumb = document.getElementById(`${prefix}reverbThumb_${partNum}`);
+          const text = document.getElementById(`${prefix}partRevText_${partNum}`);
+          if (fill) fill.style.width = pct + "%";
+          if (thumb) thumb.style.left = pct + "%";
+          if (text) text.innerText = `Rev: ${val}`;
+        });
 
         fetch("/api/montage/volume", {
           method: "POST",
@@ -1817,13 +1886,14 @@
         partsState[partNum - 1].val = val;
 
         const pct = (ratio * 100).toFixed(1);
-        const fill = document.getElementById(`sliderFill_${partNum}`);
-        const thumb = document.getElementById(`sliderThumb_${partNum}`);
-        const text = document.getElementById(`partValText_${partNum}`);
-
-        if (fill) fill.style.width = pct + "%";
-        if (thumb) thumb.style.left = pct + "%";
-        if (text) text.innerText = `${val} / 127`;
+        ['', 'stage_'].forEach(prefix => {
+          const fill = document.getElementById(`${prefix}sliderFill_${partNum}`);
+          const thumb = document.getElementById(`${prefix}sliderThumb_${partNum}`);
+          const text = document.getElementById(`${prefix}partValText_${partNum}`);
+          if (fill) fill.style.width = pct + "%";
+          if (thumb) thumb.style.left = pct + "%";
+          if (text) text.innerText = `Vol: ${val}`;
+        });
 
         sendPartVolume(partNum, val);
       }
@@ -1920,47 +1990,84 @@
     }
 
     // ==========================================
-    // Mobile Stage View & Ambient Pad Handlers
-    // ==========================================
+    // Native Fullscreen Toggle for Mobile
+    function togglePhoneFullscreen() {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen().catch(() => {});
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    }
     const REMOTE_DRONE_KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     let g_rDroneState = { active: false, root: "C", volume: 95, cutoff: 68 };
-    let g_isStageViewOpen = false;
+    let g_stageCurrentPage = 1;
+
+    const STAGE_PAGE_TITLES = {
+      1: "STAGE: CHORDS & PAD",
+      2: "STAGE: PART 1-8 FADERS",
+      3: "STAGE: BACKING TRACK & LYRICS",
+      4: "STAGE: OUTPUT & MASTER EQ"
+    };
+
+    function setStagePage(pageNum) {
+      g_stageCurrentPage = Math.max(1, Math.min(4, pageNum));
+      const track = document.getElementById("stageCarouselTrack");
+      const title = document.getElementById("stageViewPageTitle");
+      const prevBtn = document.getElementById("stagePrevBtn");
+      const nextBtn = document.getElementById("stageNextBtn");
+
+      if (track) {
+        track.style.transform = `translateX(-${(g_stageCurrentPage - 1) * 25}%)`;
+      }
+      if (title) {
+        title.innerText = STAGE_PAGE_TITLES[g_stageCurrentPage] || "STAGE VIEW";
+      }
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`stageDot${i}`);
+        if (dot) dot.style.background = (g_stageCurrentPage === i) ? "var(--accent)" : "#333";
+      }
+      if (prevBtn) prevBtn.style.opacity = g_stageCurrentPage === 1 ? "0.4" : "1";
+      if (nextBtn) nextBtn.style.opacity = g_stageCurrentPage === 4 ? "0.4" : "1";
+    }
+
+    function nextStagePage() {
+      if (g_stageCurrentPage < 4) setStagePage(g_stageCurrentPage + 1);
+    }
+
+    function prevStagePage() {
+      if (g_stageCurrentPage > 1) setStagePage(g_stageCurrentPage - 1);
+    }
 
     function toggleStageView() {
-      g_isStageViewOpen = !g_isStageViewOpen;
-      const overlay = document.getElementById("remoteStageOverlay");
-      const btn = document.getElementById("remoteStageModeBtn");
-      if (overlay) overlay.style.display = g_isStageViewOpen ? "flex" : "none";
-      if (btn) btn.classList.toggle("btn-active", g_isStageViewOpen);
-      if (g_isStageViewOpen) {
-        renderRemoteDroneRoots();
-        syncStageChordDisplays();
-      }
+      // Standalone full-screen Stage View is now the persistent root UI
+      setStagePage(1);
     }
 
     function renderRemoteDroneRoots() {
-      const grids = [document.getElementById("rDroneRootsGrid"), document.getElementById("stageDroneRoots")];
-      grids.forEach(grid => {
-        if (!grid) return;
-        grid.innerHTML = REMOTE_DRONE_KEYS.map(k => `
-          <button class="btn ${g_rDroneState.root === k ? 'btn-active' : ''}" 
-                  style="padding: 6px 2px; font-weight: 700; font-size: 11px; font-family: var(--font-mono); border: 1px solid ${g_rDroneState.root === k ? 'var(--accent)' : 'var(--border-dim)'};"
-                  onclick="selectDroneRootRemote('${k}')">
-            ${k}
-          </button>
-        `).join("");
-      });
+      const grid = document.getElementById("stageDroneRoots");
+      if (!grid) return;
+      grid.innerHTML = REMOTE_DRONE_KEYS.map(k => `
+        <button class="btn ${g_rDroneState.root === k ? 'btn-active' : ''}" 
+                style="padding: 6px 2px; font-weight: 700; font-size: 11px; font-family: var(--font-mono); border: 1px solid ${g_rDroneState.root === k ? 'var(--accent)' : 'var(--border-dim)'};"
+                onclick="selectDroneRootRemote('${k}')">
+          ${k}
+        </button>
+      `).join("");
     }
 
     function syncRemoteDroneUI() {
       const dot = document.getElementById("rDroneDot");
-      const btn = document.getElementById("rDroneToggleBtn");
       const stBtn = document.getElementById("stageDronePadToggleBtn");
       if (dot) dot.style.background = g_rDroneState.active ? "var(--success)" : "var(--text-muted)";
-      if (btn) {
-        btn.innerText = g_rDroneState.active ? `STOP (${g_rDroneState.root})` : "START";
-        btn.className = g_rDroneState.active ? "btn btn-danger" : "btn btn-primary";
-      }
       if (stBtn) {
         stBtn.innerText = g_rDroneState.active ? `STOP (${g_rDroneState.root})` : "START";
         stBtn.className = g_rDroneState.active ? "btn btn-danger" : "btn btn-primary";
@@ -1986,6 +2093,7 @@
     }
 
     function setDroneVolumeRemote(val) {
+      g_lastRemoteDroneInteraction = performance.now();
       g_rDroneState.volume = parseInt(val);
       const vText = document.getElementById("rDroneVolText");
       if (vText) vText.innerText = `${Math.round((val / 127) * 100)}%`;
@@ -1997,6 +2105,7 @@
     }
 
     async function toggleDroneActiveRemote() {
+      g_lastRemoteDroneInteraction = performance.now();
       const action = g_rDroneState.active ? "stop" : "start";
       try {
         const res = await fetch("/api/drone-pad", {
@@ -2015,6 +2124,7 @@
     }
 
     async function selectDroneRootRemote(k) {
+      g_lastRemoteDroneInteraction = performance.now();
       g_rDroneState.root = k;
       renderRemoteDroneRoots();
       try {
@@ -2034,20 +2144,7 @@
     }
 
     function syncStageChordDisplays() {
-      const curTxt = document.getElementById("remoteChordText")?.innerText || "--";
-      const nashTxt = document.getElementById("remoteNashvilleText")?.innerText || "";
-      const nxtTxt = document.getElementById("rLiveNextChord")?.innerText || "--";
-      const nxtCd = document.getElementById("rLiveNextCount")?.innerText || "";
-
-      const sLive = document.getElementById("stageLiveChord");
-      const sNash = document.getElementById("stageLiveNash");
-      const sNxt = document.getElementById("stageNextChord");
-      const sCd = document.getElementById("stageNextCountdown");
-
-      if (sLive) sLive.innerText = curTxt;
-      if (sNash) sNash.innerText = nashTxt || "[ - ]";
-      if (sNxt) sNxt.innerText = nxtTxt;
-      if (sCd) sCd.innerText = nxtCd;
+      // Direct live mapping handled in telemetry
     }
 
     function chooseRemoteEngine(eng) {
@@ -2266,24 +2363,51 @@
       }
     }
 
-    // Remote Song Library Modal Handlers
+    // Remote Song Library Modal Handlers (aliased to Setlist Library tab)
     function openRemotePlaylistModal() {
-      document.getElementById("remotePlaylistModal").style.display = "flex";
-      loadRemotePlaylist();
+      openRemoteSetlistModal("library");
     }
 
     function closeRemotePlaylistModal() {
-      document.getElementById("remotePlaylistModal").style.display = "none";
+      closeRemoteSetlistModal();
     }
 
     // Remote Setlist Handlers
-    async function openRemoteSetlistModal() {
+    let rAllSetlists = [];
+    let rActiveSetlistId = "sunday_morning";
+
+    function switchRemoteSetlistTab(tab) {
+      const tabSongs = document.getElementById("rSetlistTab_songs");
+      const tabLib = document.getElementById("rSetlistTab_library");
+      const paneSongs = document.getElementById("rSetlistPane_songs");
+      const paneLib = document.getElementById("rSetlistPane_library");
+      if (tab === "setlist") {
+        tabSongs.classList.add("btn-active");
+        tabLib.classList.remove("btn-active");
+        paneSongs.style.display = "flex";
+        paneLib.style.display = "none";
+      } else {
+        tabLib.classList.add("btn-active");
+        tabSongs.classList.remove("btn-active");
+        paneSongs.style.display = "none";
+        paneLib.style.display = "flex";
+        loadRemoteSetlistLibrary();
+      }
+    }
+
+    async function openRemoteSetlistModal(tab = "setlist") {
       document.getElementById("remoteSetlistModal").style.display = "flex";
+      switchRemoteSetlistTab(tab);
       await loadRemoteSetlist();
     }
 
     function closeRemoteSetlistModal() {
       document.getElementById("remoteSetlistModal").style.display = "none";
+    }
+
+    function onSelectRemoteSetlist(id) {
+      rActiveSetlistId = id;
+      renderRemoteSetlistSongs();
     }
 
     async function loadRemoteSetlist() {
@@ -2292,26 +2416,96 @@
       try {
         const res = await fetch("/api/setlist");
         const data = await res.json();
-        const setlists = data.setlists || [];
-        if (setlists.length === 0 || !setlists[0].songs || setlists[0].songs.length === 0) {
-          container.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No songs in setlist. Add songs on desktop workstation.</div>';
+        rAllSetlists = data.setlists || [];
+        if (rAllSetlists.length === 0) {
+          container.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No setlists found.</div>';
           return;
         }
-        const active = setlists[0];
-        container.innerHTML = active.songs.map((s, idx) => `
-          <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="loadAndApplyRemoteSong('${active.id}', '${s.id}')">
-            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-              <span style="font-size: 12px; font-weight: 800; color: var(--accent);">${idx + 1}</span>
-              <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 11px; font-weight: 700; color: var(--text-main);">${s.title || s.filename}</span>
-                <span style="font-size: 10px; color: var(--text-dim);">Key: <b style="color: var(--accent);">${s.key || '--'}</b> · Pad: ${s.patch_snapshot?.drone_root || '--'}</span>
-              </div>
-            </div>
-            <button class="btn btn-primary" style="padding: 2px 6px; font-size: 10px;">Load</button>
-          </div>
-        `).join("");
+        if (!rAllSetlists.some(s => s.id === rActiveSetlistId)) {
+          rActiveSetlistId = rAllSetlists[0].id;
+        }
+        const dd = document.getElementById("remoteSetlistDropdown");
+        if (dd) {
+          dd.innerHTML = rAllSetlists.map(s => `
+            <option value="${s.id}" ${s.id === rActiveSetlistId ? 'selected' : ''}>${s.name} (${(s.songs || []).length} songs)</option>
+          `).join("");
+        }
+        renderRemoteSetlistSongs();
       } catch (e) {
         container.innerHTML = `<div style="color: var(--danger); font-size: 11px;">Error: ${e}</div>`;
+      }
+    }
+
+    function renderRemoteSetlistSongs() {
+      const container = document.getElementById("remoteSetlistItemsList");
+      const active = rAllSetlists.find(s => s.id === rActiveSetlistId);
+      if (!active || !active.songs || active.songs.length === 0) {
+        container.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 10px; text-align: center;">No songs in this setlist.<br><span style="font-size: 10px; color: var(--text-faint);">Switch to Library tab to add tracks.</span></div>';
+        return;
+      }
+      container.innerHTML = active.songs.map((s, idx) => `
+        <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadAndApplyRemoteSong('${active.id}', '${s.id}')">
+            <span style="font-size: 12px; font-weight: 800; color: var(--accent); width: 18px; text-align: center;">${idx + 1}</span>
+            <div style="display: flex; flex-direction: column; min-width: 0;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.title || s.filename}</span>
+              <span style="font-size: 10px; color: var(--text-dim);">Key: <b style="color: var(--accent);">${s.key || '--'}</b> · Pad: ${s.patch_snapshot?.drone_root || '--'}</span>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; flex-shrink: 0;" onclick="loadAndApplyRemoteSong('${active.id}', '${s.id}')">Load</button>
+        </div>
+      `).join("");
+    }
+
+    async function loadRemoteSetlistLibrary() {
+      const container = document.getElementById("remoteSetlistLibList");
+      container.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Loading tracks...</div>';
+      try {
+        const res = await fetch("/api/playlist");
+        const data = await res.json();
+        const tracks = data.tracks || [];
+        if (tracks.length === 0) {
+          container.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No audio tracks found in uploads.</div>';
+          return;
+        }
+        container.innerHTML = tracks.map(t => {
+          const cleanName = t.filename.replace(/'/g, "\\'");
+          return `
+          <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="selectRemoteTrack('${cleanName}')">
+              <span style="font-size: 11px; font-weight: ${t.is_current ? '700' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.filename}</span>
+              <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim);">${t.size_mb} MB</span>
+            </div>
+            <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
+              <button class="btn btn-primary" style="padding: 2px 6px; font-size: 10px;" onclick="selectRemoteTrack('${cleanName}')">Play</button>
+              <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="addTrackToRemoteActiveSetlist('${cleanName}')" title="Add to setlist">+ Setlist</button>
+            </div>
+          </div>
+        `}).join("");
+      } catch (e) {
+        container.innerHTML = `<div style="color: var(--danger); font-size: 11px;">Error: ${e}</div>`;
+      }
+    }
+
+    async function addTrackToRemoteActiveSetlist(filename) {
+      try {
+        const res = await fetch("/api/setlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add_song",
+            setlist_id: rActiveSetlistId,
+            song_data: { title: filename, filename: filename, key: "C" }
+          })
+        });
+        const data = await res.json();
+        if (data.setlists) {
+          rAllSetlists = data.setlists;
+          showRemoteToast(`Added "${filename}" to setlist`);
+          switchRemoteSetlistTab('setlist');
+        }
+      } catch (e) {
+        showRemoteToast("Failed to add: " + e);
       }
     }
 
@@ -2340,35 +2534,6 @@
       }
     }
 
-    async function loadRemotePlaylist() {
-      const listEl = document.getElementById("remotePlaylistTracksList");
-      listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Loading tracks...</div>';
-      try {
-        const res = await fetch("/api/playlist");
-        const data = await res.json();
-        if (!data.tracks || data.tracks.length === 0) {
-          listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">No audio tracks found.</div>';
-          return;
-        }
-        listEl.innerHTML = data.tracks.map(t => `
-          <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 6px; padding: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="selectRemoteTrack('${t.filename.replace(/'/g, "\\'")}')">
-            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-              <span style="color: ${t.is_current ? 'var(--accent)' : 'var(--text-faint)'}; display: inline-flex; align-items: center;">
-                ${t.is_current 
-                  ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
-                  : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
-                }
-              </span>
-              <span style="font-size: 11px; font-weight: ${t.is_current ? '600' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.filename}</span>
-            </div>
-            <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim);">${t.size_mb} MB</span>
-          </div>
-        `).join("");
-      } catch (e) {
-        listEl.innerHTML = `<div style="color: var(--danger); font-size: 11px;">Error: ${e}</div>`;
-      }
-    }
-
     async function selectRemoteTrack(filename) {
       try {
         await fetch("/api/playlist/select", {
@@ -2376,7 +2541,8 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename })
         });
-        closeRemotePlaylistModal();
+        showRemoteToast(`Playing: ${filename}`);
+        closeRemoteSetlistModal();
       } catch (e) {
         console.error("Failed to select track:", e);
       }
@@ -2407,14 +2573,15 @@
             if (data.active_notes) {
               const chordName = detectAdvancedChord(data.active_notes);
               const nashObj = getChordWithNashville(chordName, remoteNashvilleKey);
-              document.getElementById("remoteChordText").innerText = chordName;
-              document.getElementById("remoteNashvilleText").innerText = nashObj.nashville;
+              const sLive = document.getElementById("stageLiveChord");
+              const sNash = document.getElementById("stageLiveNash");
+              if (sLive) sLive.innerText = chordName;
+              if (sNash) sNash.innerText = nashObj.nashville;
               if (data.active_note_names && data.active_note_names.length > 0) {
                 document.getElementById("remoteLastNote").innerText = data.active_note_names.join(" ");
               } else {
                 document.getElementById("remoteLastNote").innerText = "READY";
               }
-              if (g_isStageViewOpen) syncStageChordDisplays();
             }
             return;
           }
@@ -2446,19 +2613,15 @@
             const chart = song.chord_chart || [];
             const curChord = ChordTimeline.playableChord(ChordTimeline.chordAtTime(chart, currentPosition));
             const nextChord = ChordTimeline.nextPlayableChord(chart, currentPosition);
-            const curEl = document.getElementById("rLiveCurrentChord");
-            const timeEl = document.getElementById("remoteCurrentChordTime");
-            const nextEl = document.getElementById("rLiveNextChord");
-            const nextCd = document.getElementById("rLiveNextCount");
-            if (curEl) curEl.innerText = curChord ? curChord.chord : "--";
-            if (timeEl) timeEl.innerText = curChord ? formatTime(curChord.time) : formatTime(currentPosition);
+            const nextEl = document.getElementById("stageNextChord");
+            const nextCd = document.getElementById("stageNextCountdown");
             if (nextChord) {
               const diff = (nextChord.time - currentPosition).toFixed(1);
               if (nextEl) nextEl.innerText = nextChord.chord;
               if (nextCd) nextCd.innerText = `in ${diff}s`;
             } else {
               if (nextEl) nextEl.innerText = "--";
-              if (nextCd) nextCd.innerText = "--";
+              if (nextCd) nextCd.innerText = "";
             }
 
             // Update mobile Static Lyrics Container
@@ -2540,14 +2703,18 @@
             if (activeNotes.length > 0) {
               const chordName = detectAdvancedChord(activeNotes);
               const nashObj = getChordWithNashville(chordName, remoteNashvilleKey);
-              document.getElementById("remoteChordText").innerText = chordName;
-              document.getElementById("remoteNashvilleText").innerText = nashObj.nashville;
+              const sLive = document.getElementById("stageLiveChord");
+              const sNash = document.getElementById("stageLiveNash");
+              if (sLive) sLive.innerText = chordName;
+              if (sNash) sNash.innerText = nashObj.nashville;
               if (midi.active_note_names && midi.active_note_names.length > 0) {
                 document.getElementById("remoteLastNote").innerText = midi.active_note_names.join(" ");
               }
             } else {
-              document.getElementById("remoteChordText").innerText = "--";
-              document.getElementById("remoteNashvilleText").innerText = "";
+              const sLive = document.getElementById("stageLiveChord");
+              const sNash = document.getElementById("stageLiveNash");
+              if (sLive) sLive.innerText = "--";
+              if (sNash) sNash.innerText = "";
               document.getElementById("remoteLastNote").innerText = "READY";
             }
           }
@@ -2556,8 +2723,14 @@
           const audio = msg.audio;
           const montage = msg.montage;
           if (msg.drone_pad) {
-            g_rDroneState = msg.drone_pad;
-            syncRemoteDroneUI();
+            if (performance.now() - g_lastRemoteDroneInteraction > 600) {
+              const prevR = g_rDroneState.root;
+              const prevA = g_rDroneState.active;
+              g_rDroneState = msg.drone_pad;
+              if (prevR !== g_rDroneState.root || prevA !== g_rDroneState.active) {
+                syncRemoteDroneUI();
+              }
+            }
           }
           if (audio) {
             if (activeMixerDrag !== 'track' && audio.track_volume !== undefined) {
@@ -2624,10 +2797,11 @@
             if (montage.current_scene !== undefined && (montage.current_scene !== remoteActiveScene || remoteNamesChanged)) {
               remoteActiveScene = montage.current_scene;
               const sName = remoteSceneNames[remoteActiveScene] || `Scene ${remoteActiveScene}`;
-              document.getElementById("remoteActiveSceneText").innerText = sName;
+              const sText = document.getElementById("stageActiveSceneText");
+              if (sText) sText.innerText = sName;
               for (let s = 1; s <= 8; s++) {
-                const b = document.getElementById(`remoteSceneBtn_${s}`);
-                if (b) b.classList.toggle("is-active-loop", s === remoteActiveScene);
+                const sb = document.getElementById(`stageSceneBtn_${s}`);
+                if (sb) sb.classList.toggle("is-active-loop", s === remoteActiveScene);
               }
             }
             if (remoteNamesChanged) {

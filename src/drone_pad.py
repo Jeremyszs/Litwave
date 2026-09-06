@@ -149,9 +149,11 @@ class DronePadManager:
     def set_volume(self, vol: int):
         vol = max(0, min(127, int(vol)))
         self.volume = vol
+        self.host.set_drone_volume(vol)
         self.host.set_part_volume(self.drone_part, vol)
 
     def set_cutoff(self, cutoff: int):
         cutoff = max(0, min(127, int(cutoff)))
         self.cutoff = cutoff
+        self.host.set_drone_cutoff(cutoff)
         self.host.send_part_cc(self.drone_part, 74, cutoff)

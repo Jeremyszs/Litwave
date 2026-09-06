@@ -1176,13 +1176,9 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         <span id="dronePadBtnLabel">Drone Pad</span>
       </button>
-      <button class="btn-header-action" onclick="openSetlistModal()" title="Setlist & Patch Snapshot Manager">
+      <button class="btn-header-action" onclick="openSetlistModal('setlist')" title="Live Setlist & Practice Song Library">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-        <span>Setlists</span>
-      </button>
-      <button class="btn-header-action" onclick="openPlaylistModal()" title="View and switch songs in practice playlist">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        Playlist
+        <span>Setlist</span>
       </button>
 
       <button class="btn-header-action" onclick="openRemoteModal()" title="Connect Phone via QR Code or URL for MONTAGE M Volume Control">
@@ -1898,26 +1894,6 @@
     </div>
   </div>
 
-  <!-- Playlist & Song Library Modal -->
-  <div class="modal-backdrop" id="playlistModal">
-    <div class="modal-window" style="width: 440px; max-height: 80vh; display: flex; flex-direction: column;">
-      <div class="modal-header">
-        <div class="modal-title">Practice Song Library</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closePlaylistModal()" title="Close">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-        <div style="font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;">
-          <span>Select any track to load it immediately:</span>
-          <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="document.getElementById('songFileInput').click()">+ Upload New</button>
-        </div>
-        <div id="playlistTracksList" style="display: flex; flex-direction: column; gap: 4px;">
-          <!-- Loaded dynamically -->
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Custom In-App Bookmark Modal -->
   <div class="modal-backdrop" id="bookmarkModal">
@@ -2071,21 +2047,114 @@
 
   <!-- Setlist & Patch Manager Modal -->
   <div class="modal-backdrop" id="setlistModal" style="display: none;">
-    <div class="modal-window" style="width: 480px; max-height: 85vh; display: flex; flex-direction: column;">
+    <div class="modal-window" style="width: 520px; max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-header">
-        <div class="modal-title">Live Setlist & Patch Manager</div>
+        <div class="modal-title">Live Setlist & Library Manager</div>
         <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSetlistModal()" title="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <select id="setlistSelectDropdown" class="custom-select-dark" style="flex: 1; height: 30px;" onchange="onSelectSetlist(this.value)"></select>
-          <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="promptNewSetlist()">+ New</button>
-          <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="promptAddCurrentSongToSetlist()">+ Add Song</button>
+        <!-- Integrated Setlist & Playlist View Tabs -->
+        <div style="display: flex; gap: 6px; border-bottom: 1px solid var(--border-dim); padding-bottom: 8px;">
+          <button class="btn btn-active" id="setlistTab_songs" onclick="switchSetlistTab('setlist')" style="flex: 1; font-size: 11px; padding: 4px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <span>Live Setlist</span>
+          </button>
+          <button class="btn" id="setlistTab_library" onclick="switchSetlistTab('library')" style="flex: 1; font-size: 11px; padding: 4px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span>Song Library / Playlist</span>
+          </button>
         </div>
-        <div id="setlistSongsList" style="display: flex; flex-direction: column; gap: 6px;">
+
+        <!-- Setlist Tab Pane -->
+        <div id="setlistTabPane_setlist" style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <select id="setlistSelectDropdown" class="custom-select-dark" style="flex: 1; height: 30px;" onchange="onSelectSetlist(this.value)"></select>
+            <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="openNewSetlistModal()">+ New</button>
+            <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="openAddSongModal()" title="Add current song & patch snapshot to this setlist">+ Add Song</button>
+            <button class="btn" style="padding: 4px 8px; font-size: 11px; color: var(--danger);" onclick="promptDeleteCurrentSetlist()" title="Delete active setlist">Delete</button>
+          </div>
+          <div id="setlistSongsList" style="display: flex; flex-direction: column; gap: 6px;">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+
+        <!-- Library / Playlist Tab Pane -->
+        <div id="setlistTabPane_library" style="display: none; flex-direction: column; gap: 8px;">
+          <div style="font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;">
+            <span>Select to load, or click "+" to add to active setlist:</span>
+            <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="document.getElementById('songFileInput').click()">+ Upload New</button>
+          </div>
+          <div id="playlistTracksList" style="display: flex; flex-direction: column; gap: 4px;">
+            <!-- Loaded dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom In-App Create Setlist Modal -->
+  <div class="modal-backdrop" id="newSetlistModal" style="z-index: 550;">
+    <div class="modal-window" style="width: 340px;">
+      <div class="modal-header">
+        <div class="modal-title">Create New Setlist</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeNewSetlistModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="pref-group">
+          <label class="pref-label">Setlist Name</label>
+          <input type="text" id="newSetlistNameInput" class="modal-input" placeholder="e.g. Sunday Evening Rehearsal" maxlength="40">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px;">
+          <button class="btn" onclick="closeNewSetlistModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmNewSetlist()">Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom In-App Add Track from Playlist to Setlist Modal -->
+  <div class="modal-backdrop" id="addFromPlaylistModal" style="z-index: 550;">
+    <div class="modal-window" style="width: 440px; max-height: 80vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title">Add Track from Library to Setlist</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeAddFromPlaylistModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; color: var(--text-dim);">
+          Select a song from your saved library to add to this setlist with current VST sound settings:
+        </div>
+        <div id="addFromPlaylistItemsList" style="display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto;">
           <!-- Loaded dynamically -->
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px;">
+          <button class="btn" onclick="closeAddFromPlaylistModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom In-App Action Confirmation Modal (for Deleting Setlist / Song) -->
+  <div class="modal-backdrop" id="setlistConfirmModal" style="z-index: 600;">
+    <div class="modal-window" style="width: 340px;">
+      <div class="modal-header">
+        <div class="modal-title" id="setlistConfirmTitle">Confirm Action</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSetlistConfirmModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="setlistConfirmMessage" style="font-size: 11px; color: var(--text-main); line-height: 1.4;">
+          Are you sure you want to proceed?
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px;">
+          <button class="btn" onclick="closeSetlistConfirmModal()">Cancel</button>
+          <button class="btn btn-danger" id="setlistConfirmActionBtn" onclick="executeSetlistConfirmAction()">Confirm</button>
         </div>
       </div>
     </div>
@@ -3780,22 +3849,13 @@
       renderDesktopParts();
     }
 
-    // Playlist Modal Handlers
-    async function openPlaylistModal() {
-      const modal = document.getElementById("playlistModal");
-      modal.style.display = "flex";
-      await refreshPlaylistUI();
-    }
-
-    function closePlaylistModal() {
-      document.getElementById("playlistModal").style.display = "none";
-    }
 
     // ==========================================
     // Continuous Worship Drone Pad Controller
     // ==========================================
     const DRONE_ROOT_KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     let g_dronePadState = { active: false, root: "C", volume: 95, cutoff: 68 };
+    let g_lastDroneUserInteraction = 0;
 
     function toggleDronePadModal() {
       const modal = document.getElementById("dronePadModal");
@@ -3810,13 +3870,16 @@
     function renderDroneKeys() {
       const grid = document.getElementById("droneKeysGrid");
       if (!grid) return;
-      grid.innerHTML = DRONE_ROOT_KEYS.map(k => `
-        <button class="btn ${g_dronePadState.root === k ? 'btn-active' : ''}" 
-                style="padding: 8px 4px; font-weight: 600; font-size: 12px; font-family: var(--font-mono); border: 1px solid ${g_dronePadState.root === k ? 'var(--accent)' : 'var(--border-dim)'};"
-                onclick="selectDroneRoot('${k}')">
-          ${k}
-        </button>
-      `).join("");
+      grid.innerHTML = DRONE_ROOT_KEYS.map(k => {
+        const isActive = (g_dronePadState.root === k);
+        return `
+          <button type="button" class="btn ${isActive ? 'btn-active' : ''}" 
+                  style="padding: 8px 4px; font-weight: 700; font-size: 12px; font-family: var(--font-mono); border: 1px solid ${isActive ? 'var(--accent)' : 'var(--border-dim)'}; cursor: pointer;"
+                  onclick="selectDroneRoot('${k}')">
+            ${k}
+          </button>
+        `;
+      }).join("");
     }
 
     function syncDroneModalUi() {
@@ -3849,6 +3912,7 @@
     }
 
     async function toggleDroneActiveState() {
+      g_lastDroneUserInteraction = performance.now();
       const action = g_dronePadState.active ? "stop" : "start";
       try {
         const res = await fetch("/api/drone-pad", {
@@ -3866,7 +3930,8 @@
       }
     }
 
-    function selectDroneRoot(key) {
+    async function selectDroneRoot(key) {
+      g_lastDroneUserInteraction = performance.now();
       g_dronePadState.root = key;
       renderDroneKeys();
       const dot = document.getElementById("droneModalStatusDot");
@@ -3878,19 +3943,20 @@
       if (label && g_dronePadState.active) {
         label.innerText = `Pad: ${key}`;
       }
-      fetch("/api/drone-pad", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "set_root", root: key })
-      })
-      .then(r => r.json())
-      .then(data => {
+      try {
+        const res = await fetch("/api/drone-pad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_root", root: key })
+        });
+        const data = await res.json();
         if (data.drone_pad) {
           g_dronePadState = data.drone_pad;
           syncDroneModalUi();
         }
-      })
-      .catch(e => console.error("Drone root change failed:", e));
+      } catch (e) {
+        console.error("Drone root change failed:", e);
+      }
     }
 
     function changeDroneVoice(val) {
@@ -3905,38 +3971,70 @@
     }
 
     async function setDroneVolume(val) {
+      g_lastDroneUserInteraction = performance.now();
       g_dronePadState.volume = parseInt(val);
       document.getElementById("droneVolValue").innerText = `${Math.round((val / 127) * 100)}%`;
       fetch("/api/drone-pad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "set_volume", volume: parseInt(val) })
-      }).catch(() => {});
+      }).catch(e => console.error("Drone volume change error:", e));
     }
 
     async function setDroneCutoff(val) {
+      g_lastDroneUserInteraction = performance.now();
       g_dronePadState.cutoff = parseInt(val);
       document.getElementById("droneCutoffValue").innerText = `${Math.round((val / 127) * 100)}%`;
       fetch("/api/drone-pad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "set_cutoff", cutoff: parseInt(val) })
-      }).catch(() => {});
+      }).catch(e => console.error("Drone cutoff change error:", e));
     }
 
     // ==========================================
-    // Setlist & Patch Manager Handlers
+    // Setlist & Library Manager Handlers
     // ==========================================
     let g_allSetlists = [];
     let g_activeSetlistId = "sunday_morning";
+    let g_pendingConfirmCallback = null;
 
-    async function openSetlistModal() {
+    async function openSetlistModal(initialTab = "setlist") {
       document.getElementById("setlistModal").style.display = "flex";
+      switchSetlistTab(initialTab);
       await refreshSetlistsUI();
+      await refreshPlaylistUI();
     }
 
     function closeSetlistModal() {
       document.getElementById("setlistModal").style.display = "none";
+    }
+
+    // Direct alias for playlist button so both work seamlessly
+    async function openPlaylistModal() {
+      openSetlistModal("library");
+    }
+
+    function closePlaylistModal() {
+      closeSetlistModal();
+    }
+
+    function switchSetlistTab(tab) {
+      const tabSongs = document.getElementById("setlistTab_songs");
+      const tabLib = document.getElementById("setlistTab_library");
+      const paneSongs = document.getElementById("setlistTabPane_setlist");
+      const paneLib = document.getElementById("setlistTabPane_library");
+      if (tab === "setlist") {
+        tabSongs.classList.add("btn-active");
+        tabLib.classList.remove("btn-active");
+        paneSongs.style.display = "flex";
+        paneLib.style.display = "none";
+      } else {
+        tabLib.classList.add("btn-active");
+        tabSongs.classList.remove("btn-active");
+        paneSongs.style.display = "none";
+        paneLib.style.display = "flex";
+      }
     }
 
     async function refreshSetlistsUI() {
@@ -3945,6 +4043,9 @@
         const data = await res.json();
         if (data.setlists) {
           g_allSetlists = data.setlists;
+          if (!g_allSetlists.some(s => s.id === g_activeSetlistId) && g_allSetlists.length > 0) {
+            g_activeSetlistId = g_allSetlists[0].id;
+          }
           renderSetlistDropdown();
           renderActiveSetlistSongs();
         }
@@ -3971,31 +4072,86 @@
       if (!container) return;
       const cur = g_allSetlists.find(s => s.id === g_activeSetlistId);
       if (!cur || !cur.songs || cur.songs.length === 0) {
-        container.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">No songs in this setlist yet. Click "+ Add Song" to bundle the current track & VST sound patch.</div>';
+        container.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 12px; text-align: center; border: 1px dashed var(--border-dim); border-radius: 6px;">No songs in this setlist yet.<br><span style="color: var(--text-dim); font-size: 10px;">Click "+ Add Song" or switch to "Song Library / Playlist" tab to add tracks.</span></div>';
         return;
       }
       container.innerHTML = cur.songs.map((song, idx) => `
-        <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; cursor: pointer;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">
-            <span style="font-size: 12px; font-weight: 700; color: var(--accent); width: 18px;">${idx + 1}</span>
-            <div style="display: flex; flex-direction: column;">
-              <span style="font-size: 11px; font-weight: 600; color: var(--text-main);">${song.title || song.filename}</span>
+        <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">
+            <span style="font-size: 12px; font-weight: 700; color: var(--accent); width: 20px; text-align: center;">${idx + 1}</span>
+            <div style="display: flex; flex-direction: column; min-width: 0;">
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${song.title || song.filename}</span>
               <span style="font-size: 10px; color: var(--text-dim);">
                 Key: <b style="color: var(--accent);">${song.key || '--'}</b> · Pad: <b style="color: var(--text-main);">${song.patch_snapshot?.drone_root || '--'}</b> · Engine: ${song.patch_snapshot?.engine_type || 'yamaha'}
               </span>
             </div>
           </div>
-          <div style="display: flex; gap: 4px; align-items: center;">
-            <button class="btn btn-primary" style="padding: 2px 6px; font-size: 10px;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">Load</button>
-            <button class="btn" style="padding: 2px 4px; color: var(--danger); font-size: 10px;" onclick="removeSongFromSetlist('${cur.id}', '${song.id}')" title="Remove">✕</button>
+          <div style="display: flex; gap: 3px; align-items: center; flex-shrink: 0;">
+            <button class="btn" style="padding: 2px 5px; font-size: 9px;" onclick="moveSongInSetlist('${cur.id}', '${song.id}', 'up')" title="Move Up" ${idx === 0 ? 'disabled' : ''}>▲</button>
+            <button class="btn" style="padding: 2px 5px; font-size: 9px;" onclick="moveSongInSetlist('${cur.id}', '${song.id}', 'down')" title="Move Down" ${idx === cur.songs.length - 1 ? 'disabled' : ''}>▼</button>
+            <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; font-weight: 600;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">Load</button>
+            <button class="btn" style="padding: 3px 6px; color: var(--danger); font-size: 10px;" onclick="confirmRemoveSong('${cur.id}', '${song.id}', '${(song.title || song.filename).replace(/'/g, "\\'")}')" title="Remove">✕</button>
           </div>
         </div>
       `).join("");
     }
 
-    async function promptNewSetlist() {
-      const name = prompt("Enter new setlist name:", "Sunday Evening Rehearsal");
-      if (!name) return;
+    async function moveSongInSetlist(setlistId, songId, direction) {
+      try {
+        const res = await fetch("/api/setlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "move_song", setlist_id: setlistId, song_id: songId, direction: direction })
+        });
+        const data = await res.json();
+        if (data.setlists) {
+          g_allSetlists = data.setlists;
+          renderActiveSetlistSongs();
+        }
+      } catch (e) {
+        showAppToast("Failed to reorder song: " + e);
+      }
+    }
+
+    // Modal Confirmation Dialog Helpers (replaces alert & confirm)
+    function openSetlistConfirmModal(title, message, confirmBtnLabel, onConfirm) {
+      document.getElementById("setlistConfirmTitle").innerText = title;
+      document.getElementById("setlistConfirmMessage").innerText = message;
+      const btn = document.getElementById("setlistConfirmActionBtn");
+      btn.innerText = confirmBtnLabel || "Confirm";
+      g_pendingConfirmCallback = onConfirm;
+      document.getElementById("setlistConfirmModal").style.display = "flex";
+    }
+
+    function closeSetlistConfirmModal() {
+      document.getElementById("setlistConfirmModal").style.display = "none";
+      g_pendingConfirmCallback = null;
+    }
+
+    async function executeSetlistConfirmAction() {
+      const cb = g_pendingConfirmCallback;
+      closeSetlistConfirmModal();
+      if (typeof cb === "function") {
+        await cb();
+      }
+    }
+
+    // Create New Setlist
+    function openNewSetlistModal() {
+      const inp = document.getElementById("newSetlistNameInput");
+      inp.value = `Setlist ${g_allSetlists.length + 1}`;
+      document.getElementById("newSetlistModal").style.display = "flex";
+      setTimeout(() => { inp.focus(); inp.select(); }, 50);
+    }
+
+    function closeNewSetlistModal() {
+      document.getElementById("newSetlistModal").style.display = "none";
+    }
+
+    async function confirmNewSetlist() {
+      const inp = document.getElementById("newSetlistNameInput");
+      const name = inp.value.trim() || `Setlist ${g_allSetlists.length + 1}`;
+      closeNewSetlistModal();
       try {
         const res = await fetch("/api/setlist", {
           method: "POST",
@@ -4006,19 +4162,86 @@
         if (data.setlist) {
           g_activeSetlistId = data.setlist.id;
           await refreshSetlistsUI();
+          showAppToast(`Created setlist "${name}"`);
         }
       } catch (e) {
-        alert("Failed to create setlist: " + e);
+        showAppToast("Failed to create setlist: " + e);
       }
     }
 
-    async function promptAddCurrentSongToSetlist() {
-      const songTitle = document.getElementById("songFilename")?.innerText || "Current Song";
-      const keyVal = (document.getElementById("intelKeyText")?.innerText || "Key: C").replace("Key:", "").trim();
+    // Delete Current Setlist
+    function promptDeleteCurrentSetlist() {
+      const cur = g_allSetlists.find(s => s.id === g_activeSetlistId);
+      if (!cur) return;
+      openSetlistConfirmModal(
+        "Delete Setlist",
+        `Are you sure you want to delete "${cur.name}"? This action cannot be undone.`,
+        "Delete Setlist",
+        async () => {
+          try {
+            const res = await fetch("/api/setlist", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "delete_setlist", setlist_id: cur.id })
+            });
+            const data = await res.json();
+            if (data.setlists) {
+              g_allSetlists = data.setlists;
+              g_activeSetlistId = g_allSetlists[0]?.id || "sunday_morning";
+              await refreshSetlistsUI();
+              showAppToast(`Deleted setlist "${cur.name}"`);
+            }
+          } catch (e) {
+            showAppToast("Failed to delete setlist: " + e);
+          }
+        }
+      );
+    }
+
+    // Add Songs from Playlist to Setlist
+    async function openAddSongModal() {
+      const container = document.getElementById("addFromPlaylistItemsList");
+      if (!container) return;
+      container.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">Loading library...</div>';
+      document.getElementById("addFromPlaylistModal").style.display = "flex";
+
+      try {
+        const res = await fetch("/api/playlist");
+        const data = await res.json();
+        const tracks = data.tracks || [];
+        if (tracks.length === 0) {
+          container.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">No audio tracks found. Click "+ Upload New" to add audio files.</div>';
+          return;
+        }
+        container.innerHTML = tracks.map(t => {
+          const cleanName = t.filename.replace(/'/g, "\\'");
+          const title = (t.title || t.filename).replace(/'/g, "\\'");
+          const key = t.key || "C";
+          return `
+            <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.title || t.filename}</span>
+                <span style="font-size: 10px; color: var(--text-dim);">Key: ${t.key || '--'} · ${t.size_mb || 0} MB</span>
+              </div>
+              <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; font-weight: 600;" onclick="confirmAddTrackFromPlaylist('${cleanName}', '${title}', '${key}')">+ Add</button>
+            </div>
+          `;
+        }).join("");
+      } catch (e) {
+        container.innerHTML = `<div style="color: var(--danger); font-size: 11px;">Error loading tracks: ${e}</div>`;
+      }
+    }
+
+    function closeAddFromPlaylistModal() {
+      document.getElementById("addFromPlaylistModal").style.display = "none";
+    }
+
+    async function confirmAddTrackFromPlaylist(filename, title, key) {
+      closeAddFromPlaylistModal();
       const songData = {
-        title: songTitle,
-        filename: songTitle,
-        key: keyVal
+        title: title || filename,
+        filename: filename,
+        key: key || "C"
       };
       try {
         const res = await fetch("/api/setlist", {
@@ -4034,32 +4257,43 @@
         if (data.setlists) {
           g_allSetlists = data.setlists;
           renderActiveSetlistSongs();
+          renderSetlistDropdown();
+          showAppToast(`Added "${songData.title}" to setlist with VST snapshot`);
         }
       } catch (e) {
-        alert("Failed to add song to setlist: " + e);
+        showAppToast("Failed to add song: " + e);
       }
     }
 
-    async function removeSongFromSetlist(setlistId, songId) {
-      if (!confirm("Remove song from setlist?")) return;
-      try {
-        const res = await fetch("/api/setlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "remove_song",
-            setlist_id: setlistId,
-            song_id: songId
-          })
-        });
-        const data = await res.json();
-        if (data.setlists) {
-          g_allSetlists = data.setlists;
-          renderActiveSetlistSongs();
+    // Remove Song from Setlist with custom confirmation
+    function confirmRemoveSong(setlistId, songId, songTitle) {
+      openSetlistConfirmModal(
+        "Remove Song",
+        `Remove "${songTitle}" from this setlist?`,
+        "Remove",
+        async () => {
+          try {
+            const res = await fetch("/api/setlist", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "remove_song",
+                setlist_id: setlistId,
+                song_id: songId
+              })
+            });
+            const data = await res.json();
+            if (data.setlists) {
+              g_allSetlists = data.setlists;
+              renderActiveSetlistSongs();
+              renderSetlistDropdown();
+              showAppToast(`Removed song from setlist`);
+            }
+          } catch (e) {
+            showAppToast("Failed to remove song: " + e);
+          }
         }
-      } catch (e) {
-        alert("Failed to remove song: " + e);
-      }
+      );
     }
 
     async function loadAndApplySetlistSong(setlistId, songId) {
@@ -4070,7 +4304,7 @@
 
       // 1. Load backing track if filename matches
       if (song.filename) {
-        loadPlaylistTrack(song.filename);
+        await loadPlaylistTrack(song.filename, false);
       }
 
       // 2. Apply VST patch snapshot & ambient pad root
@@ -4084,6 +4318,7 @@
               patch_snapshot: song.patch_snapshot
             })
           });
+          showAppToast(`Loaded "${song.title || song.filename}" (Key: ${song.key || 'C'})`);
         } catch (e) {
           console.error("Failed to apply patch:", e);
         }
@@ -4093,6 +4328,7 @@
 
     async function refreshPlaylistUI() {
       const listEl = document.getElementById("playlistTracksList");
+      if (!listEl) return;
       listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">Loading library...</div>';
       try {
         const res = await fetch("/api/playlist");
@@ -4101,9 +4337,11 @@
           listEl.innerHTML = '<div style="font-size: 11px; color: var(--text-faint); padding: 8px;">No audio files found in uploads. Click "+ Upload New" to add tracks.</div>';
           return;
         }
-        listEl.innerHTML = data.tracks.map(t => `
-          <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 4px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.1s ease;" onclick="loadPlaylistTrack('${t.filename.replace(/'/g, "\\'")}')">
-            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+        listEl.innerHTML = data.tracks.map(t => {
+          const cleanName = t.filename.replace(/'/g, "\\'");
+          return `
+          <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: all 0.1s ease;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadPlaylistTrack('${cleanName}')">
               <span style="color: ${t.is_current ? 'var(--accent)' : 'var(--text-faint)'}; display: inline-flex; align-items: center;">
                 ${t.is_current 
                   ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
@@ -4111,16 +4349,48 @@
                 }
               </span>
               <span style="font-size: 11px; font-weight: ${t.is_current ? '600' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.filename}</span>
+              <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim); margin-left: 6px;">${t.size_mb} MB</span>
             </div>
-            <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim); flex-shrink: 0; margin-left: 8px;">${t.size_mb} MB</span>
+            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+              <button class="btn btn-primary" style="padding: 2px 7px; font-size: 10px;" onclick="loadPlaylistTrack('${cleanName}')">Load</button>
+              <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="quickAddPlaylistTrackToSetlist('${cleanName}')" title="Add to current setlist with VST snapshot">+ Setlist</button>
+            </div>
           </div>
-        `).join("");
+        `}).join("");
       } catch (e) {
         listEl.innerHTML = `<div style="color: var(--danger); font-size: 11px;">Error loading tracks: ${e}</div>`;
       }
     }
 
-    async function loadPlaylistTrack(filename) {
+    async function quickAddPlaylistTrackToSetlist(filename) {
+      const songData = {
+        title: filename,
+        filename: filename,
+        key: "C"
+      };
+      try {
+        const res = await fetch("/api/setlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add_song",
+            setlist_id: g_activeSetlistId,
+            song_data: songData
+          })
+        });
+        const data = await res.json();
+        if (data.setlists) {
+          g_allSetlists = data.setlists;
+          renderActiveSetlistSongs();
+          renderSetlistDropdown();
+          showAppToast(`Added "${filename}" to active setlist!`);
+        }
+      } catch (e) {
+        showAppToast("Failed to add track to setlist: " + e);
+      }
+    }
+
+    async function loadPlaylistTrack(filename, closeModal = true) {
       try {
         const res = await fetch("/api/playlist/select", {
           method: "POST",
@@ -4134,8 +4404,11 @@
             waveformPeaks = data.song.waveform_peaks;
             drawWaveform();
           }
+          showAppToast(`Loaded backing track "${filename}"`);
         }
-        closePlaylistModal();
+        if (closeModal) {
+          closeSetlistModal();
+        }
       } catch (e) {
         console.error("Failed to load song:", e);
       }
@@ -4456,8 +4729,15 @@
         }
       }
       if (data.drone_pad) {
-        g_dronePadState = data.drone_pad;
-        syncDroneModalUi();
+        // Prevent incoming 25fps WebSocket telemetry from clobbering optimistic UI click during user interaction
+        if (performance.now() - g_lastDroneUserInteraction > 600) {
+          const prevRoot = g_dronePadState.root;
+          const prevActive = g_dronePadState.active;
+          g_dronePadState = data.drone_pad;
+          if (prevRoot !== g_dronePadState.root || prevActive !== g_dronePadState.active) {
+            syncDroneModalUi();
+          }
+        }
       }
       updateEngineStatusUi();
 
@@ -5255,9 +5535,13 @@
       document.getElementById("songFilename").innerText = "Decoding track...";
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.success && data.song.waveform_peaks) {
-        waveformPeaks = data.song.waveform_peaks;
-        drawWaveform();
+      if (data.success) {
+        if (data.song && data.song.waveform_peaks) {
+          waveformPeaks = data.song.waveform_peaks;
+          drawWaveform();
+        }
+        showAppToast(`Loaded & saved "${data.filename}" to playlist library`);
+        refreshPlaylistUI();
       }
     }
 
