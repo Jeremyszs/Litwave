@@ -3849,23 +3849,31 @@
       }
     }
 
-    async function selectDroneRoot(key) {
+    function selectDroneRoot(key) {
       g_dronePadState.root = key;
       renderDroneKeys();
-      try {
-        const res = await fetch("/api/drone-pad", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "set_root", root: key })
-        });
-        const data = await res.json();
+      const dot = document.getElementById("droneModalStatusDot");
+      const btn = document.getElementById("dronePadToggleActionBtn");
+      const label = document.getElementById("dronePadBtnLabel");
+      if (btn && g_dronePadState.active) {
+        btn.innerText = `Stop Pad (${key})`;
+      }
+      if (label && g_dronePadState.active) {
+        label.innerText = `Pad: ${key}`;
+      }
+      fetch("/api/drone-pad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_root", root: key })
+      })
+      .then(r => r.json())
+      .then(data => {
         if (data.drone_pad) {
           g_dronePadState = data.drone_pad;
           syncDroneModalUi();
         }
-      } catch (e) {
-        console.error("Drone root change failed:", e);
-      }
+      })
+      .catch(e => console.error("Drone root change failed:", e));
     }
 
     async function setDroneVolume(val) {

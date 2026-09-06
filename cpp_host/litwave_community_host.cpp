@@ -658,12 +658,17 @@ void UdpControlServerThread() {
                     }
                 } else if (cmd == 0x90) { // Note On from Web/UDP
                     float vel = (float)d2 / 127.0f;
-                    int p = (int)ch;
-                    if (vel > 0.0f) trigger_note_on(p, d1, vel);
-                    else trigger_note_off(p, d1);
+                    // Support both 0-indexed and 1-indexed part channels (Channel 7 or Part 8 -> index 7)
+                    int p = (ch == 8) ? 7 : (int)ch;
+                    if (p >= 0 && p < 8) {
+                        if (vel > 0.0f) trigger_note_on(p, d1, vel);
+                        else trigger_note_off(p, d1);
+                    }
                 } else if (cmd == 0x80) { // Note Off from Web/UDP
-                    int p = (int)ch;
-                    trigger_note_off(p, d1);
+                    int p = (ch == 8) ? 7 : (int)ch;
+                    if (p >= 0 && p < 8) {
+                        trigger_note_off(p, d1);
+                    }
                 }
             }
         }
