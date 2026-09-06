@@ -1,0 +1,394 @@
+[
+  {
+    "id": "nord_stage_romantic",
+    "name": "Nord Stage 3 Romantic Grand",
+    "category": "Piano (Modern & Worship)",
+    "bank": 10,
+    "preset": 0
+  },
+  {
+    "id": "roland_rd_popgrand",
+    "name": "Roland RD-700/800 Stage Grand",
+    "category": "Piano (Modern & Worship)",
+    "bank": 14,
+    "preset": 0
+  },
+  {
+    "id": "chateau_grand_ccm",
+    "name": "Chateau Grand (Modern CCM)",
+    "category": "Piano (Modern & Worship)",
+    "bank": 6,
+    "preset": 0
+  },
+  {
+    "id": "chateau_dynamic_grand",
+    "name": "Chateau Dynamic Studio Grand",
+    "category": "Piano (Modern & Worship)",
+    "bank": 6,
+    "preset": 1
+  },
+  {
+    "id": "chateau_dark_grand",
+    "name": "Chateau Intimate Dark Grand",
+    "category": "Piano (Modern & Worship)",
+    "bank": 6,
+    "preset": 3
+  },
+  {
+    "id": "chateau_piano_full_pad",
+    "name": "Chateau Grand + Worship Ambient Pad",
+    "category": "Piano (Modern & Worship)",
+    "bank": 6,
+    "preset": 8
+  },
+  {
+    "id": "yamaha_c5_grand",
+    "name": "Yamaha C5 Grand (Studio Core)",
+    "category": "Piano (Modern & Worship)",
+    "bank": 5,
+    "preset": 0
+  },
+  {
+    "id": "yamaha_dynamic_c5",
+    "name": "Yamaha Dynamic C5 Grand",
+    "category": "Piano (Modern & Worship)",
+    "bank": 5,
+    "preset": 2
+  },
+  {
+    "id": "yamaha_mellow_c5",
+    "name": "Yamaha Mellow C5 (Ballad)",
+    "category": "Piano (Modern & Worship)",
+    "bank": 5,
+    "preset": 1
+  },
+  {
+    "id": "general_bright_grand",
+    "name": "Stage Pop Bright Grand",
+    "category": "Piano (Modern & Worship)",
+    "bank": 0,
+    "preset": 1
+  },
+  {
+    "id": "rhodes_soft_mellow",
+    "name": "Rhodes Mark II (Soft & Warm)",
+    "category": "Electric Piano",
+    "bank": 16,
+    "preset": 0
+  },
+  {
+    "id": "rhodes_slow_tremolo",
+    "name": "Rhodes Slow Chorus Tremolo",
+    "category": "Electric Piano",
+    "bank": 16,
+    "preset": 2
+  },
+  {
+    "id": "rhodes_bell_mellow",
+    "name": "Rhodes Bell Warm Tine",
+    "category": "Electric Piano",
+    "bank": 16,
+    "preset": 9
+  },
+  {
+    "id": "rhodes_bell_slow_tr",
+    "name": "Rhodes Bell Soft Tremolo",
+    "category": "Electric Piano",
+    "bank": 16,
+    "preset": 11
+  },
+  {
+    "id": "wurlitzer_soft_layer",
+    "name": "Wurlitzer 200A Soft Tone",
+    "category": "Electric Piano",
+    "bank": 16,
+    "preset": 17
+  },
+  {
+    "id": "dx7_soft_ballad",
+    "name": "DX7 Mellow Ballad EP",
+    "category": "Electric Piano",
+    "bank": 16,
+    "preset": 8
+  },
+  {
+    "id": "piano_fm_ep_layer",
+    "name": "Acoustic Piano & Soft FM EP Layer",
+    "category": "Electric Piano",
+    "bank": 0,
+    "preset": 207
+  },
+  {
+    "id": "tine_fm_dual_ep",
+    "name": "Dual Tine & FM Soft Blend",
+    "category": "Electric Piano",
+    "bank": 0,
+    "preset": 206
+  },
+  {
+    "id": "yamaha_elek_road",
+    "name": "Yamaha ElekRoad Dyno",
+    "category": "Electric Piano",
+    "bank": 1,
+    "preset": 18
+  },
+  {
+    "id": "roland_epiano_chorus",
+    "name": "Roland Chorused EP",
+    "category": "Electric Piano",
+    "bank": 2,
+    "preset": 4
+  },
+  {
+    "id": "bell_tine_ep",
+    "name": "Bell Tine EP (80s Ballad)",
+    "category": "Electric Piano",
+    "bank": 0,
+    "preset": 236
+  },
+  {
+    "id": "chateau_warm_pad_lush",
+    "name": "Chateau Ultra-Soft Ambient Pad",
+    "category": "Pad & Atmosphere",
+    "bank": 6,
+    "preset": 4
+  },
+  {
+    "id": "halo_ethereal_pad",
+    "name": "Halo Ethereal Soft Wash",
+    "category": "Pad & Atmosphere",
+    "bank": 0,
+    "preset": 94
+  },
+  {
+    "id": "orchestra_warm_pad",
+    "name": "Orchestral Warm Ambient Pad",
+    "category": "Pad & Atmosphere",
+    "bank": 0,
+    "preset": 189
+  },
+  {
+    "id": "bowed_silk_pad",
+    "name": "Bowed Silk String Pad",
+    "category": "Pad & Atmosphere",
+    "bank": 2,
+    "preset": 92
+  },
+  {
+    "id": "roland_choir_pad",
+    "name": "Roland Soft Choir Pad",
+    "category": "Pad & Atmosphere",
+    "bank": 2,
+    "preset": 91
+  },
+  {
+    "id": "roland_warm_pad",
+    "name": "Roland Warm Analog Pad",
+    "category": "Pad & Atmosphere",
+    "bank": 2,
+    "preset": 89
+  },
+  {
+    "id": "vibrato_ambient_pad",
+    "name": "Vibrato Gentle Bloom Pad",
+    "category": "Pad & Atmosphere",
+    "bank": 2,
+    "preset": 114
+  },
+  {
+    "id": "yamaha_superpad",
+    "name": "Yamaha Atmosphere Wash",
+    "category": "Pad & Atmosphere",
+    "bank": 1,
+    "preset": 56
+  },
+  {
+    "id": "yamaha_dynapad",
+    "name": "Yamaha DynaPad (Warm)",
+    "category": "Pad & Atmosphere",
+    "bank": 1,
+    "preset": 11
+  },
+  {
+    "id": "yamaha_ice_field",
+    "name": "Yamaha Ice Field Shimmer",
+    "category": "Pad & Atmosphere",
+    "bank": 1,
+    "preset": 12
+  },
+  {
+    "id": "zenology_sine_lead",
+    "name": "Roland Zenology Pure Sine Lead",
+    "category": "Lead & Upbeat Synth",
+    "bank": 17,
+    "preset": 166
+  },
+  {
+    "id": "roland_sine_classic",
+    "name": "Roland SC-88 Silky Sine Lead",
+    "category": "Lead & Upbeat Synth",
+    "bank": 2,
+    "preset": 109
+  },
+  {
+    "id": "zenology_trance_hook",
+    "name": "Zenology Modern Trance / Praise Hook",
+    "category": "Lead & Upbeat Synth",
+    "bank": 17,
+    "preset": 149
+  },
+  {
+    "id": "zenology_polysynth_anthem",
+    "name": "Zenology Polysynth Anthem (Upbeat Chords)",
+    "category": "Lead & Upbeat Synth",
+    "bank": 17,
+    "preset": 90
+  },
+  {
+    "id": "zenology_synth_brass",
+    "name": "Zenology Modern Synth Brass (Punchy Stabs)",
+    "category": "Lead & Upbeat Synth",
+    "bank": 17,
+    "preset": 62
+  },
+  {
+    "id": "zenology_5th_saw",
+    "name": "Zenology 5th Saw Stack (Huge Swells)",
+    "category": "Lead & Upbeat Synth",
+    "bank": 17,
+    "preset": 86
+  },
+  {
+    "id": "zenology_saw_wave2",
+    "name": "Zenology Cutting Modern Saw Lead",
+    "category": "Lead & Upbeat Synth",
+    "bank": 17,
+    "preset": 132
+  },
+  {
+    "id": "yamaha_vco_lead",
+    "name": "Yamaha Super Waves VCO Lead",
+    "category": "Lead & Upbeat Synth",
+    "bank": 1,
+    "preset": 52
+  },
+  {
+    "id": "yamaha_hard_sync",
+    "name": "Yamaha Hard Sync Lead",
+    "category": "Lead & Upbeat Synth",
+    "bank": 1,
+    "preset": 51
+  },
+  {
+    "id": "roland_whistle_solo",
+    "name": "Roland Expressive Whistle Solo",
+    "category": "Lead & Upbeat Synth",
+    "bank": 2,
+    "preset": 78
+  },
+  {
+    "id": "roland_fantasia_bell",
+    "name": "Roland D-50 Fantasia Bell",
+    "category": "Bells & Mallets",
+    "bank": 2,
+    "preset": 88
+  },
+  {
+    "id": "roland_tubular_bells",
+    "name": "Roland Concert Chimes",
+    "category": "Bells & Mallets",
+    "bank": 2,
+    "preset": 14
+  },
+  {
+    "id": "yamaha_crystals",
+    "name": "Yamaha Crystals Chime",
+    "category": "Bells & Mallets",
+    "bank": 1,
+    "preset": 50
+  },
+  {
+    "id": "yamaha_bell_wah",
+    "name": "Yamaha BellWah Shimmer",
+    "category": "Bells & Mallets",
+    "bank": 1,
+    "preset": 47
+  },
+  {
+    "id": "yamaha_mallet_ep",
+    "name": "Yamaha Mallet Bell",
+    "category": "Bells & Mallets",
+    "bank": 1,
+    "preset": 19
+  },
+  {
+    "id": "tinker_bell_fm",
+    "name": "Tinker Bell Sparkle",
+    "category": "Bells & Mallets",
+    "bank": 0,
+    "preset": 112
+  },
+  {
+    "id": "church_bell_tower",
+    "name": "Church Bell Tower",
+    "category": "Bells & Mallets",
+    "bank": 0,
+    "preset": 175
+  },
+  {
+    "id": "yamaha_full_strings",
+    "name": "Yamaha Full Strings",
+    "category": "Strings & Orchestral",
+    "bank": 1,
+    "preset": 2
+  },
+  {
+    "id": "yamaha_chamber_strings",
+    "name": "Yamaha Chamber Strings",
+    "category": "Strings & Orchestral",
+    "bank": 1,
+    "preset": 43
+  },
+  {
+    "id": "roland_syn_strings",
+    "name": "Roland Synth Strings",
+    "category": "Strings & Orchestral",
+    "bank": 2,
+    "preset": 50
+  },
+  {
+    "id": "roland_pizzicato",
+    "name": "Roland Pizzicato Strings",
+    "category": "Strings & Orchestral",
+    "bank": 2,
+    "preset": 45
+  },
+  {
+    "id": "roland_analog_bass",
+    "name": "Roland Analog Sub Bass",
+    "category": "Bass",
+    "bank": 2,
+    "preset": 107
+  },
+  {
+    "id": "yamaha_sin_bass",
+    "name": "Yamaha Deep Sine Bass",
+    "category": "Bass",
+    "bank": 1,
+    "preset": 41
+  },
+  {
+    "id": "yamaha_wood_bass",
+    "name": "Yamaha Upright Acoustic Bass",
+    "category": "Bass",
+    "bank": 1,
+    "preset": 36
+  },
+  {
+    "id": "roland_slap_bass",
+    "name": "Roland Slap Bass 1",
+    "category": "Bass",
+    "bank": 2,
+    "preset": 36
+  }
+]

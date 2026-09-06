@@ -48,8 +48,22 @@ class AppState:
             self.midi.open_port(0)
 
     def _on_midi_event(self, event_dict):
-        # We don't flood the websocket with hundreds of raw note messages since telemetry runs at 25fps
-        pass
+        # Push raw note event immediately to browser & phone to trigger zero-latency chord updates
+        if self.ws_clients and self._loop and self._loop.is_running():
+            ev_type = event_dict.get("type")
+            if ev_type in ("note_on", "note_off"):
+                snapshot = self.midi.get_snapshot()
+                event_dict["active_notes"] = snapshot["active_notes"]
+                event_dict["active_note_names"] = snapshot["active_note_names"]
+                msg = json.dumps({
+                    "type": "midi_event",
+                    "data": event_dict
+                })
+                for client in list(self.ws_clients):
+                    try:
+                        asyncio.run_coroutine_threadsafe(client.send_text(msg), self._loop)
+                    except Exception:
+                        pass
 
     def _monitor_native_engine(self):
         """Poll slow native DSP/FFT state off the audio and ASGI threads."""
@@ -304,6 +318,8 @@ async def ws_telemetry(websocket: WebSocket):
                 "engine": state.montage.native_status,
                 "spectrum": state.montage.spectrum_bins if state.analyzer_visible_clients > 0 else [],
                 "montage": {
+                    "engine_type": state.montage.engine_type,
+                    "is_running": state.montage.native_status.get("reachable", False),
                     "master_volume": state.montage.master_vst_volume,
                     "part_volumes": state.montage.part_volumes,
                     "part_reverbs": state.montage.part_reverbs,
@@ -337,24 +353,57 @@ async def api_open_editor(request):
     try:
         data = await request.json() if request.method == "POST" else {}
         action = data.get("action")
+        engine = data.get("engine") # "yamaha" or "community"
         if action == "kill":
             ok = state.montage.kill_vst_engine()
             return JSONResponse({"success": ok, "action": "kill"})
+        elif action == "switch":
+            state.montage.kill_vst_engine()
+            time.sleep(0.3)
+            ok = state.montage.open_vst_editor(hidden=False, engine=engine)
+            return JSONResponse({"success": ok, "action": "switched", "engine": state.montage.engine_type})
         elif action in ("hide", "show", "minimize"):
             # Check if running first
             if not state.montage.is_engine_running():
-                ok = state.montage.open_vst_editor(hidden=(action == "hide"))
-                return JSONResponse({"success": ok, "action": "started_fresh"})
+                ok = state.montage.open_vst_editor(hidden=(action == "hide"), engine=engine)
+                return JSONResponse({"success": ok, "action": "started_fresh", "engine": state.montage.engine_type})
             ok = state.montage.toggle_vst_window(action)
-            return JSONResponse({"success": ok, "action": action})
+            return JSONResponse({"success": ok, "action": action, "engine": state.montage.engine_type})
         elif action == "start":
             hidden = bool(data.get("hidden", True))
-            ok = state.montage.open_vst_editor(hidden=hidden)
-            return JSONResponse({"success": ok, "action": "started"})
+            ok = state.montage.open_vst_editor(hidden=hidden, engine=engine)
+            return JSONResponse({"success": ok, "action": "started", "engine": state.montage.engine_type})
     except Exception:
         pass
     ok = state.montage.open_vst_editor()
-    return JSONResponse({"success": ok})
+    return JSONResponse({"success": ok, "engine": state.montage.engine_type})
+
+async def api_voices_catalog(request):
+    """Return available voice presets in Community SoundFont VST catalog"""
+    catalog_path = os.path.join(os.path.dirname(__file__), "voice_catalog.json")
+    if os.path.exists(catalog_path):
+        try:
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                return JSONResponse(json.load(f))
+        except Exception:
+            pass
+    return JSONResponse([])
+
+async def api_assign_voice(request):
+    """Assign a soundfont voice to a part in Community VST"""
+    try:
+        data = await request.json()
+        part = int(data.get("part", 1))
+        bank = int(data.get("bank", 0))
+        preset = int(data.get("preset", 0))
+        name = data.get("name")
+        ok = state.montage.assign_part_voice(part, bank, preset)
+        if name:
+            state.montage.part_names[part] = name
+            state.montage._save_custom_names()
+        return JSONResponse({"success": ok, "part": part, "bank": bank, "preset": preset, "name": name})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 async def api_montage_volume(request):
     try:
@@ -652,6 +701,8 @@ routes = [
     Route("/api/playlist/select", api_playlist_select, methods=["POST"]),
     Route("/api/analyze", api_analyze_song, methods=["GET", "POST"]),
     Route("/api/montage/editor", api_open_editor, methods=["POST"]),
+    Route("/api/montage/voices", api_voices_catalog, methods=["GET"]),
+    Route("/api/montage/assign_voice", api_assign_voice, methods=["POST"]),
     Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
     Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
     Route("/api/montage/names", api_custom_names, methods=["GET", "POST"]),

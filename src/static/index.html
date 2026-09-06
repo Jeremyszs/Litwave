@@ -1182,9 +1182,9 @@
         Phone Remote
       </button>
 
-      <button class="btn-header-action" onclick="openSynthEditor()" title="Open Yamaha MONTAGE M native GUI window">
+      <button class="btn-header-action" onclick="openSynthEditor()" title="VST Sound Engine Manager: Choose Engine, Open GUI, Minimize, or Kill Process">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        Synth Editor
+        <span>VST Engine</span>
       </button>
 
       <button class="btn-header-action" onclick="openSettingsModal()" title="Audio driver, buffer and preferences">
@@ -1803,6 +1803,73 @@
     </div>
   </div>
 
+  <!-- VST Engine Control & Selection Modal -->
+  <div class="modal-backdrop" id="engineSelectModal" style="display: none;">
+    <div class="modal-window" style="width: 480px; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title">VST Sound Engine Manager</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEngineModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px; padding: 14px;">
+        <div style="font-size: 11px; color: var(--text-dim);">
+          Select active synthesizer engine and control running state (Open GUI, Minimize, or Kill):
+        </div>
+
+        <!-- Engine Selection Cards -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Yamaha Option -->
+          <div id="engineOptYamaha" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px 12px; cursor: pointer; background: var(--bg-panel); transition: all 0.15s ease;" onclick="chooseEngine('yamaha')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="radio" name="vstEngineRadio" id="radioYamaha" style="cursor: pointer;" checked>
+                <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">Yamaha MONTAGE M E.S.P. VST3</span>
+              </div>
+              <span id="badgeYamahaActive" class="badge-active" style="display: none; font-size: 9px; padding: 2px 6px; background: var(--accent); color: #000; border-radius: 4px; font-weight: 700;">RUNNING</span>
+            </div>
+            <div style="font-size: 10px; color: var(--text-dim); margin-top: 4px; margin-left: 22px;">
+              Official Steinberg licensed VST3 with full 16-part workstation GUI, factory ROM & presets.
+            </div>
+          </div>
+
+          <!-- Community SoundFont Option -->
+          <div id="engineOptCommunity" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px 12px; cursor: pointer; background: var(--bg-panel); transition: all 0.15s ease;" onclick="chooseEngine('community')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="radio" name="vstEngineRadio" id="radioCommunity" style="cursor: pointer;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">Litwave Community SoundFont VST</span>
+              </div>
+              <span id="badgeCommunityActive" class="badge-active" style="display: none; font-size: 9px; padding: 2px 6px; background: var(--accent); color: #000; border-radius: 4px; font-weight: 700;">RUNNING</span>
+            </div>
+            <div style="font-size: 10px; color: var(--text-dim); margin-top: 4px; margin-left: 22px;">
+              Lightweight royalty-free engine: Nord Stage 3 Romantic, Roland RD, Chateau Grand, Zenology Sine & Pads.
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons: Open GUI, Kill Process -->
+        <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border-dim); padding-top: 12px; margin-top: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--text-main);">Engine Controls:</span>
+            <span id="engineRunningStatusText" style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">Status: Checking...</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            <button class="btn btn-primary" onclick="vstActionOpenGUI()" style="padding: 8px 10px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <span>Launch / Open GUI</span>
+            </button>
+            <button class="btn btn-danger" onclick="vstActionKill()" style="padding: 8px 10px; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <span>Kill Engine Process</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MONTAGE M Parts 1-8 Mixer Modal -->
   <div class="modal-backdrop" id="partsModal">
     <div class="modal-window" style="width: 520px; max-height: 85vh; display: flex; flex-direction: column;">
@@ -2320,6 +2387,7 @@
       const engine = nativeEngineData || {};
       const audio = lastKnownAudioTelemetry || {};
       const reachable = Boolean(engine.reachable);
+      window.g_nativeEngineRunning = reachable;
       const sr = reachable ? (engine.sample_rate || 44100) : (audio.samplerate || 48000);
       const srText = `${Math.round(sr / 1000)}k`;
       const buf = reachable ? (engine.buffer_frames || 256) : (audio.blocksize || 256);
@@ -3311,6 +3379,12 @@
 
     function openPartsModal() {
       document.getElementById("partsModal").style.display = "flex";
+      if (!window.g_voicesCatalog) {
+        fetch("/api/montage/voices")
+          .then(r => r.ok ? r.json() : [])
+          .then(data => { window.g_voicesCatalog = data; renderDesktopParts(); })
+          .catch(() => {});
+      }
       renderDesktopParts();
     }
 
@@ -3322,6 +3396,12 @@
       const container = document.getElementById("desktopPartsGrid");
       if (!container) return;
       container.innerHTML = "";
+
+      const isCommunity = (activeEngine === "community");
+      const modalTitle = document.querySelector("#partsModal .modal-title");
+      if (modalTitle) {
+        modalTitle.innerText = isCommunity ? "Litwave Community SoundFont Parts 1–8 Mixer" : "Yamaha MONTAGE M Parts 1–8 Mixer";
+      }
 
       desktopPartsState.forEach((p) => {
         const row = document.createElement("div");
@@ -3336,16 +3416,41 @@
         const pctVol = ((p.val / 127) * 100).toFixed(1);
         const pctRev = (((p.rev || 40) / 127) * 100).toFixed(1);
 
+        let voiceSelectorHtml = "";
+        if (isCommunity) {
+          let voiceOptions = `<option value="">-- Voice Preset --</option>`;
+          if (window.g_voicesCatalog) {
+            const cats = {};
+            window.g_voicesCatalog.forEach(v => {
+              if (!cats[v.category]) cats[v.category] = [];
+              cats[v.category].push(v);
+            });
+            for (const c in cats) {
+              voiceOptions += `<optgroup label="${c}">`;
+              cats[c].forEach(v => {
+                voiceOptions += `<option value="${v.bank}:${v.preset}:${v.name}">${v.name}</option>`;
+              });
+              voiceOptions += `</optgroup>`;
+            }
+          }
+          voiceSelectorHtml = `
+            <select class="modal-input" style="padding: 1px 4px; font-size: 10px; font-weight: 600; width: 140px; height: 22px; background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 4px; color: var(--accent);" onchange="assignVoicePreset(${p.part}, this.value)" title="Switch Community soundfont voice">
+              ${voiceOptions}
+            </select>
+          `;
+        }
+
         row.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="text" value="${p.name}" class="modal-input" style="padding: 2px 6px; font-size: 11px; font-weight: 600; width: 110px; height: 22px; background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; color: var(--text-main);" onchange="renamePart(${p.part}, this.value)" title="Click to rename part">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="text" value="${p.name}" class="modal-input" style="padding: 2px 6px; font-size: 11px; font-weight: 600; width: ${isCommunity ? '100px' : '135px'}; height: 22px; background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; color: var(--text-main);" onchange="renamePart(${p.part}, this.value)" title="Click to rename part">
+              ${voiceSelectorHtml}
               <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleDesktopMute(${p.part})">M</button>
               <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleDesktopSolo(${p.part})">S</button>
             </div>
-            <div style="display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 11px;">
-              <span id="dtPartVal_${p.part}" style="color: ${p.mute ? 'var(--text-faint)' : 'var(--accent)'};">Volume: ${p.val}</span>
-              <span id="dtPartRev_${p.part}" style="color: var(--accent-secondary);">Reverb: ${p.rev || 40}</span>
+            <div style="display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 10px;">
+              <span id="dtPartVal_${p.part}" style="color: ${p.mute ? 'var(--text-faint)' : 'var(--accent)'};">Vol: ${p.val}</span>
+              <span id="dtPartRev_${p.part}" style="color: var(--accent-secondary);">Rev: ${p.rev || 40}</span>
             </div>
           </div>
 
@@ -3531,6 +3636,28 @@
       window.addEventListener("mouseup", onUp);
       onMove(e);
       e.preventDefault();
+    }
+
+    async function assignVoicePreset(partNum, val) {
+      if (!val) return;
+      const parts = val.split(":");
+      const bank = parseInt(parts[0]);
+      const preset = parseInt(parts[1]);
+      const name = parts[2];
+      try {
+        const res = await fetch("/api/montage/assign_voice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ part: partNum, bank: bank, preset: preset, name: name })
+        });
+        if (res.ok) {
+          desktopPartsState[partNum - 1].name = name;
+          renderDesktopParts();
+          showAppToast(`Part ${partNum} assigned to ${name}`);
+        }
+      } catch(e) {
+        console.error("Failed to assign voice:", e);
+      }
     }
 
     async function toggleDesktopMute(partNum) {
@@ -4548,6 +4675,17 @@
       if (data.type === "note_on") {
         document.getElementById("lastNoteDisplay").innerText = `NOTE ${data.note_name} · VEL ${data.velocity}`;
       }
+      if (data.active_notes) {
+        const cName = detectAdvancedChord(data.active_notes);
+        const nashObj = getChordWithNashville(cName, userNashvilleKey);
+        document.getElementById("chordNameDisplay").innerText = cName;
+        document.getElementById("chordNashvilleDisplay").innerText = nashObj.nashville;
+        if (data.active_note_names && data.active_note_names.length > 0) {
+          document.getElementById("chordNotesDisplay").innerText = data.active_note_names.join(" ");
+        } else {
+          document.getElementById("chordNotesDisplay").innerText = "READY";
+        }
+      }
     }
 
     function drawWaveform() {
@@ -4810,37 +4948,98 @@
     // State 0: Not Running / Initial -> Click 1: Starts in background / Hides (Running in Background)
     // State 1: Running in Background -> Click 2: Show GUI Window
     // State 2: GUI Visible -> Click 3: Kill / Delete GUI & Process Completely
-    let vstGuiCycleState = 0; // 0 = not running/fresh, 1 = running in background, 2 = gui visible
+    // VST Engine Manager State & Handlers
+    let activeEngine = localStorage.getItem("litwave_active_engine") || "yamaha"; // "yamaha" or "community"
+    let pendingEngineChoice = activeEngine;
 
-    async function openSynthEditor() {
-      if (vstGuiCycleState === 0) {
-        // Start engine directly hidden in background without race condition
-        await fetch("/api/montage/editor", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "start", hidden: true })
-        });
-        vstGuiCycleState = 1;
-        showAppToast("Yamaha VST running in background");
-      } else if (vstGuiCycleState === 1) {
-        // 2nd click: Show the GUI window
-        await fetch("/api/montage/editor", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "show" })
-        });
-        vstGuiCycleState = 2;
-        showAppToast("Yamaha VST GUI opened");
+    function updateEngineModalUI() {
+      const optY = document.getElementById("engineOptYamaha");
+      const optC = document.getElementById("engineOptCommunity");
+      const rY = document.getElementById("radioYamaha");
+      const rC = document.getElementById("radioCommunity");
+      const bY = document.getElementById("badgeYamahaActive");
+      const bC = document.getElementById("badgeCommunityActive");
+      const stText = document.getElementById("engineRunningStatusText");
+
+      if (!optY || !optC) return;
+      if (pendingEngineChoice === "yamaha") {
+        optY.style.borderColor = "var(--accent)";
+        optY.style.background = "var(--bg-panel-hover, #1e293b)";
+        optC.style.borderColor = "var(--border-dim)";
+        optC.style.background = "var(--bg-panel)";
+        if (rY) rY.checked = true;
       } else {
-        // 3rd click: Kill / Delete GUI and process completely
+        optC.style.borderColor = "var(--accent)";
+        optC.style.background = "var(--bg-panel-hover, #1e293b)";
+        optY.style.borderColor = "var(--border-dim)";
+        optY.style.background = "var(--bg-panel)";
+        if (rC) rC.checked = true;
+      }
+
+      if (window.g_nativeEngineRunning) {
+        if (bY) bY.style.display = (activeEngine === "yamaha") ? "inline-block" : "none";
+        if (bC) bC.style.display = (activeEngine === "community") ? "inline-block" : "none";
+        if (stText) stText.innerHTML = `<span style="color: var(--success, #4ade80);">● Running (${activeEngine === 'yamaha' ? 'Yamaha' : 'Community'})</span>`;
+      } else {
+        if (bY) bY.style.display = "none";
+        if (bC) bC.style.display = "none";
+        if (stText) stText.innerHTML = `<span style="color: var(--text-dim);">○ Stopped</span>`;
+      }
+    }
+
+    function chooseEngine(eng) {
+      pendingEngineChoice = eng;
+      updateEngineModalUI();
+    }
+
+    function closeEngineModal() {
+      document.getElementById("engineSelectModal").style.display = "none";
+    }
+
+    // Open GUI action for selected engine
+    async function vstActionOpenGUI() {
+      activeEngine = pendingEngineChoice;
+      localStorage.setItem("litwave_active_engine", activeEngine);
+      closeEngineModal();
+
+      if (activeEngine === "yamaha") {
         await fetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "kill" })
+          body: JSON.stringify({ action: "show", engine: "yamaha" })
         });
-        vstGuiCycleState = 0;
-        showAppToast("Yamaha VST process terminated");
+        window.g_nativeEngineRunning = true;
+        showAppToast("Opened Yamaha MONTAGE M GUI");
+      } else {
+        await fetch("/api/montage/editor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "start", engine: "community", hidden: true })
+        });
+        window.g_nativeEngineRunning = true;
+        showAppToast("Opened Community SoundFont Mixer");
+        openPartsModal();
       }
+    }
+
+    // Kill action
+    async function vstActionKill() {
+      await fetch("/api/montage/editor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "kill" })
+      });
+      window.g_nativeEngineRunning = false;
+      closePartsModal();
+      closeEngineModal();
+      showAppToast("VST engine process killed completely");
+    }
+
+    // Clicking the VST Engine header button opens the management window
+    function openSynthEditor() {
+      pendingEngineChoice = activeEngine || "yamaha";
+      updateEngineModalUI();
+      document.getElementById("engineSelectModal").style.display = "flex";
     }
 
     function formatTime(sec) {

@@ -392,8 +392,8 @@
       <span style="font-size: 11px; color: var(--text-faint); font-weight: 500;">Practice Station</span>
     </div>
     <div style="display: flex; align-items: center; gap: 6px;">
-      <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="cycleRemoteVstState()" title="1: Start/Hide, 2: Open GUI, 3: Kill process">
-        <span id="remoteVstCycleText">VST GUI</span>
+      <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="openRemoteEngineModal()" title="VST Engine Manager">
+        <span id="remoteVstCycleText">VST Engine</span>
       </button>
       <div class="status-badge">
         <span id="connDot" class="status-dot"></span>
@@ -401,6 +401,53 @@
       </div>
     </div>
   </header>
+
+  <!-- Remote VST Engine Selection & Control Modal -->
+  <div class="modal-backdrop" id="remoteEngineModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; align-items: center; justify-content: center; padding: 14px;">
+    <div class="card" style="width: 100%; max-width: 380px; background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-dim); padding-bottom: 8px;">
+        <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">VST Sound Engine</span>
+        <button class="btn" style="padding: 2px 6px; font-size: 11px;" onclick="closeRemoteEngineModal()">✕</button>
+      </div>
+
+      <div style="font-size: 11px; color: var(--text-dim);">
+        Choose active synthesizer engine for phone remote & keyboard:
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div id="rOptYamaha" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px; cursor: pointer; background: var(--bg-panel);" onclick="chooseRemoteEngine('yamaha')">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="rEngineRadio" id="rRadioYamaha" checked>
+              <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">Yamaha MONTAGE M</span>
+            </div>
+            <span id="rBadgeYamaha" style="display: none; font-size: 9px; padding: 1px 5px; background: var(--accent); color: #000; border-radius: 3px; font-weight: 700;">ACTIVE</span>
+          </div>
+          <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; margin-left: 20px;">Official Yamaha VST3 host</div>
+        </div>
+
+        <div id="rOptCommunity" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px; cursor: pointer; background: var(--bg-panel);" onclick="chooseRemoteEngine('community')">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="rEngineRadio" id="rRadioCommunity">
+              <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">Litwave Community VST</span>
+            </div>
+            <span id="rBadgeCommunity" style="display: none; font-size: 9px; padding: 1px 5px; background: var(--accent); color: #000; border-radius: 3px; font-weight: 700;">ACTIVE</span>
+          </div>
+          <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; margin-left: 20px;">Nord Romantic, Roland RD, Chateau & Synths</div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-dim); padding-top: 10px; margin-top: 2px;">
+        <span id="rEngineStatusText" style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">Status: Checking...</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button class="btn btn-primary" onclick="remoteVstActionOpen()" style="padding: 8px; font-size: 11px; font-weight: 700;">Launch Engine</button>
+        <button class="btn btn-danger" onclick="remoteVstActionKill()" style="padding: 8px; font-size: 11px; font-weight: 700;">Kill Process</button>
+      </div>
+    </div>
+  </div>
 
   <div class="remote-content">
     <!-- Live Chord Recognition Display from MIDI Keyboard -->
@@ -1356,6 +1403,12 @@
       const container = document.getElementById("partsGrid");
       container.innerHTML = "";
 
+      const isCommunity = (remoteActiveEngine === "community");
+      const titleEl = document.querySelector("#partsSectionTitle");
+      if (titleEl) {
+        titleEl.innerText = isCommunity ? "Community VST Parts (1–8)" : "MONTAGE M Parts (1–8)";
+      }
+
       partsState.forEach((p) => {
         const pctVol = ((p.val / 127) * 100).toFixed(1);
         const pctRev = (((p.rev || 40) / 127) * 100).toFixed(1);
@@ -1366,6 +1419,28 @@
         row.style.padding = "8px 0";
         row.style.borderBottom = "1px solid var(--border-dim)";
 
+        let voiceSelectorHtml = "";
+        if (isCommunity && window.g_remoteVoices) {
+          let voiceOptions = `<option value="">-- Voice Preset --</option>`;
+          const cats = {};
+          window.g_remoteVoices.forEach(v => {
+            if (!cats[v.category]) cats[v.category] = [];
+            cats[v.category].push(v);
+          });
+          for (const c in cats) {
+            voiceOptions += `<optgroup label="${c}">`;
+            cats[c].forEach(v => {
+              voiceOptions += `<option value="${v.bank}:${v.preset}:${v.name}">${v.name}</option>`;
+            });
+            voiceOptions += `</optgroup>`;
+          }
+          voiceSelectorHtml = `
+            <select style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 4px; color: var(--accent); font-size: 10px; padding: 2px 4px; outline: none; width: 120px;" onchange="assignRemoteVoice(${p.part}, this.value)">
+              ${voiceOptions}
+            </select>
+          `;
+        }
+
         row.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -1373,6 +1448,7 @@
                 <span>${p.name}</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
               </span>
+              ${voiceSelectorHtml}
               <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleRemoteMute(${p.part})">M</button>
               <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 6px; font-size: 9px; font-weight: 700; border-radius: 3px; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleRemoteSolo(${p.part})">S</button>
             </div>
@@ -1574,6 +1650,28 @@
       });
     }
 
+    async function assignRemoteVoice(partNum, val) {
+      if (!val) return;
+      const parts = val.split(":");
+      const bank = parseInt(parts[0]);
+      const preset = parseInt(parts[1]);
+      const name = parts[2];
+      try {
+        const res = await fetch("/api/montage/assign_voice", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ part: partNum, bank: bank, preset: preset, name: name })
+        });
+        if (res.ok) {
+          partsState[partNum - 1].name = name;
+          renderParts();
+          showRemoteToast(`Part ${partNum}: ${name}`);
+        }
+      } catch(e) {
+        console.error("Failed to assign voice:", e);
+      }
+    }
+
     async function toggleRemoteMute(partNum) {
       const p = partsState[partNum - 1];
       const newMute = !p.mute;
@@ -1710,38 +1808,92 @@
       sendTransport("pitch_shift", { semitones: val });
     }
 
-    // Remote Yamaha VST State Cycling (1: Start in Background, 2: Open GUI, 3: Kill Process)
-    let rVstCycleState = 0;
-    async function cycleRemoteVstState() {
-      const txt = document.getElementById("remoteVstCycleText");
-      if (rVstCycleState === 0) {
+    // Remote VST Engine Modal & State Handlers
+    let remoteActiveEngine = "yamaha";
+    let remotePendingEngine = "yamaha";
+
+    function openRemoteEngineModal() {
+      remotePendingEngine = remoteActiveEngine;
+      updateRemoteEngineModalUI();
+      const modal = document.getElementById("remoteEngineModal");
+      if (modal) modal.style.display = "flex";
+    }
+
+    function closeRemoteEngineModal() {
+      const modal = document.getElementById("remoteEngineModal");
+      if (modal) modal.style.display = "none";
+    }
+
+    function chooseRemoteEngine(eng) {
+      remotePendingEngine = eng;
+      updateRemoteEngineModalUI();
+    }
+
+    function updateRemoteEngineModalUI() {
+      const optY = document.getElementById("rOptYamaha");
+      const optC = document.getElementById("rOptCommunity");
+      const rY = document.getElementById("rRadioYamaha");
+      const rC = document.getElementById("rRadioCommunity");
+      const bY = document.getElementById("rBadgeYamaha");
+      const bC = document.getElementById("rBadgeCommunity");
+      const stText = document.getElementById("rEngineStatusText");
+
+      if (!optY || !optC) return;
+      if (remotePendingEngine === "yamaha") {
+        optY.style.borderColor = "var(--accent)";
+        optY.style.background = "var(--bg-panel-hover, #1e293b)";
+        optC.style.borderColor = "var(--border-dim)";
+        optC.style.background = "var(--bg-panel)";
+        if (rY) rY.checked = true;
+      } else {
+        optC.style.borderColor = "var(--accent)";
+        optC.style.background = "var(--bg-panel-hover, #1e293b)";
+        optY.style.borderColor = "var(--border-dim)";
+        optY.style.background = "var(--bg-panel)";
+        if (rC) rC.checked = true;
+      }
+
+      if (window.g_remoteEngineRunning) {
+        if (bY) bY.style.display = (remoteActiveEngine === "yamaha") ? "inline-block" : "none";
+        if (bC) bC.style.display = (remoteActiveEngine === "community") ? "inline-block" : "none";
+        if (stText) stText.innerHTML = `<span style="color: var(--success, #4ade80);">● Running (${remoteActiveEngine === 'yamaha' ? 'Yamaha' : 'Community'})</span>`;
+      } else {
+        if (bY) bY.style.display = "none";
+        if (bC) bC.style.display = "none";
+        if (stText) stText.innerHTML = `<span style="color: var(--text-dim);">○ Stopped</span>`;
+      }
+    }
+
+    async function remoteVstActionOpen() {
+      remoteActiveEngine = remotePendingEngine;
+      closeRemoteEngineModal();
+      if (remoteActiveEngine === "yamaha") {
         await fetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "start", hidden: true })
+          body: JSON.stringify({ action: "show", engine: "yamaha" })
         });
-        rVstCycleState = 1;
-        if (txt) txt.innerText = "Show GUI";
-        showRemoteToast("Yamaha VST running in background");
-      } else if (rVstCycleState === 1) {
-        await fetch("/api/montage/editor", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "show" })
-        });
-        rVstCycleState = 2;
-        if (txt) txt.innerText = "Kill VST";
-        showRemoteToast("Yamaha VST GUI opened");
+        showRemoteToast("Opened Yamaha MONTAGE M GUI");
       } else {
         await fetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "kill" })
+          body: JSON.stringify({ action: "start", engine: "community", hidden: true })
         });
-        rVstCycleState = 0;
-        if (txt) txt.innerText = "Start VST";
-        showRemoteToast("Yamaha VST process terminated");
+        showRemoteToast("Started Community SoundFont VST");
       }
+      renderParts();
+    }
+
+    async function remoteVstActionKill() {
+      await fetch("/api/montage/editor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "kill" })
+      });
+      window.g_remoteEngineRunning = false;
+      closeRemoteEngineModal();
+      showRemoteToast("VST process killed completely");
     }
 
     // Remote Lyrics Font Size Stepper
@@ -1960,6 +2112,21 @@
       ws.onmessage = (evt) => {
         try {
           const msg = JSON.parse(evt.data);
+          if (msg.type === "midi_event" && msg.data) {
+            const data = msg.data;
+            if (data.active_notes) {
+              const chordName = detectAdvancedChord(data.active_notes);
+              const nashObj = getChordWithNashville(chordName, remoteNashvilleKey);
+              document.getElementById("remoteChordText").innerText = chordName;
+              document.getElementById("remoteNashvilleText").innerText = nashObj.nashville;
+              if (data.active_note_names && data.active_note_names.length > 0) {
+                document.getElementById("remoteLastNote").innerText = data.active_note_names.join(" ");
+              } else {
+                document.getElementById("remoteLastNote").innerText = "READY";
+              }
+            }
+            return;
+          }
           if (msg.type !== "telemetry") return;
 
           const song = msg.song;
@@ -2141,6 +2308,11 @@
             }
           }
           if (montage) {
+            if (montage.engine_type && montage.engine_type !== remoteActiveEngine) {
+              remoteActiveEngine = montage.engine_type;
+              renderParts();
+            }
+            window.g_remoteEngineRunning = Boolean(montage.is_running);
             if (montage.part_names) {
               for (let p = 1; p <= 8; p++) {
                 if (montage.part_names[p]) partsState[p - 1].name = montage.part_names[p];
@@ -2309,6 +2481,10 @@
 
     // Initial Init
     window.addEventListener("DOMContentLoaded", () => {
+      fetch("/api/montage/voices")
+        .then(r => r.ok ? r.json() : [])
+        .then(d => { window.g_remoteVoices = d; renderParts(); })
+        .catch(() => {});
       renderParts();
       renderRemoteScenes();
       setupMixerFaders();

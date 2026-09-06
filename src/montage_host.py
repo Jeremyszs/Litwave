@@ -22,12 +22,15 @@ VST3_DIR = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin
 VST3_BIN = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin for MONTAGE M.vst3\Contents\x86_64-win\Expanded Softsynth Plugin for MONTAGE M.vst3"
 DATA_DIR = r"C:\ProgramData\Yamaha\Expanded Softsynth Plugin for MONTAGE M"
 STEINBERG_SAM = r"C:\Program Files\Steinberg\Activation Manager\SteinbergActivationManager.exe"
-MONTAGE_ENGINE_EXE = r"C:\Users\Jeremy Rukmana\Projects\montage-practice-daw\cpp_host\montage_live_engine.exe"
+YAMAHA_ENGINE_EXE = r"C:\Users\Jeremy Rukmana\Projects\montage-practice-daw\cpp_host\montage_live_engine.exe"
+COMMUNITY_ENGINE_EXE = r"C:\Users\Jeremy Rukmana\Projects\montage-practice-daw\cpp_host\litwave_community_engine.exe"
+MONTAGE_ENGINE_EXE = YAMAHA_ENGINE_EXE
 
 class MontageHost:
     def __init__(self):
         self.vst_path = VST3_BIN
         self.data_dir = DATA_DIR
+        self.engine_type = "yamaha" # "yamaha" or "community"
         self.editor_process = None
         self.master_vst_volume = 127
         self.part_volumes = {i: 100 for i in range(1, 9)}
@@ -309,27 +312,38 @@ class MontageHost:
             "status": "ready" if (has_vst and has_data) else "missing_components"
         }
 
-    def is_engine_running(self) -> bool:
-        """Check if native montage_live_engine C++ host process is active"""
+    def get_running_engine_type(self) -> Optional[str]:
+        """Check which specific engine binary is currently active"""
         import subprocess
         try:
-            out = subprocess.check_output(
+            out_yamaha = subprocess.check_output(
                 ['powershell', '-Command', '(Get-Process -Name "montage_live_engine" -ErrorAction SilentlyContinue).Id'],
-                text=True,
                 creationflags=subprocess.CREATE_NO_WINDOW
-            )
-            return bool(out.strip())
+            ).decode('utf-8', errors='ignore').strip()
+            if out_yamaha:
+                return "yamaha"
+
+            out_comm = subprocess.check_output(
+                ['powershell', '-Command', '(Get-Process -Name "litwave_community_engine" -ErrorAction SilentlyContinue).Id'],
+                creationflags=subprocess.CREATE_NO_WINDOW
+            ).decode('utf-8', errors='ignore').strip()
+            if out_comm:
+                return "community"
         except Exception:
-            return False
+            pass
+        return None
+
+    def is_engine_running(self) -> bool:
+        """Check if any native C++ host process (Yamaha or Community) is active"""
+        return self.get_running_engine_type() is not None
 
     def kill_vst_engine(self) -> bool:
-        """Kill montage_live_engine C++ host process completely"""
+        """Kill all native C++ host processes completely"""
         import subprocess
-        # Try graceful command first
         self.toggle_vst_window("kill")
         try:
             subprocess.run(
-                ['powershell', '-Command', 'Stop-Process -Name "montage_live_engine" -Force -ErrorAction SilentlyContinue'],
+                ['powershell', '-Command', 'Stop-Process -Name "montage_live_engine","litwave_community_engine" -Force -ErrorAction SilentlyContinue'],
                 creationflags=subprocess.CREATE_NO_WINDOW
             )
             return True
@@ -356,17 +370,35 @@ class MontageHost:
             print(f"Failed to send VST window action: {e}")
             return False
 
-    def open_vst_editor(self, hidden: bool = False) -> bool:
-        """Launch the exact native Yamaha MONTAGE M GUI window directly (Single Instance Enforcement)"""
-        # If already running, do not spawn another instance
-        if self.is_engine_running():
-            self.toggle_vst_window("hide" if hidden else "show")
-            return True
+    def open_vst_editor(self, hidden: bool = False, engine: Optional[str] = None) -> bool:
+        """Launch the requested engine (Yamaha or Community) with single-instance safety"""
+        if engine in ("yamaha", "community"):
+            self.engine_type = engine
 
-        if os.path.exists(MONTAGE_ENGINE_EXE):
+        current_running = self.get_running_engine_type()
+
+        # If a different engine is currently running, kill it before launching the new one!
+        if current_running and current_running != self.engine_type:
+            self.kill_vst_engine()
+            import time
+            time.sleep(0.35)
+            current_running = None
+
+        # If the requested engine is ALREADY running:
+        if current_running == self.engine_type:
+            if self.engine_type == "yamaha":
+                # Toggle Yamaha Win32 window
+                self.toggle_vst_window("hide" if hidden else "show")
+                return True
+            else:
+                # Community engine is already running fine in background
+                return True
+
+        target_exe = COMMUNITY_ENGINE_EXE if self.engine_type == "community" else YAMAHA_ENGINE_EXE
+        if os.path.exists(target_exe):
             try:
-                cmd = [MONTAGE_ENGINE_EXE]
-                if hidden:
+                cmd = [target_exe]
+                if hidden and self.engine_type == "yamaha":
                     cmd.append("--hidden")
                 subprocess.Popen(
                     cmd,
@@ -374,11 +406,12 @@ class MontageHost:
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     close_fds=True,
-                    creationflags=subprocess.DETACHED_PROCESS
+                    creationflags=subprocess.DETACHED_PROCESS,
+                    cwd=os.path.dirname(target_exe)
                 )
                 return True
             except Exception as e:
-                print(f"Error launching native host: {e}")
+                print(f"Error launching native host ({target_exe}): {e}")
                 return False
         return False
 
@@ -402,6 +435,15 @@ class MontageHost:
             print(f"Failed to send UDP MIDI CC: {e}")
             return False
 
+    def assign_part_voice(self, part_num: int, bank_idx: int, preset_idx: int) -> bool:
+        """Assign voice preset to a part over UDP command 'K' (0x4B)"""
+        try:
+            packet = bytes([0x4B, part_num & 0xFF, bank_idx & 0xFF, preset_idx & 0xFF])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to assign voice to part {part_num}: {e}")
+            return False
     def set_part_volume(self, part_number: int, volume_val: int) -> bool:
         """
         Sets volume for MONTAGE M Part (1-8).
