@@ -529,6 +529,14 @@
       <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;" id="rDroneRootsGrid">
         <!-- Root keys rendered dynamically -->
       </div>
+      <!-- Drone Volume & Cutoff on Mobile -->
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; background: var(--bg-panel); padding: 8px; border-radius: 6px; border: 1px solid var(--border-dim);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 10px; font-weight: 600; color: var(--text-dim);">PAD VOLUME</span>
+          <span id="rDroneVolText" style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">75%</span>
+        </div>
+        <input type="range" id="rDroneVolSlider" min="0" max="127" value="95" style="width: 100%; accent-color: var(--accent);" oninput="setDroneVolumeRemote(this.value)">
+      </div>
     </div>
 
     <!-- Live Song Chord Tracker Card (Current & Next Chord) -->
@@ -1920,7 +1928,24 @@
         stBtn.innerText = g_rDroneState.active ? `STOP (${g_rDroneState.root})` : "START";
         stBtn.className = g_rDroneState.active ? "btn btn-danger" : "btn btn-primary";
       }
+      const vText = document.getElementById("rDroneVolText");
+      const vSlider = document.getElementById("rDroneVolSlider");
+      if (vText && vSlider) {
+        vText.innerText = `${Math.round((g_rDroneState.volume / 127) * 100)}%`;
+        vSlider.value = g_rDroneState.volume;
+      }
       renderRemoteDroneRoots();
+    }
+
+    function setDroneVolumeRemote(val) {
+      g_rDroneState.volume = parseInt(val);
+      const vText = document.getElementById("rDroneVolText");
+      if (vText) vText.innerText = `${Math.round((val / 127) * 100)}%`;
+      fetch("/api/drone-pad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_volume", volume: parseInt(val) })
+      }).catch(() => {});
     }
 
     async function toggleDroneActiveRemote() {
