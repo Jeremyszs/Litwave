@@ -2606,14 +2606,13 @@
     let draggedEqBandIdx = null;
 
     function openEqModal() {
-      const modal = document.getElementById("eqModal");
-      if (modal) modal.style.display = "flex";
-      setTimeout(initEqCanvas, 50);
+      // In embedded desktop design, EQ is seamlessly integrated in the Master Deck
+      const canvas = document.getElementById("eqCanvas");
+      if (canvas) canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function closeEqModal() {
-      const modal = document.getElementById("eqModal");
-      if (modal) modal.style.display = "none";
+      // No-op for embedded desktop layout
     }
 
     async function resetEqFlat() {
@@ -2804,7 +2803,7 @@
 
     function renderEqInspectors() {
       const container = document.getElementById("eqBandInspectors");
-      if (!container) return;
+      if (!container) return; // Embedded canvas layout uses direct legend & tooltips
       container.innerHTML = eqBands.map((b, i) => `
         <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); padding: 6px; border-radius: 4px; text-align: center;">
           <div style="font-size: 9px; font-weight: 700; color: var(--accent); font-family: var(--font-mono);">BAND ${b.id} (${b.type.toUpperCase().slice(0, 4)})</div>
@@ -3979,7 +3978,7 @@
 
     async function promptAddCurrentSongToSetlist() {
       const songTitle = document.getElementById("songFilename")?.innerText || "Current Song";
-      const keyVal = document.getElementById("songKeyDisplay")?.innerText || "C";
+      const keyVal = (document.getElementById("intelKeyText")?.innerText || "Key: C").replace("Key:", "").trim();
       const songData = {
         title: songTitle,
         filename: songTitle,
