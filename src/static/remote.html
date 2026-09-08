@@ -1113,6 +1113,8 @@
   </div>
 
   <script src="/static/chord_timeline.js"></script>
+  <script src="/static/browser_api.js"></script>
+  <script src="/static/ws_telemetry.js"></script>
   <script>
     function showRemoteToast(msg, durationMs = 2500) {
       const toast = document.getElementById("remoteToastNotice");
@@ -1144,6 +1146,7 @@
     let tapTimes = [];
     let songDuration = 0;
     let currentPosition = 0;
+    let g_lastRemoteDroneInteraction = 0;
 
     let remoteNashvilleKey = 'C';
     function onRemoteNashvilleKeyChange(val) {
@@ -1201,9 +1204,8 @@
 
     // Advanced Chord Detection (Precision scoring & exact match with jazz extensions)
     function detectAdvancedChord(notes) {
-      if (!notes || notes.length === 0) return "--";
+      if (!notes || notes.length < 3) return "--";
       const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-      if (notes.length === 1) return NAMES[notes[0] % 12];
 
       const sortedNotes = [...notes].sort((a, b) => a - b);
       const bassPitch = sortedNotes[0] % 12;

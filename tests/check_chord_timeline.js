@@ -3,6 +3,7 @@ const {
   chordAtTime,
   nextPlayableChord,
   playableChord,
+  detectAdvancedChord,
 } = require("../src/static/chord_timeline.js");
 
 const chart = [
@@ -32,4 +33,13 @@ const manualOverride = [
 ];
 assert.strictEqual(chordAtTime(manualOverride, 3).chord, "Dm");
 
-console.log("PASS: chord timeline interval checks");
+// Chord detector: minimum 3 detected MIDI key notes required before chord detection
+assert.strictEqual(detectAdvancedChord(null), "--");
+assert.strictEqual(detectAdvancedChord([]), "--");
+assert.strictEqual(detectAdvancedChord([60]), "--");
+assert.strictEqual(detectAdvancedChord([60, 67]), "--");
+assert.strictEqual(detectAdvancedChord([60, 64]), "--");
+assert.strictEqual(detectAdvancedChord([60, 64, 67]), "C");
+assert.strictEqual(detectAdvancedChord([60, 63, 67]), "Cm");
+
+console.log("PASS: chord timeline interval and detector checks");

@@ -2462,6 +2462,8 @@
   </div>
 
   <script src="/static/chord_timeline.js"></script>
+  <script src="/static/browser_api.js"></script>
+  <script src="/static/ws_telemetry.js"></script>
   <script>
     function showAppToast(msg, durationMs = 2500) {
       const toast = document.getElementById("appToastNotice");
@@ -3097,7 +3099,7 @@
         ctx.stroke();
         if ([100, 1000, 10000].includes(f)) {
           ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-          ctx.font = "9px var(--font-mono)";
+          ctx.font = "9px 'Geist Mono', monospace";
           ctx.fillText(f >= 1000 ? `${f/1000}k` : `${f}`, gx + 4, 12);
         }
       });
@@ -3119,7 +3121,7 @@
         if (px === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
-      ctx.strokeStyle = "var(--accent)";
+      ctx.strokeStyle = "#e2e8f0";
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -3140,15 +3142,15 @@
 
         ctx.beginPath();
         ctx.arc(bx, by, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = draggedEqBandIdx === i ? "#ffffff" : "var(--accent)";
+        ctx.fillStyle = draggedEqBandIdx === i ? "#ffffff" : "#e2e8f0";
         ctx.fill();
         ctx.lineWidth = 2;
         ctx.strokeStyle = "#090a0c";
         ctx.stroke();
 
         // Node Label
-        ctx.fillStyle = "var(--text-main)";
-        ctx.font = "bold 9px var(--font-mono)";
+        ctx.fillStyle = "#f3f4f6";
+        ctx.font = "bold 9px 'Geist Mono', monospace";
         ctx.fillText(`B${b.id}`, bx - 5, by - 9);
       });
     }
@@ -5287,6 +5289,8 @@
     connectWS();
 
     let lastSpectrumDraw = 0;
+    let lastRecordedChord = "";
+    let lastRecordedChordTime = 0;
     function renderTelemetry(data) {
       if (data.audio) lastKnownAudioTelemetry = data.audio;
       const audio = data.audio || lastKnownAudioTelemetry;
@@ -5712,8 +5716,6 @@
           document.getElementById("chordNameDisplay").innerText = cName;
           document.getElementById("chordNashvilleDisplay").innerText = nashObj.nashville;
 
-          let lastRecordedChord = "";
-          let lastRecordedChordTime = 0;
           if (isRecordingChords && cName && cName !== "--" && !cName.includes("Poly")) {
             const nowTime = currentSongDuration > 0 ? (song ? (song.current_time_seconds || 0) : 0) : 0;
             if (cName !== lastRecordedChord || (nowTime - lastRecordedChordTime) > 1.5) {
@@ -5872,9 +5874,8 @@
     ];
 
     function detectAdvancedChord(notes) {
-      if (!notes || notes.length === 0) return "--";
+      if (!notes || notes.length < 3) return "--";
       const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-      if (notes.length === 1) return NAMES[notes[0] % 12];
 
       const sortedNotes = [...notes].sort((a, b) => a - b);
       const bassPitch = sortedNotes[0] % 12;

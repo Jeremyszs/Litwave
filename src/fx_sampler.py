@@ -77,7 +77,7 @@ class FxSampler:
         self.voices: List[FxVoice] = []
         self.lock = threading.Lock()
         
-        # Selected/Active bank for UI ("A", "B", "C", "D")
+        # Selected/Active bank for UI ("A", "B", "C", "D", "E", "F")
         self.active_bank: str = "A"
         
         # Sound catalog: all 32 available sound definitions (id -> metadata)

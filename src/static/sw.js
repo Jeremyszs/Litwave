@@ -4,6 +4,8 @@ const STATIC_ASSETS = [
   "/remote",
   "/static/remote.html",
   "/static/chord_timeline.js",
+  "/static/browser_api.js",
+  "/static/ws_telemetry.js",
   "/static/manifest.json",
   "/static/icon-192.png",
   "/static/icon-512.png",
@@ -38,13 +40,13 @@ self.addEventListener("activate", (evt) => {
 self.addEventListener("fetch", (evt) => {
   const url = new URL(evt.request.url);
 
-  // Always bypass cache for API routes, uploads, or non-GET requests
-  if (evt.request.method !== "GET" || url.pathname.startsWith("/api/") || url.pathname.startsWith("/ws")) {
+  // Always bypass cache for API routes, uploads, WebSocket, or non-GET requests
+  if (evt.request.method !== "GET" || url.pathname.startsWith("/api/") || url.pathname.startsWith("/ws") || url.pathname.startsWith("/static/uploads/")) {
     return;
   }
 
-  // Handle navigation requests (e.g. /remote) with network-first falling back to cache
-  if (evt.request.mode === "navigate" || url.pathname === "/remote") {
+  // Handle navigation to /remote only with network-first falling back to cache
+  if (url.pathname === "/remote" && (evt.request.mode === "navigate" || evt.request.destination === "document")) {
     evt.respondWith(
       fetch(evt.request)
         .then((res) => {
@@ -58,6 +60,11 @@ self.addEventListener("fetch", (evt) => {
           });
         })
     );
+    return;
+  }
+
+  // Do not intercept other navigation requests (e.g. root "/" desktop UI)
+  if (evt.request.mode === "navigate") {
     return;
   }
 

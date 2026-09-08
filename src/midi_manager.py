@@ -122,6 +122,13 @@ class MidiManager:
         with self.lock:
             self._close_internal()
 
+    def stop(self):
+        """Orderly shutdown: stop worker thread, close port. Idempotent."""
+        self._running = False
+        if self._thread is not None and self._thread.is_alive():
+            self._thread.join(timeout=2.0)
+        self.close_port()
+
     def _worker_loop(self):
         last_hotplug_check = 0.0
         while self._running:
