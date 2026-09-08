@@ -1,4 +1,4 @@
-# Montage Practice DAW (Litwave)
+# (Litwave)
 
 Desktop practice environment and mobile companion for keyboardists, integrating the Yamaha MONTAGE M (and Community SoundFont VST fallback), deep MIR chord/key analysis, ambient worship drone pad, MPC-style 48-pad performance sampler, and live stage telemetry.
 
