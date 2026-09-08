@@ -107,6 +107,7 @@ async def api_status(request):
         "song": state.audio.song_player.get_telemetry(),
         "montage": state.montage.check_installation(),
         "engine": state.montage.native_status,
+        "fx_pads": state.audio.fx_sampler.get_status(),
         "devices": {
             "audio_outputs": state.audio.get_output_devices(force_refresh=True),
             "midi_inputs": state.midi.get_available_ports(force_refresh=True)
@@ -236,7 +237,7 @@ async def api_mixer(request):
         state.montage.update_vst_equalizer(idx, t_code, b_obj["freq"], b_obj["gain"], b_obj["q"])
     if "equalizer_enabled" in body:
         state.audio.equalizer.enabled = bool(body["equalizer_enabled"])
-    if "equalizer_reset" in body:
+    if "equalizer_reset" in body or "reset_equalizer_flat" in body:
         state.audio.equalizer.reset_flat()
         for idx in range(4):
             b_obj = state.audio.equalizer.bands[idx]
@@ -343,7 +344,8 @@ async def ws_telemetry(websocket: WebSocket):
                     "part_chorus": state.montage.part_chorus,
                     "current_scene": state.montage.current_scene
                 },
-                "drone_pad": state.drone_pad.get_status()
+                "drone_pad": state.drone_pad.get_status(),
+                "fx_pads": state.audio.fx_sampler.get_status()
             }
             if include_devices:
                 telemetry["devices"] = {
@@ -482,15 +484,20 @@ async def api_remote_info(request):
     except Exception:
         pass
 
+    # Check litwave tunnel state first, then fallback to 9router tunnel state
     tunnel_url = None
     litwave_tunnel_file = os.path.expandvars(r"%LOCALAPPDATA%\litwave\tunnel_state.json")
-    if os.path.exists(litwave_tunnel_file):
-        try:
-            with open(litwave_tunnel_file, "r", encoding="utf-8") as f:
-                tdata = json.load(f)
-                tunnel_url = tdata.get("tunnelUrl")
-        except Exception:
-            pass
+    ninerouter_tunnel_file = os.path.expandvars(r"%APPDATA%\9router\tunnel\state.json")
+    for t_file in [litwave_tunnel_file, ninerouter_tunnel_file]:
+        if os.path.exists(t_file):
+            try:
+                with open(t_file, "r", encoding="utf-8") as f:
+                    tdata = json.load(f)
+                    if tdata.get("tunnelUrl"):
+                        tunnel_url = tdata.get("tunnelUrl")
+                        break
+            except Exception:
+                pass
 
     return JSONResponse({
         "lan_ip": lan_ip,
@@ -507,6 +514,20 @@ async def remote_page(request):
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Remote page not found</h1>", status_code=404)
 
+async def service_worker_file(request):
+    path = os.path.join(STATIC_DIR, "sw.js")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return Response(f.read(), media_type="application/javascript", headers={"Service-Worker-Allowed": "/"})
+    return Response("Not found", status_code=404)
+
+async def manifest_file(request):
+    path = os.path.join(STATIC_DIR, "manifest.json")
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return Response(f.read(), media_type="application/manifest+json")
+    return Response("Not found", status_code=404)
+
 async def api_montage_scene(request):
     try:
         data = await request.json()
@@ -514,13 +535,31 @@ async def api_montage_scene(request):
         scene = int(data.get("scene", 1))
         if action == "save":
             ok = state.montage.save_scene_snapshot(scene)
-            return JSONResponse({"success": ok, "action": "save", "scene": scene, "snapshot": state.montage.saved_scenes[scene]})
+            res_payload = {"success": ok, "action": "save", "scene": scene, "snapshot": state.montage.saved_scenes[scene]}
         elif action == "recall":
             ok = state.montage.recall_saved_scene(scene)
-            return JSONResponse({"success": ok, "action": "recall", "scene": scene, "snapshot": state.montage.saved_scenes[scene]})
+            res_payload = {"success": ok, "action": "recall", "scene": scene, "snapshot": state.montage.saved_scenes[scene]}
         else:
             ok = state.montage.select_scene(scene)
-            return JSONResponse({"success": ok, "action": "select", "scene": scene})
+            res_payload = {"success": ok, "action": "select", "scene": scene}
+
+        # Broadcast instant scene & parts update to all active WebSocket clients (desktop & remote)
+        if state.ws_clients:
+            sync_msg = json.dumps({
+                "type": "telemetry",
+                "montage": {
+                    "current_scene": state.montage.current_scene,
+                    "master_volume": state.montage.master_vst_volume,
+                    "part_volumes": state.montage.part_volumes,
+                    "part_reverbs": state.montage.part_reverbs,
+                    "part_mutes": state.montage.part_mutes,
+                    "part_solos": state.montage.part_solos,
+                    "scene_names": state.montage.scene_names
+                }
+            }, cls=CustomJSONEncoder)
+            asyncio.create_task(state.broadcast(sync_msg))
+
+        return JSONResponse(res_payload)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
@@ -601,6 +640,86 @@ async def api_play_voicing(request):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=400)
 
+
+async def api_fx_pads(request):
+    """Performance FX Pad sampler trigger and configuration endpoint"""
+    try:
+        data = await request.json() if request.method == "POST" else {}
+        action = data.get("action", "trigger")
+        sampler = state.audio.fx_sampler
+
+        if action == "trigger":
+            pad_id = data.get("pad_id")
+            velocity = int(data.get("velocity", 127))
+            act = data.get("press_type", "press") # 'press' or 'release'
+            ok = sampler.trigger_pad(pad_id, velocity=velocity, action=act)
+
+            # Broadcast instant lightweight pad pulse over WebSocket to all clients
+            if state.ws_clients and ok:
+                msg = json.dumps({
+                    "type": "fx_pad_pulse",
+                    "pad_id": pad_id,
+                    "action": act
+                })
+                asyncio.create_task(state.broadcast(msg))
+
+            return JSONResponse({"success": ok, "pad_id": pad_id})
+
+        elif action == "stop_all":
+            sampler.stop_all_pads()
+            return JSONResponse({"success": True})
+
+        elif action == "bank":
+            bank = data.get("bank", "A").upper()
+            if bank in ("A", "B", "C", "D"):
+                sampler.active_bank = bank
+                sampler.persist_settings()
+            return JSONResponse({"success": True, "active_bank": sampler.active_bank})
+
+        elif action == "bus":
+            if "volume" in data:
+                sampler.bus_volume = max(0.0, min(1.5, float(data["volume"])))
+            if "muted" in data:
+                sampler.bus_muted = bool(data["muted"])
+            sampler.persist_settings()
+            return JSONResponse({"success": True, "bus_volume": sampler.bus_volume, "bus_muted": sampler.bus_muted})
+
+        elif action == "update_pad":
+            pad_id = data.get("pad_id")
+            if pad_id in sampler.pads:
+                p = sampler.pads[pad_id]
+                for key in ["name", "sample_path", "trigger_mode", "choke_group", "volume", "pan", "pitch", "midi_note", "velocity_sensitive"]:
+                    if key in data:
+                        p[key] = data[key]
+                sampler._rebuild_midi_map()
+                # If sample path was updated, preload it
+                if "sample_path" in data and data["sample_path"]:
+                    buf = sampler._decode_audio_file(data["sample_path"])
+                    if buf is not None:
+                        sampler.sample_cache[data["sample_path"]] = buf
+                if "sound_id" in data:
+                    sound_id = data["sound_id"]
+                    if hasattr(sampler, "sound_catalog") and sound_id in sampler.sound_catalog:
+                        s_meta = sampler.sound_catalog[sound_id]
+                        p["sound_id"] = sound_id
+                        p["name"] = s_meta["name"]
+                        p["sample_path"] = s_meta["sample_path"]
+                        p["category"] = s_meta.get("category", p.get("category"))
+                        if p["sample_path"] not in sampler.sample_cache:
+                            buf = sampler._decode_audio_file(p["sample_path"])
+                            if buf is not None:
+                                sampler.sample_cache[p["sample_path"]] = buf
+                sampler.persist_settings()
+                return JSONResponse({"success": True, "pad": p})
+            return JSONResponse({"error": "Invalid pad_id"}, status_code=404)
+
+        elif action == "upload_custom_sample":
+            # Handled via multipart or upload endpoint
+            pass
+
+        return JSONResponse(sampler.get_status())
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
 
 async def api_ear_exercise(request):
     """Generate or retrieve ear training exercise"""
@@ -787,6 +906,12 @@ async def api_setlist(request):
             # 3. Update drone root if specified
             if "drone_root" in patch:
                 state.drone_pad.set_root(patch["drone_root"])
+            # 4. Recall FX Bank if specified
+            if "fx_bank" in patch:
+                bank = str(patch["fx_bank"]).upper()
+                if bank in ("A", "B", "C", "D"):
+                    state.audio.fx_sampler.active_bank = bank
+                    state.audio.fx_sampler.persist_settings()
             return JSONResponse({"success": True, "applied": True})
         return JSONResponse({"success": False, "error": "Unknown action"}, status_code=400)
     except Exception as e:
@@ -795,6 +920,8 @@ async def api_setlist(request):
 routes = [
     Route("/", index),
     Route("/remote", remote_page),
+    Route("/sw.js", service_worker_file),
+    Route("/manifest.json", manifest_file),
     Route("/api/remote-info", api_remote_info, methods=["GET"]),
     Route("/api/status", api_status, methods=["GET"]),
     Route("/api/transport", api_transport, methods=["POST"]),
@@ -815,6 +942,7 @@ routes = [
     Route("/api/midi/panic", api_midi_panic, methods=["POST"]),
     Route("/api/master/dsp", api_master_dsp, methods=["POST"]),
     Route("/api/drone-pad", api_drone_pad, methods=["POST"]),
+    Route("/api/fx-pads", api_fx_pads, methods=["GET", "POST"]),
     Route("/api/setlist", api_setlist, methods=["GET", "POST"]),
     Route("/api/ear-training", api_ear_exercise, methods=["GET", "POST"]),
     Route("/api/montage/license", api_launch_license_manager, methods=["POST"]),

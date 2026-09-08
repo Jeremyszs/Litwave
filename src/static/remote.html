@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Litwave Remote</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Litwave">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -351,6 +358,11 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* Performance FX Touch Pad Trigger Animation */
+    .r-fx-pad-triggered {
+      transform: scale(0.96);
+    }
+
     /* Custom Mobile Slider */
     .part-slider-wrap {
       position: relative;
@@ -420,17 +432,17 @@
       display: flex;
       flex-direction: row;
       flex-wrap: nowrap;
-      width: 400%;
+      width: 500%;
       height: 100%;
       transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
       will-change: transform;
     }
 
     .stage-page {
-      width: 25%;
-      min-width: 25%;
-      max-width: 25%;
-      flex: 0 0 25%;
+      width: 20%;
+      min-width: 20%;
+      max-width: 20%;
+      flex: 0 0 20%;
       height: 100%;
       overflow-y: auto;
       overflow-x: hidden;
@@ -524,16 +536,25 @@
             <span id="stageDot2" style="width: 14px; height: 3px; border-radius: 2px; background: #333;"></span>
             <span id="stageDot3" style="width: 14px; height: 3px; border-radius: 2px; background: #333;"></span>
             <span id="stageDot4" style="width: 14px; height: 3px; border-radius: 2px; background: #333;"></span>
+            <span id="stageDot5" style="width: 14px; height: 3px; border-radius: 2px; background: #333;"></span>
           </div>
         </div>
       </div>
 
       <!-- Right: Action Buttons & Next Page -->
-      <div style="display: flex; align-items: center; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 5px;">
+        <button class="btn btn-primary" onclick="installLitwavePwa()" title="Install Standalone App" id="remotePwaInstallBtn" style="display: none; padding: 3px 6px; font-size: 10px; font-weight: 700; background: #38bdf8; color: #000;">
+          Install App
+        </button>
+        <button class="stage-nav-btn" onclick="refreshRemotePage()" title="Refresh Remote" id="remoteRefreshBtn" style="width: 30px; height: 28px;">
+          <svg id="refreshIconSvg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
         <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="openRemoteEngineModal()" title="VST Engine Manager">
           <span id="remoteVstCycleText">VST</span>
         </button>
-        <button class="stage-nav-btn" onclick="togglePhoneFullscreen()" title="Toggle Phone Fullscreen" style="width: 32px; height: 28px;">
+        <button class="stage-nav-btn" onclick="togglePhoneFullscreen()" title="Toggle Phone Fullscreen" style="width: 30px; height: 28px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
         <button class="stage-nav-btn" onclick="nextStagePage()" title="Next Stage Page" id="stageNextBtn">
@@ -626,9 +647,47 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- PAGE 2: Parts 1-8 Faders & Scene Selector Bar -->
+        <!-- PAGE 2: Performance FX Pads (32 Sounds)        -->
         <!-- ============================================== -->
-        <div class="stage-page" id="stagePage2">
+        <div class="stage-page" id="stagePage2" style="touch-action: pan-y; -webkit-user-select: none; user-select: none;">
+          <!-- Top Bar: Bank Selector & Stop Button -->
+          <div style="background: #0c0e12; border: 1px solid var(--border-dim); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 10px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">BANK</span>
+              <div style="display: flex; gap: 3px; flex-wrap: wrap;">
+                <button class="btn btn-active" id="rFxBankBtn_A" onclick="selectRemoteFxBank('A')" style="padding: 3px 6px; font-size: 10px; font-weight: 800;">A: Perc</button>
+                <button class="btn" id="rFxBankBtn_B" onclick="selectRemoteFxBank('B')" style="padding: 3px 6px; font-size: 10px; font-weight: 800;">B: Hits</button>
+                <button class="btn" id="rFxBankBtn_C" onclick="selectRemoteFxBank('C')" style="padding: 3px 6px; font-size: 10px; font-weight: 800;">C: Trans</button>
+                <button class="btn" id="rFxBankBtn_D" onclick="selectRemoteFxBank('D')" style="padding: 3px 6px; font-size: 10px; font-weight: 800;">D: Spec</button>
+                <button class="btn" id="rFxBankBtn_E" onclick="selectRemoteFxBank('E')" style="padding: 3px 6px; font-size: 10px; font-weight: 800;">E: Wide</button>
+                <button class="btn" id="rFxBankBtn_F" onclick="selectRemoteFxBank('F')" style="padding: 3px 6px; font-size: 10px; font-weight: 800;">F: Live</button>
+              </div>
+            </div>
+            <button class="btn btn-danger" onclick="stopAllRemoteFxPads()" style="padding: 4px 8px; font-size: 10px; font-weight: 700;">Stop All</button>
+          </div>
+
+          <!-- Volume Slider on Top of Pads -->
+          <div style="background: #0c0e12; border: 1px solid var(--border-dim); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">FX PADS LEVEL</span>
+              <span id="remoteFxTopVolText" style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);">-1.4 dB</span>
+            </div>
+            <div class="part-slider-wrap" id="sliderWrap_top_fx" style="height: 18px; background: var(--bg-sunken); margin: 0;">
+              <div class="part-slider-fill" id="sliderFill_top_fx" style="width: 56.6%;"></div>
+              <div class="part-slider-thumb" id="sliderThumb_top_fx" style="left: 56.6%;"></div>
+            </div>
+          </div>
+
+          <!-- 8 Large Touch Pads Grid (2 columns x 4 rows) -->
+          <div id="remoteFxPadsGrid" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 8px; flex: 1; min-height: 360px;">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- PAGE 3: Parts 1-8 Faders & Scene Selector Bar -->
+        <!-- ============================================== -->
+        <div class="stage-page" id="stagePage3">
           <!-- Scene Selector Strip -->
           <div style="background: #0c0e12; border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -662,9 +721,9 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- PAGE 3: Backing Track Player & Lyrics View     -->
+        <!-- PAGE 4: Backing Track Player & Lyrics View     -->
         <!-- ============================================== -->
-        <div class="stage-page" id="stagePage3">
+        <div class="stage-page" id="stagePage4">
           <!-- Backing Track Controller Card -->
           <div class="card" style="margin-bottom: 10px;">
             <div class="card-title">
@@ -752,9 +811,9 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- PAGE 4: Output Mixer, Metronome & Master EQ    -->
+        <!-- PAGE 5: Output Mixer, Metronome & Master EQ    -->
         <!-- ============================================== -->
-        <div class="stage-page" id="stagePage4">
+        <div class="stage-page" id="stagePage5">
           <div class="card" style="display: flex; flex-direction: column; gap: 10px;">
             <div class="card-title">
               <span>Output Levels & Master EQ</span>
@@ -810,11 +869,23 @@
                 </div>
               </div>
 
+              <!-- FX Pads Bus Volume -->
+              <div class="part-row">
+                <div class="part-info">
+                  <span class="part-num" style="font-size: 12px; font-weight: 600; color: var(--text-main); font-family: var(--font-sans);">FX Pads Volume</span>
+                  <span class="part-val" id="remoteFxVolText">-1.4 dB</span>
+                </div>
+                <div class="part-slider-wrap" id="sliderWrap_fx">
+                  <div class="part-slider-fill" id="sliderFill_fx" style="width: 56.6%;"></div>
+                  <div class="part-slider-thumb" id="sliderThumb_fx" style="left: 56.6%;"></div>
+                </div>
+              </div>
+
               <!-- Metronome Playback Toggle & BPM Bar -->
               <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; margin-top: 4px; border-top: 1px solid var(--border-dim); gap: 6px;">
                 <button class="btn" id="remoteMetroToggleBtn" onclick="toggleRemoteMetronome()" style="font-size: 11px; padding: 5px 8px; display: inline-flex; align-items: center; gap: 4px;">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
-                  <span id="remoteMetroStatusText">Click [Off]</span>
+                  <span id="remoteMetroStatusText">Click</span>
                 </button>
                 <div style="display: flex; align-items: center; gap: 4px;">
                   <select id="remoteMetroSoundSelect" style="background: #090a0c; border: 1px solid rgba(56, 189, 248, 0.4); color: var(--accent); font-family: var(--font-mono); font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 4px; outline: none;" onchange="handleRemoteMetroSoundChange(this.value)">
@@ -1277,12 +1348,30 @@
         const sb = document.getElementById(`stageSceneBtn_${s}`);
         if (sb) sb.classList.toggle("is-active-loop", s === sceneNum);
       }
+      renderRemoteScenes();
       try {
-        await fetch("/api/montage/scene", {
+        const res = await fetch("/api/montage/scene", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "recall", scene: sceneNum })
         });
+        const data = await res.json();
+        if (data.snapshot && data.snapshot.parts) {
+          for (const p in data.snapshot.parts) {
+            const partIdx = parseInt(p) - 1;
+            if (partsState[partIdx]) {
+              const val = data.snapshot.parts[p];
+              partsState[partIdx].val = val;
+              const pct = ((val / 127) * 100).toFixed(1);
+              const fill = document.getElementById(`sliderFill_${p}`);
+              const thumb = document.getElementById(`sliderThumb_${p}`);
+              const text = document.getElementById(`partValText_${p}`);
+              if (fill) fill.style.width = pct + "%";
+              if (thumb) thumb.style.left = pct + "%";
+              if (text) text.innerText = `Vol: ${val}`;
+            }
+          }
+        }
       } catch (e) {
         console.error("Failed to recall scene:", e);
       }
@@ -1467,7 +1556,7 @@
         await fetch("/api/mixer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reset_equalizer_flat: true })
+          body: JSON.stringify({ equalizer_reset: true })
         });
       } catch (e) {}
     }
@@ -1599,7 +1688,7 @@
           <div class="part-scroll-handle" title="Touch and drag here to scroll page">
             <div style="display: flex; align-items: center; gap: 5px;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.5;"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
-              <span style="font-size: 9px; font-weight: 700; color: var(--text-faint); letter-spacing: 0.5px;">SCROLL AREA</span>
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-faint); letter-spacing: 0.5px;"></span>
             </div>
             <span style="font-size: 9px; font-family: var(--font-mono); color: var(--text-faint);">PART ${p.part}</span>
           </div>
@@ -1728,14 +1817,12 @@
         partsState[partNum - 1][paramName] = val;
         const pct = (ratio * 100).toFixed(1);
         const pCap = paramShort.charAt(0).toUpperCase() + paramShort.slice(1);
-        ['', 'stage_'].forEach(prefix => {
-          const fill = document.getElementById(`${prefix}remote${pCap}Fill_${partNum}`);
-          const thumb = document.getElementById(`${prefix}remote${pCap}Thumb_${partNum}`);
-          const text = document.getElementById(`${prefix}remote${pCap}Val_${partNum}`);
-          if (fill) fill.style.width = pct + "%";
-          if (thumb) thumb.style.left = pct + "%";
-          if (text) text.innerText = val;
-        });
+        const fill = document.getElementById(`remote${pCap}Fill_${partNum}`);
+        const thumb = document.getElementById(`remote${pCap}Thumb_${partNum}`);
+        const text = document.getElementById(`remote${pCap}Val_${partNum}`);
+        if (fill) fill.style.width = pct + "%";
+        if (thumb) thumb.style.left = pct + "%";
+        if (text) text.innerText = val;
 
         fetch("/api/montage/volume", {
           method: "POST",
@@ -1776,14 +1863,12 @@
         partsState[partNum - 1].rev = val;
 
         const pct = (ratio * 100).toFixed(1);
-        ['', 'stage_'].forEach(prefix => {
-          const fill = document.getElementById(`${prefix}reverbFill_${partNum}`);
-          const thumb = document.getElementById(`${prefix}reverbThumb_${partNum}`);
-          const text = document.getElementById(`${prefix}partRevText_${partNum}`);
-          if (fill) fill.style.width = pct + "%";
-          if (thumb) thumb.style.left = pct + "%";
-          if (text) text.innerText = `Rev: ${val}`;
-        });
+        const fill = document.getElementById(`reverbFill_${partNum}`);
+        const thumb = document.getElementById(`reverbThumb_${partNum}`);
+        const text = document.getElementById(`partRevText_${partNum}`);
+        if (fill) fill.style.width = pct + "%";
+        if (thumb) thumb.style.left = pct + "%";
+        if (text) text.innerText = `Rev: ${val}`;
 
         fetch("/api/montage/volume", {
           method: "POST",
@@ -1874,9 +1959,9 @@
       }
     }
 
-    function bindSliderDrag(element, partNum) {
-      let isDragging = false;
+    let g_activePartFaderDrag = null;
 
+    function bindSliderDrag(element, partNum) {
       function updateFromX(clientX) {
         const rect = element.getBoundingClientRect();
         let ratio = (clientX - rect.left) / rect.width;
@@ -1886,35 +1971,32 @@
         partsState[partNum - 1].val = val;
 
         const pct = (ratio * 100).toFixed(1);
-        ['', 'stage_'].forEach(prefix => {
-          const fill = document.getElementById(`${prefix}sliderFill_${partNum}`);
-          const thumb = document.getElementById(`${prefix}sliderThumb_${partNum}`);
-          const text = document.getElementById(`${prefix}partValText_${partNum}`);
-          if (fill) fill.style.width = pct + "%";
-          if (thumb) thumb.style.left = pct + "%";
-          if (text) text.innerText = `Vol: ${val}`;
-        });
+        const fill = document.getElementById(`sliderFill_${partNum}`);
+        const thumb = document.getElementById(`sliderThumb_${partNum}`);
+        const text = document.getElementById(`partValText_${partNum}`);
+        if (fill) fill.style.width = pct + "%";
+        if (thumb) thumb.style.left = pct + "%";
+        if (text) text.innerText = `Vol: ${val}`;
 
         sendPartVolume(partNum, val);
       }
 
       element.addEventListener("touchstart", (e) => {
-        isDragging = true;
+        g_activePartFaderDrag = partNum;
         updateFromX(e.touches[0].clientX);
       }, { passive: true });
 
       element.addEventListener("touchmove", (e) => {
-        if (!isDragging) return;
-        updateFromX(e.touches[0].clientX);
+        if (g_activePartFaderDrag === partNum) updateFromX(e.touches[0].clientX);
       }, { passive: true });
 
-      window.addEventListener("touchend", () => { isDragging = false; });
+      window.addEventListener("touchend", () => { g_activePartFaderDrag = null; });
 
       element.addEventListener("mousedown", (e) => {
-        isDragging = true;
+        g_activePartFaderDrag = partNum;
         updateFromX(e.clientX);
-        const onMove = (mv) => { if (isDragging) updateFromX(mv.clientX); };
-        const onUp = () => { isDragging = false; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+        const onMove = (mv) => { if (g_activePartFaderDrag === partNum) updateFromX(mv.clientX); };
+        const onUp = () => { g_activePartFaderDrag = null; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
         window.addEventListener("mousemove", onMove);
         window.addEventListener("mouseup", onUp);
       });
@@ -1990,6 +2072,42 @@
     }
 
     // ==========================================
+    // PWA Installation Hook
+    // ==========================================
+    let g_deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      g_deferredPrompt = e;
+      const installBtn = document.getElementById("remotePwaInstallBtn");
+      if (installBtn) installBtn.style.display = "inline-flex";
+    });
+
+    async function installLitwavePwa() {
+      if (!g_deferredPrompt) return;
+      g_deferredPrompt.prompt();
+      const choiceResult = await g_deferredPrompt.userChoice;
+      if (choiceResult.outcome === "accepted") {
+        const installBtn = document.getElementById("remotePwaInstallBtn");
+        if (installBtn) installBtn.style.display = "none";
+      }
+      g_deferredPrompt = null;
+    }
+
+    // ==========================================
+    // Top-Bar Quick Refresh Function
+    // ==========================================
+    function refreshRemotePage() {
+      const icon = document.getElementById("refreshIconSvg");
+      if (icon) {
+        icon.style.transition = "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+        icon.style.transform = "rotate(360deg)";
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 250);
+    }
+
+    // ==========================================
     // Native Fullscreen Toggle for Mobile
     function togglePhoneFullscreen() {
       if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -2007,40 +2125,168 @@
         }
       }
     }
+    // ==========================================
+    // Performance FX Pads Mobile State & Handlers
+    // ==========================================
+    // 8 Vivid Hardware MPC/SP-404 Style RGB Pad Colors (Index 0..7)
+    const FX_PAD_PALETTE = [
+      { bg: "linear-gradient(135deg, rgba(239, 68, 68, 0.28) 0%, rgba(185, 28, 28, 0.45) 100%)", border: "#ef4444", glow: "rgba(239, 68, 68, 0.5)" },     // 1: Red
+      { bg: "linear-gradient(135deg, rgba(249, 115, 22, 0.28) 0%, rgba(194, 65, 12, 0.45) 100%)", border: "#f97316", glow: "rgba(249, 115, 22, 0.5)" },   // 2: Orange
+      { bg: "linear-gradient(135deg, rgba(234, 179, 8, 0.28) 0%, rgba(161, 98, 7, 0.45) 100%)", border: "#eab308", glow: "rgba(234, 179, 8, 0.5)" },      // 3: Amber/Gold
+      { bg: "linear-gradient(135deg, rgba(34, 197, 94, 0.28) 0%, rgba(21, 128, 61, 0.45) 100%)", border: "#22c55e", glow: "rgba(34, 197, 94, 0.5)" },     // 4: Green
+      { bg: "linear-gradient(135deg, rgba(6, 182, 212, 0.28) 0%, rgba(14, 116, 144, 0.45) 100%)", border: "#06b6d4", glow: "rgba(6, 182, 212, 0.5)" },     // 5: Cyan
+      { bg: "linear-gradient(135deg, rgba(59, 130, 246, 0.28) 0%, rgba(29, 78, 216, 0.45) 100%)", border: "#3b82f6", glow: "rgba(59, 130, 246, 0.5)" },     // 6: Blue
+      { bg: "linear-gradient(135deg, rgba(168, 85, 247, 0.28) 0%, rgba(126, 34, 206, 0.45) 100%)", border: "#a855f7", glow: "rgba(168, 85, 247, 0.5)" },   // 7: Purple
+      { bg: "linear-gradient(135deg, rgba(236, 72, 153, 0.28) 0%, rgba(190, 24, 93, 0.45) 100%)", border: "#ec4899", glow: "rgba(236, 72, 153, 0.5)" }     // 8: Pink / Magenta
+    ];
+
+    let g_rFxPadsState = {
+      bus_volume: 0.85,
+      bus_muted: false,
+      active_bank: "A",
+      pad_indicators: {},
+      pads: {}
+    };
+
+    function selectRemoteFxBank(bank) {
+      g_rFxPadsState.active_bank = bank;
+      ["A", "B", "C", "D", "E", "F"].forEach(b => {
+        const btn = document.getElementById(`rFxBankBtn_${b}`);
+        if (btn) btn.classList.toggle("btn-active", b === bank);
+      });
+      renderRemoteFxPads();
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "bank", bank: bank })
+      }).catch(() => {});
+    }
+
+    function triggerRemoteFxPad(padId, pressType = "press") {
+      const el = document.getElementById(`rFxPad_${padId}`);
+      const p = g_rFxPadsState.pads ? g_rFxPadsState.pads[padId] : null;
+      if (el && pressType === "press" && p) {
+        const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+        el.style.background = padColor.border;
+        el.style.boxShadow = `0 0 20px ${padColor.glow}`;
+        setTimeout(() => {
+          if (el) {
+            el.style.background = padColor.bg;
+            el.style.boxShadow = "none";
+          }
+        }, 140);
+      }
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "trigger", pad_id: padId, velocity: 127, press_type: pressType })
+      }).catch(console.error);
+    }
+
+    function stopAllRemoteFxPads() {
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "stop_all" })
+      }).catch(console.error);
+    }
+
+    function renderRemoteFxPads() {
+      const container = document.getElementById("remoteFxPadsGrid");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const activeBank = g_rFxPadsState.active_bank || "A";
+      const padList = Object.values(g_rFxPadsState.pads || {}).filter(p => p.bank === activeBank);
+      padList.sort((a, b) => a.pad_index - b.pad_index);
+
+      padList.forEach(p => {
+        const isPlaying = Boolean(g_rFxPadsState.pad_indicators && g_rFxPadsState.pad_indicators[p.id]);
+        const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+
+        const padBtn = document.createElement("button");
+        padBtn.id = `rFxPad_${p.id}`;
+        padBtn.type = "button";
+        padBtn.className = `btn ${isPlaying ? 'r-fx-pad-triggered' : ''}`;
+        padBtn.style.background = isPlaying ? padColor.border : padColor.bg;
+        padBtn.style.border = `1.5px solid ${padColor.border}`;
+        padBtn.style.borderRadius = "8px";
+        padBtn.style.display = "flex";
+        padBtn.style.flexDirection = "column";
+        padBtn.style.alignItems = "center";
+        padBtn.style.justifyContent = "center";
+        padBtn.style.gap = "4px";
+        padBtn.style.padding = "12px 6px";
+        padBtn.style.touchAction = "manipulation";
+        padBtn.style.userSelect = "none";
+        padBtn.style.webkitUserSelect = "none";
+        padBtn.style.boxShadow = isPlaying ? `0 0 16px ${padColor.glow}` : "none";
+        padBtn.style.transition = "transform 0.05s ease, background-color 0.1s ease";
+
+        padBtn.innerHTML = `
+          <span style="font-size: 11px; font-family: var(--font-mono); color: #ffffff; font-weight: 800; text-shadow: 0 1px 2px #000;">${p.bank}${p.pad_index + 1}</span>
+          <span style="font-size: 14px; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.15; padding: 0 4px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${p.name}</span>
+          <span style="font-size: 9px; font-family: var(--font-mono); color: #e2e8f0; text-shadow: 0 1px 2px #000;">${p.trigger_mode.toUpperCase()}</span>
+        `;
+
+        padBtn.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          triggerRemoteFxPad(p.id, "press");
+        }, { passive: false });
+
+        padBtn.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          triggerRemoteFxPad(p.id, "release");
+        }, { passive: false });
+
+        padBtn.onmousedown = (e) => {
+          e.preventDefault();
+          triggerRemoteFxPad(p.id, "press");
+        };
+
+        padBtn.onmouseup = () => {
+          triggerRemoteFxPad(p.id, "release");
+        };
+
+        container.appendChild(padBtn);
+      });
+    }
+
     const REMOTE_DRONE_KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     let g_rDroneState = { active: false, root: "C", volume: 95, cutoff: 68 };
     let g_stageCurrentPage = 1;
 
     const STAGE_PAGE_TITLES = {
       1: "STAGE: CHORDS & PAD",
-      2: "STAGE: PART 1-8 FADERS",
-      3: "STAGE: BACKING TRACK & LYRICS",
-      4: "STAGE: OUTPUT & MASTER EQ"
+      2: "STAGE: FX PADS",
+      3: "STAGE: PART 1-8 FADERS",
+      4: "STAGE: SONG MANAGER",
+      5: "STAGE: MIXER"
     };
 
     function setStagePage(pageNum) {
-      g_stageCurrentPage = Math.max(1, Math.min(4, pageNum));
+      g_stageCurrentPage = Math.max(1, Math.min(5, pageNum));
       const track = document.getElementById("stageCarouselTrack");
       const title = document.getElementById("stageViewPageTitle");
       const prevBtn = document.getElementById("stagePrevBtn");
       const nextBtn = document.getElementById("stageNextBtn");
 
       if (track) {
-        track.style.transform = `translateX(-${(g_stageCurrentPage - 1) * 25}%)`;
+        track.style.transform = `translateX(-${(g_stageCurrentPage - 1) * 20}%)`;
       }
       if (title) {
         title.innerText = STAGE_PAGE_TITLES[g_stageCurrentPage] || "STAGE VIEW";
       }
-      for (let i = 1; i <= 4; i++) {
+      for (let i = 1; i <= 5; i++) {
         const dot = document.getElementById(`stageDot${i}`);
         if (dot) dot.style.background = (g_stageCurrentPage === i) ? "var(--accent)" : "#333";
       }
       if (prevBtn) prevBtn.style.opacity = g_stageCurrentPage === 1 ? "0.4" : "1";
-      if (nextBtn) nextBtn.style.opacity = g_stageCurrentPage === 4 ? "0.4" : "1";
+      if (nextBtn) nextBtn.style.opacity = g_stageCurrentPage === 5 ? "0.4" : "1";
     }
 
     function nextStagePage() {
-      if (g_stageCurrentPage < 4) setStagePage(g_stageCurrentPage + 1);
+      if (g_stageCurrentPage < 5) setStagePage(g_stageCurrentPage + 1);
     }
 
     function prevStagePage() {
@@ -2568,6 +2814,23 @@
       ws.onmessage = (evt) => {
         try {
           const msg = JSON.parse(evt.data);
+          if (msg.type === "fx_pad_pulse") {
+            const padId = msg.pad_id;
+            const el = document.getElementById(`rFxPad_${padId}`);
+            const p = g_rFxPadsState.pads ? g_rFxPadsState.pads[padId] : null;
+            if (el && p && msg.action === "press") {
+              const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+              el.style.background = padColor.border;
+              el.style.boxShadow = `0 0 20px ${padColor.glow}`;
+              setTimeout(() => {
+                if (el) {
+                  el.style.background = padColor.bg;
+                  el.style.boxShadow = "none";
+                }
+              }, 140);
+            }
+            return;
+          }
           if (msg.type === "midi_event" && msg.data) {
             const data = msg.data;
             if (data.active_notes) {
@@ -2575,13 +2838,11 @@
               const nashObj = getChordWithNashville(chordName, remoteNashvilleKey);
               const sLive = document.getElementById("stageLiveChord");
               const sNash = document.getElementById("stageLiveNash");
-              if (sLive) sLive.innerText = chordName;
-              if (sNash) sNash.innerText = nashObj.nashville;
-              if (data.active_note_names && data.active_note_names.length > 0) {
-                document.getElementById("remoteLastNote").innerText = data.active_note_names.join(" ");
-              } else {
-                document.getElementById("remoteLastNote").innerText = "READY";
-              }
+              if (sLive && sLive.innerText !== chordName) sLive.innerText = chordName;
+              if (sNash && sNash.innerText !== nashObj.nashville) sNash.innerText = nashObj.nashville;
+              const noteDisplay = (data.active_note_names && data.active_note_names.length > 0) ? data.active_note_names.join(" ") : "READY";
+              const noteEl = document.getElementById("remoteLastNote");
+              if (noteEl && noteEl.innerText !== noteDisplay) noteEl.innerText = noteDisplay;
             }
             return;
           }
@@ -2705,23 +2966,60 @@
               const nashObj = getChordWithNashville(chordName, remoteNashvilleKey);
               const sLive = document.getElementById("stageLiveChord");
               const sNash = document.getElementById("stageLiveNash");
-              if (sLive) sLive.innerText = chordName;
-              if (sNash) sNash.innerText = nashObj.nashville;
+              if (sLive && sLive.innerText !== chordName) sLive.innerText = chordName;
+              if (sNash && sNash.innerText !== nashObj.nashville) sNash.innerText = nashObj.nashville;
               if (midi.active_note_names && midi.active_note_names.length > 0) {
-                document.getElementById("remoteLastNote").innerText = midi.active_note_names.join(" ");
+                const noteDisplay = midi.active_note_names.join(" ");
+                const noteEl = document.getElementById("remoteLastNote");
+                if (noteEl && noteEl.innerText !== noteDisplay) noteEl.innerText = noteDisplay;
               }
             } else {
               const sLive = document.getElementById("stageLiveChord");
               const sNash = document.getElementById("stageLiveNash");
-              if (sLive) sLive.innerText = "--";
-              if (sNash) sNash.innerText = "";
-              document.getElementById("remoteLastNote").innerText = "READY";
+              if (sLive && sLive.innerText !== "--") sLive.innerText = "--";
+              if (sNash && sNash.innerText !== "") sNash.innerText = "";
+              const noteEl = document.getElementById("remoteLastNote");
+              if (noteEl && noteEl.innerText !== "READY") noteEl.innerText = "READY";
             }
           }
 
           // 4. Bidirectional Mixer Volume Telemetry (From Desktop / Engine to Remote)
           const audio = msg.audio;
           const montage = msg.montage;
+          const engine = msg.engine;
+          if (msg.fx_pads) {
+            let padsLoaded = false;
+            if (msg.fx_pads.pads && Object.keys(msg.fx_pads.pads).length > 0) {
+              const hadNoPads = !g_rFxPadsState.pads || Object.keys(g_rFxPadsState.pads).length === 0;
+              g_rFxPadsState.pads = msg.fx_pads.pads;
+              if (hadNoPads) padsLoaded = true;
+            }
+            if (msg.fx_pads.sound_catalog) g_rFxPadsState.sound_catalog = msg.fx_pads.sound_catalog;
+            if (msg.fx_pads.bus_volume !== undefined) g_rFxPadsState.bus_volume = msg.fx_pads.bus_volume;
+            if (msg.fx_pads.bus_muted !== undefined) g_rFxPadsState.bus_muted = msg.fx_pads.bus_muted;
+            if (msg.fx_pads.active_bank !== undefined) g_rFxPadsState.active_bank = msg.fx_pads.active_bank;
+            if (msg.fx_pads.active_voices !== undefined) g_rFxPadsState.active_voices = msg.fx_pads.active_voices;
+            if (msg.fx_pads.pad_indicators) g_rFxPadsState.pad_indicators = msg.fx_pads.pad_indicators;
+
+            if (padsLoaded) {
+              renderRemoteFxPads();
+            }
+
+            if (g_rFxPadsState.pad_indicators) {
+              for (const pid in g_rFxPadsState.pad_indicators) {
+                const el = document.getElementById(`rFxPad_${pid}`);
+                const p = g_rFxPadsState.pads ? g_rFxPadsState.pads[pid] : null;
+                if (el && p) {
+                  const active = Boolean(g_rFxPadsState.pad_indicators[pid]);
+                  const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+                  el.classList.toggle("r-fx-pad-triggered", active);
+                  el.style.background = active ? padColor.border : padColor.bg;
+                  el.style.borderColor = padColor.border;
+                  el.style.boxShadow = active ? `0 0 16px ${padColor.glow}` : "none";
+                }
+              }
+            }
+          }
           if (msg.drone_pad) {
             if (performance.now() - g_lastRemoteDroneInteraction > 600) {
               const prevR = g_rDroneState.root;
@@ -2755,6 +3053,21 @@
               document.getElementById("sliderFill_metro").style.width = pct + "%";
               document.getElementById("sliderThumb_metro").style.left = pct + "%";
             }
+            if (activeMixerDrag !== 'fx' && activeMixerDrag !== 'top_fx' && audio.fx_pad_volume !== undefined) {
+              const fxVol = audio.fx_pad_volume;
+              const pct = (fxVol / 1.5) * 100;
+              const db = fxVol > 0 ? (20 * Math.log10(fxVol)).toFixed(1) : "-inf";
+              const textEl = document.getElementById("remoteFxVolText");
+              if (textEl) textEl.innerText = `${db} dB`;
+              const topTextEl = document.getElementById("remoteFxTopVolText");
+              if (topTextEl) topTextEl.innerText = `${db} dB`;
+              ['fx', 'top_fx'].forEach(st => {
+                const fEl = document.getElementById(`sliderFill_${st}`);
+                if (fEl) fEl.style.width = pct + "%";
+                const thEl = document.getElementById(`sliderThumb_${st}`);
+                if (thEl) thEl.style.left = pct + "%";
+              });
+            }
             if (audio.metronome_enabled !== undefined) {
               metroEnabled = Boolean(audio.metronome_enabled);
               const btn = document.getElementById("remoteMetroToggleBtn");
@@ -2780,7 +3093,13 @@
               remoteActiveEngine = montage.engine_type;
               renderParts();
             }
-            window.g_remoteEngineRunning = Boolean(montage.is_running);
+            const isEngRunning = Boolean(montage.is_running || (engine && engine.reachable));
+            window.g_remoteEngineRunning = isEngRunning;
+            updateRemoteEngineModalUI();
+            const vstBadge = document.getElementById("remoteVstCycleText");
+            if (vstBadge) {
+              vstBadge.innerHTML = isEngRunning ? `<span style="color: var(--success, #4ade80);">● ${remoteActiveEngine === 'yamaha' ? 'MONTAGE' : 'Community'}</span>` : `VST`;
+            }
             if (montage.part_names) {
               for (let p = 1; p <= 8; p++) {
                 if (montage.part_names[p]) partsState[p - 1].name = montage.part_names[p];
@@ -2803,6 +3122,7 @@
                 const sb = document.getElementById(`stageSceneBtn_${s}`);
                 if (sb) sb.classList.toggle("is-active-loop", s === remoteActiveScene);
               }
+              renderRemoteScenes();
             }
             if (remoteNamesChanged) {
               renderRemoteScenes();
@@ -2819,7 +3139,7 @@
             }
             if (montage.part_volumes) {
               for (let p = 1; p <= 8; p++) {
-                if (montage.part_volumes[p] !== undefined) {
+                if (montage.part_volumes[p] !== undefined && g_activePartFaderDrag !== p) {
                   const val = montage.part_volumes[p];
                   partsState[p - 1].val = val;
                   const pct = ((val / 127) * 100).toFixed(1);
@@ -2878,7 +3198,7 @@
     let activeMixerDrag = null;
 
     function setupMixerFaders() {
-      ['track', 'synth', 'master', 'metro'].forEach(type => {
+      ['track', 'synth', 'master', 'metro', 'fx', 'top_fx'].forEach(type => {
         const wrap = document.getElementById(`sliderWrap_${type}`);
         if (!wrap) return;
 
@@ -2930,6 +3250,27 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ metronome_volume: vol })
             }).catch(console.error);
+          } else if (type === 'fx' || type === 'top_fx') {
+            const vol = ratio * 1.5;
+            const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
+            const el1 = document.getElementById("remoteFxVolText");
+            if (el1) el1.innerText = `${db} dB`;
+            const el2 = document.getElementById("remoteFxTopVolText");
+            if (el2) el2.innerText = `${db} dB`;
+            
+            // Mirror to both sliders on remote
+            ['fx', 'top_fx'].forEach(st => {
+              const f = document.getElementById(`sliderFill_${st}`);
+              const th = document.getElementById(`sliderThumb_${st}`);
+              if (f) f.style.width = pct + "%";
+              if (th) th.style.left = pct + "%";
+            });
+
+            fetch("/api/fx-pads", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "bus", volume: vol })
+            }).catch(console.error);
           }
         }
 
@@ -2950,12 +3291,21 @@
 
     // Initial Init
     window.addEventListener("DOMContentLoaded", () => {
+      // Register Offline PWA Service Worker
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js", { scope: "/" })
+          .then((reg) => console.log("PWA Service Worker registered with scope:", reg.scope))
+          .catch((err) => console.warn("PWA Service Worker registration failed:", err));
+      }
+
       fetch("/api/montage/voices")
         .then(r => r.ok ? r.json() : [])
         .then(d => { window.g_remoteVoices = d; renderParts(); })
         .catch(() => {});
+      fetch("/api/fx-pads").then(r => r.json()).then(d => { g_rFxPadsState = d; renderRemoteFxPads(); }).catch(() => {});
       renderParts();
       renderRemoteScenes();
+      renderRemoteFxPads();
       setupMixerFaders();
       initRemoteEqSliders();
       connectWS();

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="108" fill="#090a0f"/>
+  <rect x="16" y="16" width="480" height="480" rx="92" fill="none" stroke="#1e293b" stroke-width="4"/>
+  <!-- Soundwave / Synth waveform bars in signature studio cyan -->
+  <g fill="#38bdf8">
+    <rect x="80" y="216" width="28" height="80" rx="14"/>
+    <rect x="128" y="176" width="28" height="160" rx="14"/>
+    <rect x="176" y="120" width="28" height="272" rx="14"/>
+    <rect x="224" y="80" width="28" height="352" rx="14" fill="#60a5fa"/>
+    <rect x="272" y="150" width="28" height="212" rx="14"/>
+    <rect x="320" y="200" width="28" height="112" rx="14"/>
+    <rect x="368" y="160" width="28" height="192" rx="14"/>
+    <rect x="416" y="236" width="28" height="40" rx="14"/>
+  </g>
+  <!-- Stage chord symbol accent -->
+  <circle cx="256" cy="460" r="8" fill="#38bdf8"/>
+</svg>

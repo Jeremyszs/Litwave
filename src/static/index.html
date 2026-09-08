@@ -848,6 +848,11 @@
     }
     .pulse-dot.pulse { background-color: var(--accent); }
 
+    /* Performance FX Pads Styles */
+    .fx-pad-btn:active, .fx-pad-btn.fx-pad-triggered {
+      transform: scale(0.97);
+    }
+
     /* MIDI Window Content */
     .midi-body {
       flex: 1;
@@ -1144,6 +1149,96 @@
       font-family: var(--font-mono);
       font-size: 10px;
     }
+
+    /* Header Tools Hamburger Menu */
+    .header-menu-dropdown {
+      position: fixed;
+      top: 44px;
+      right: 12px;
+      width: 228px;
+      background: rgba(11, 14, 20, 0.88);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 8px 16px rgba(0, 0, 0, 0.4);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-12px) scale(0.92);
+      transform-origin: top right;
+      pointer-events: none;
+      transition: opacity 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.28s ease;
+    }
+    .header-menu-dropdown.is-open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    /* Staggered fluid entrance for menu items */
+    .header-menu-dropdown .header-menu-item {
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .header-menu-dropdown.is-open .header-menu-item {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(1) { transition-delay: 0.03s; }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(2) { transition-delay: 0.06s; }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(3) { transition-delay: 0.09s; }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(4) { transition-delay: 0.12s; }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(5) { transition-delay: 0.15s; }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(7) { transition-delay: 0.18s; }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(8) { transition-delay: 0.21s; }
+    .header-menu-dropdown.is-open .header-menu-item:nth-child(9) { transition-delay: 0.24s; }
+
+    .header-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      position: relative;
+    }
+    .header-menu-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      transform: translateX(4px) !important;
+    }
+    .header-menu-item:active {
+      transform: scale(0.97) !important;
+    }
+    .header-menu-item svg {
+      opacity: 0.75;
+      flex-shrink: 0;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease;
+    }
+    .header-menu-item:hover svg {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+    .header-menu-item.btn-active {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+    }
   </style>
 </head>
 <body>
@@ -1164,36 +1259,51 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span>Panic</span>
       </button>
-      <button class="btn-header-action" onclick="openEarModal()" title="Ear Training & Chord Progression Practice">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
+
+      <!-- 3-line Hamburger Menu Button -->
+      <button class="btn-header-action" id="headerMenuBtn" onclick="toggleHeaderMenu(event)" title="Workstation Tools & Windows Menu" style="padding: 4px 8px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Dropdown Menu for all secondary workstation buttons -->
+    <div class="header-menu-dropdown" id="headerMenuDropdown">
+      <button class="header-menu-item" onclick="closeHeaderMenu(); openEarModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2v-8z"/><path d="M22 12h-2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v-8z"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
         <span>Ear Training</span>
       </button>
-      <button class="btn-header-action" onclick="openPartsModal()" title="MONTAGE M Parts 1-8 Mixer, Reverb & Mute/Solo">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      <button class="header-menu-item" onclick="closeHeaderMenu(); openPartsModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
         <span>Parts Mixer</span>
       </button>
-      <button class="btn-header-action" id="dronePadHeaderBtn" onclick="toggleDronePadModal()" title="Continuous Ambient Worship Drone Pad (Root + 5th)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <button class="header-menu-item" id="fxPadsHeaderBtn" onclick="closeHeaderMenu(); toggleFxPadsModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        <span>FX Pads (Sampler)</span>
+      </button>
+      <button class="header-menu-item" id="dronePadHeaderBtn" onclick="closeHeaderMenu(); toggleDronePadModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         <span id="dronePadBtnLabel">Drone Pad</span>
       </button>
-      <button class="btn-header-action" onclick="openSetlistModal('setlist')" title="Live Setlist & Practice Song Library">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-        <span>Setlist</span>
+      <button class="header-menu-item" onclick="closeHeaderMenu(); openSetlistModal('setlist')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span>Live Setlist</span>
       </button>
-
-      <button class="btn-header-action" onclick="openRemoteModal()" title="Connect Phone via QR Code or URL for MONTAGE M Volume Control">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        Phone Remote
+      <div style="height: 1px; background: var(--border-dim); margin: 3px 0;"></div>
+      <button class="header-menu-item" onclick="closeHeaderMenu(); openRemoteModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span>Phone Remote (QR)</span>
       </button>
-
-      <button class="btn-header-action" onclick="openSynthEditor()" title="VST Sound Engine Manager: Choose Engine, Open GUI, Minimize, or Kill Process">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        <span>VST Engine</span>
+      <button class="header-menu-item" onclick="closeHeaderMenu(); openSynthEditor()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span>VST Sound Engine</span>
       </button>
-
-      <button class="btn-header-action" onclick="openSettingsModal()" title="Audio driver, buffer and preferences">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Preferences
+      <button class="header-menu-item" onclick="closeHeaderMenu(); openSettingsModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Preferences</span>
       </button>
     </div>
   </header>
@@ -1584,6 +1694,21 @@
               </div>
             </div>
             <div class="fader-value" id="synthVolText">0.0 dB</div>
+          </div>
+
+          <!-- FX Pad Fader -->
+          <div class="channel-strip">
+            <div class="strip-label">FX Pads</div>
+            <div class="fader-group">
+              <div class="meter-bar-container">
+                <div id="vuFxPad" class="meter-fill"></div>
+              </div>
+              <div class="fader-track-wrap" id="faderTrackFx" onmousedown="startFaderDrag('fx', event)">
+                <div class="fader-track-fill" id="faderFillFx"></div>
+                <div class="fader-thumb-handle" id="faderThumbFx"></div>
+              </div>
+            </div>
+            <div class="fader-value" id="fxPadVolText">-1.4 dB</div>
           </div>
 
           <!-- Master Fader -->
@@ -1984,6 +2109,109 @@
     </div>
   </div>
 
+  <!-- Performance FX Pads & One-Shot Sampler Modal (Desktop) -->
+  <div class="modal-backdrop" id="fxPadsModal" style="display: none;">
+    <div class="modal-window" style="width: 580px; display: flex; flex-direction: column; gap: 10px;">
+      <div class="modal-header">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span class="status-dot active"></span>
+          <span>Performance FX Pads Sampler (32 Sounds)</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="btn btn-danger" style="padding: 2px 7px; font-size: 10px; font-weight: 700;" onclick="stopAllFxPads()" title="Stop all playing voices immediately">Stop All</button>
+          <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="toggleFxPadsModal()" title="Close">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px; padding: 0 4px;">
+        <!-- Bank Selector & Master FX Bus Level -->
+        <div style="display: flex; flex-direction: column; gap: 6px; background: var(--bg-panel); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-dim);">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;">BANK:</span>
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <button class="btn btn-active" id="fxBankBtn_A" onclick="selectFxBank('A')" style="padding: 3px 8px; font-size: 10px; font-weight: 800;">A: Perc</button>
+                <button class="btn" id="fxBankBtn_B" onclick="selectFxBank('B')" style="padding: 3px 8px; font-size: 10px; font-weight: 800;">B: Hits</button>
+                <button class="btn" id="fxBankBtn_C" onclick="selectFxBank('C')" style="padding: 3px 8px; font-size: 10px; font-weight: 800;">C: Trans</button>
+                <button class="btn" id="fxBankBtn_D" onclick="selectFxBank('D')" style="padding: 3px 8px; font-size: 10px; font-weight: 800;">D: Special</button>
+                <button class="btn" id="fxBankBtn_E" onclick="selectFxBank('E')" style="padding: 3px 8px; font-size: 10px; font-weight: 800;">E: Wide</button>
+                <button class="btn" id="fxBankBtn_F" onclick="selectFxBank('F')" style="padding: 3px 8px; font-size: 10px; font-weight: 800;">F: Live</button>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 10px; font-weight: 700; color: var(--text-dim);">LEVEL:</span>
+              <span id="desktopFxBusVolText" style="font-size: 11px; font-family: var(--font-mono); color: var(--accent); min-width: 44px; text-align: right;">-1.4 dB</span>
+            </div>
+          </div>
+          <!-- Horizontal Studio Blue Gradation Fader directly on top of pads -->
+          <div class="slider-rect-wrap" id="dtFxTopVolWrap" style="height: 18px;" onmousedown="startDesktopFxTopFaderDrag(event)">
+            <div class="slider-rect-fill" id="dtFxTopVolFill" style="width: 56.6%;"></div>
+            <div class="slider-rect-thumb" id="dtFxTopVolThumb" style="left: 56.6%;"></div>
+          </div>
+        </div>
+
+        <!-- 8 Performance Pads Grid (2 rows x 4 columns) -->
+        <div id="desktopFxPadsGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Selected Pad Editor / Customizer -->
+        <div id="fxPadEditorCard" style="display: none; flex-direction: column; gap: 8px; background: var(--bg-sunken); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-dim); margin-top: 2px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="fxEditorTitle" style="font-size: 11px; font-weight: 700; color: var(--text-main);">Configure Pad</span>
+            <button class="btn" style="padding: 1px 5px; font-size: 10px;" onclick="closeFxPadEditor()">Done</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-dim);">ASSIGN SOUND (FROM 32 VOICES)</span>
+              <select id="fxEditorSoundSelect" class="custom-select-dark" style="height: 24px; font-size: 10px;" onchange="assignFxPadSound(this.value)">
+                <!-- Dynamically populated with 32 sounds grouped by category -->
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-dim);">TRIGGER MODE</span>
+              <select id="fxEditorMode" class="custom-select-dark" style="height: 24px; font-size: 10px;" onchange="saveFxPadField('trigger_mode', this.value)">
+                <option value="oneshot">ONE SHOT (Full Sample)</option>
+                <option value="gate">GATE (Hold to Play)</option>
+                <option value="toggle">TOGGLE (Start/Stop)</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-dim);">CUSTOM LABEL</span>
+              <input type="text" id="fxEditorName" class="modal-input" style="height: 24px; font-size: 11px;" onchange="saveFxPadField('name', this.value)">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-dim);">CHOKE GROUP</span>
+              <select id="fxEditorChoke" class="custom-select-dark" style="height: 24px; font-size: 10px;" onchange="saveFxPadField('choke_group', parseInt(this.value))">
+                <option value="0">None (Polyphonic)</option>
+                <option value="1">Group 1 (Sub/Bass)</option>
+                <option value="2">Group 2 (Transitions)</option>
+                <option value="3">Group 3</option>
+                <option value="4">Group 4</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-dim);">PITCH (SEMITONES)</span>
+              <input type="number" id="fxEditorPitch" class="modal-input" min="-12" max="12" style="height: 24px; font-size: 11px;" onchange="saveFxPadField('pitch', parseInt(this.value))">
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 6px; margin-top: 2px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; flex: 1;">
+              <span style="font-size: 9px; font-weight: 700; color: var(--text-dim);">SAMPLE FILE</span>
+              <span id="fxEditorSamplePath" style="font-size: 10px; font-family: var(--font-mono); color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 380px;"></span>
+            </div>
+            <button class="btn" style="padding: 3px 8px; font-size: 10px; flex-shrink: 0;" onclick="document.getElementById('customFxSampleInput').click()">Replace Sample...</button>
+            <input type="file" id="customFxSampleInput" accept=".wav,.mp3,.flac" style="display: none;" onchange="uploadCustomFxSample(this)">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Continuous Ambient Worship Drone Pad Modal -->
   <div class="modal-backdrop" id="dronePadModal" style="display: none;">
     <div class="modal-window" style="width: 440px; display: flex; flex-direction: column;">
@@ -2265,6 +2493,7 @@
     // Fader values
     let valTrack = 0.8;
     let valSynth = 1.0;
+    let valFx = 0.85;
     let valMaster = 1.0;
 
     function renderCustomFaders() {
@@ -2275,6 +2504,12 @@
       const pctSynth = Math.max(0, Math.min(100, (valSynth / 1.0) * 100));
       document.getElementById("faderFillSynth").style.height = `${pctSynth}%`;
       document.getElementById("faderThumbSynth").style.bottom = `${Math.max(0, Math.min(58, (pctSynth / 100) * 58))}px`;
+
+      const pctFx = Math.max(0, Math.min(100, (valFx / 1.5) * 100));
+      const fillFx = document.getElementById("faderFillFx");
+      const thumbFx = document.getElementById("faderThumbFx");
+      if (fillFx) fillFx.style.height = `${pctFx}%`;
+      if (thumbFx) thumbFx.style.bottom = `${Math.max(0, Math.min(58, (pctFx / 100) * 58))}px`;
 
       const pctMaster = Math.max(0, Math.min(100, (valMaster / 1.2) * 100));
       document.getElementById("faderFillMaster").style.height = `${pctMaster}%`;
@@ -2291,7 +2526,7 @@
     }
 
     function updateFaderFromEvent(type, e) {
-      const el = type === 'track' ? document.getElementById("faderTrackTrack") : (type === 'synth' ? document.getElementById("faderTrackSynth") : document.getElementById("faderTrackMaster"));
+      const el = type === 'track' ? document.getElementById("faderTrackTrack") : (type === 'synth' ? document.getElementById("faderTrackSynth") : (type === 'fx' ? document.getElementById("faderTrackFx") : document.getElementById("faderTrackMaster")));
       const rect = el.getBoundingClientRect();
       const clickY = e.clientY - rect.top;
       const ratio = Math.max(0, Math.min(1.0, 1.0 - (clickY / rect.height)));
@@ -2310,6 +2545,15 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ master_volume: vst127 })
+        }).catch(console.error);
+      } else if (type === 'fx') {
+        valFx = ratio * 1.5;
+        const db = valFx > 0 ? (20 * Math.log10(valFx)).toFixed(1) : "-inf";
+        document.getElementById("fxPadVolText").innerText = `${db} dB`;
+        fetch("/api/fx-pads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "bus", volume: valFx })
         }).catch(console.error);
       } else {
         valMaster = ratio * 1.2;
@@ -2439,11 +2683,33 @@
       if (!isShown) updateEngineStatusUi(true);
     }
 
+    // Header Tools Hamburger Menu Handlers
+    function toggleHeaderMenu(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById("headerMenuDropdown");
+      const btn = document.getElementById("headerMenuBtn");
+      if (!menu) return;
+      const isOpen = menu.classList.toggle("is-open");
+      if (btn) btn.classList.toggle("btn-active", isOpen);
+    }
+
+    function closeHeaderMenu() {
+      const menu = document.getElementById("headerMenuDropdown");
+      const btn = document.getElementById("headerMenuBtn");
+      if (menu) menu.classList.remove("is-open");
+      if (btn) btn.classList.remove("btn-active");
+    }
+
     document.addEventListener("click", (e) => {
       const pop = document.getElementById("enginePopover");
       const btn = document.getElementById("engineStatusBtn");
       if (pop && pop.style.display === "flex" && !pop.contains(e.target) && !btn.contains(e.target)) {
         pop.style.display = "none";
+      }
+      const menu = document.getElementById("headerMenuDropdown");
+      const menuBtn = document.getElementById("headerMenuBtn");
+      if (menu && menu.classList.contains("is-open") && !menu.contains(e.target) && !menuBtn.contains(e.target)) {
+        closeHeaderMenu();
       }
     });
 
@@ -3776,10 +4042,13 @@
       e.preventDefault();
     }
 
+    let g_activeDtPartDrag = null;
+
     function startDesktopPartFaderDrag(partNum, type, e) {
       const wrapId = type === 'vol' ? `dtVolWrap_${partNum}` : `dtRevWrap_${partNum}`;
       const wrap = document.getElementById(wrapId);
       if (!wrap) return;
+      g_activeDtPartDrag = `${type}_${partNum}`;
       const onMove = (ev) => {
         const rect = wrap.getBoundingClientRect();
         const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
@@ -3788,6 +4057,7 @@
         else onDesktopRevChange(partNum, val);
       };
       const onUp = () => {
+        g_activeDtPartDrag = null;
         window.removeEventListener("mousemove", onMove);
         window.removeEventListener("mouseup", onUp);
       };
@@ -3853,6 +4123,244 @@
     // ==========================================
     // Continuous Worship Drone Pad Controller
     // ==========================================
+    // ==========================================
+    // Performance FX Pads Desktop State & Handlers
+    // ==========================================
+    // 8 Vivid Hardware MPC/SP-404 Style RGB Pad Colors (Index 0..7)
+    const FX_PAD_PALETTE = [
+      { bg: "linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(185, 28, 28, 0.4) 100%)", border: "#ef4444", glow: "rgba(239, 68, 68, 0.4)" },     // 1: Red
+      { bg: "linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(194, 65, 12, 0.4) 100%)", border: "#f97316", glow: "rgba(249, 115, 22, 0.4)" },   // 2: Orange
+      { bg: "linear-gradient(135deg, rgba(234, 179, 8, 0.25) 0%, rgba(161, 98, 7, 0.4) 100%)", border: "#eab308", glow: "rgba(234, 179, 8, 0.4)" },      // 3: Amber/Gold
+      { bg: "linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(21, 128, 61, 0.4) 100%)", border: "#22c55e", glow: "rgba(34, 197, 94, 0.4)" },     // 4: Green
+      { bg: "linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(14, 116, 144, 0.4) 100%)", border: "#06b6d4", glow: "rgba(6, 182, 212, 0.4)" },     // 5: Cyan
+      { bg: "linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(29, 78, 216, 0.4) 100%)", border: "#3b82f6", glow: "rgba(59, 130, 246, 0.4)" },     // 6: Blue
+      { bg: "linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(126, 34, 206, 0.4) 100%)", border: "#a855f7", glow: "rgba(168, 85, 247, 0.4)" },   // 7: Purple
+      { bg: "linear-gradient(135deg, rgba(236, 72, 153, 0.25) 0%, rgba(190, 24, 93, 0.4) 100%)", border: "#ec4899", glow: "rgba(236, 72, 153, 0.4)" }     // 8: Pink / Magenta
+    ];
+
+    let g_fxPadsState = {
+      bus_volume: 0.85,
+      bus_muted: false,
+      active_bank: "A",
+      pad_indicators: {},
+      pads: {}
+    };
+    let g_editingFxPadId = null;
+
+    function toggleFxPadsModal() {
+      const modal = document.getElementById("fxPadsModal");
+      const isVisible = (modal.style.display === "flex");
+      modal.style.display = isVisible ? "none" : "flex";
+      if (!isVisible) {
+        renderDesktopFxPads();
+      }
+    }
+
+    function selectFxBank(bank) {
+      g_fxPadsState.active_bank = bank;
+      ["A", "B", "C", "D", "E", "F"].forEach(b => {
+        const btn = document.getElementById(`fxBankBtn_${b}`);
+        if (btn) btn.classList.toggle("btn-active", b === bank);
+      });
+      renderDesktopFxPads();
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "bank", bank: bank })
+      }).catch(() => {});
+    }
+
+    function triggerFxPad(padId, pressType = "press") {
+      // Optimistic visual feedback immediately
+      const padEl = document.getElementById(`dtFxPad_${padId}`);
+      const p = g_fxPadsState.pads ? g_fxPadsState.pads[padId] : null;
+      if (padEl && pressType === "press" && p) {
+        const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+        padEl.style.background = padColor.border;
+        padEl.style.boxShadow = `0 0 20px ${padColor.glow}`;
+        setTimeout(() => {
+          if (padEl) {
+            padEl.style.background = padColor.bg;
+            padEl.style.boxShadow = "none";
+          }
+        }, 140);
+      }
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "trigger", pad_id: padId, velocity: 127, press_type: pressType })
+      }).catch(console.error);
+    }
+
+    function stopAllFxPads() {
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "stop_all" })
+      }).catch(console.error);
+    }
+
+    function renderDesktopFxPads() {
+      const container = document.getElementById("desktopFxPadsGrid");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const activeBank = g_fxPadsState.active_bank || "A";
+      const padList = Object.values(g_fxPadsState.pads || {}).filter(p => p.bank === activeBank);
+      padList.sort((a, b) => a.pad_index - b.pad_index);
+
+      padList.forEach(p => {
+        const isPlaying = Boolean(g_fxPadsState.pad_indicators && g_fxPadsState.pad_indicators[p.id]);
+        const modeBadge = p.trigger_mode !== 'oneshot' ? `<span style="font-size: 8px; color: var(--accent);">${p.trigger_mode.toUpperCase()}</span>` : '';
+        const chokeBadge = p.choke_group > 0 ? `<span style="font-size: 8px; color: var(--accent-secondary);">CH${p.choke_group}</span>` : '';
+
+        // Hardware color mapping by pad_index (0..7)
+        const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+
+        const padDiv = document.createElement("div");
+        padDiv.id = `dtFxPad_${p.id}`;
+        padDiv.className = `fx-pad-btn ${isPlaying ? 'is-playing' : ''}`;
+        padDiv.style.background = isPlaying ? padColor.border : padColor.bg;
+        padDiv.style.border = `1px solid ${padColor.border}`;
+        padDiv.style.borderRadius = "6px";
+        padDiv.style.padding = "10px 8px";
+        padDiv.style.display = "flex";
+        padDiv.style.flexDirection = "column";
+        padDiv.style.justifyContent = "space-between";
+        padDiv.style.height = "76px";
+        padDiv.style.cursor = "pointer";
+        padDiv.style.userSelect = "none";
+        padDiv.style.boxShadow = isPlaying ? `0 0 16px ${padColor.glow}` : "none";
+        padDiv.style.transition = "all 0.1s ease";
+
+        padDiv.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span style="font-size: 9px; font-family: var(--font-mono); color: #ffffff; font-weight: 800; text-shadow: 0 1px 2px #000;">${p.bank}${p.pad_index + 1}</span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              ${modeBadge}
+              ${chokeBadge}
+              <button class="btn" style="padding: 1px 4px; font-size: 8px; background: rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.2);" onclick="event.stopPropagation(); openFxPadEditor('${p.id}')" title="Configure and assign sound">Assign</button>
+            </div>
+          </div>
+          <div style="font-size: 11px; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.2; word-break: break-word; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+            ${p.name}
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-family: var(--font-mono); color: #e2e8f0; text-shadow: 0 1px 2px #000;">
+            <span>VOL</span>
+            <span>${p.volume}%</span>
+          </div>
+        `;
+
+        // Support both mouse and touch
+        padDiv.onmousedown = (e) => { e.preventDefault(); triggerFxPad(p.id, "press"); };
+        padDiv.onmouseup = () => { triggerFxPad(p.id, "release"); };
+        container.appendChild(padDiv);
+      });
+    }
+
+    function openFxPadEditor(padId) {
+      g_editingFxPadId = padId;
+      const card = document.getElementById("fxPadEditorCard");
+      const p = g_fxPadsState.pads[padId];
+      if (!card || !p) return;
+      card.style.display = "flex";
+      document.getElementById("fxEditorTitle").innerText = `Configure & Assign Pad [${p.bank}${p.pad_index + 1}]`;
+      document.getElementById("fxEditorName").value = p.name;
+      document.getElementById("fxEditorMode").value = p.trigger_mode;
+      document.getElementById("fxEditorChoke").value = p.choke_group;
+      document.getElementById("fxEditorPitch").value = p.pitch;
+
+      // Populate Sound Selector with all 48 factory voices grouped by category
+      const soundSel = document.getElementById("fxEditorSoundSelect");
+      if (soundSel && g_fxPadsState.sound_catalog) {
+        let optHtml = "";
+        const categories = {
+          percussion: "Acoustic & Electronic Percussion",
+          hits: "Impacts, Hits & 808 Bass Drops",
+          transitions: "Whooshes, Risers & Sweeps",
+          special: "Atmospheres, Swells & Vocal Chops"
+        };
+        for (const cat in categories) {
+          optHtml += `<optgroup label="${categories[cat]}">`;
+          for (const sid in g_fxPadsState.sound_catalog) {
+            const sc = g_fxPadsState.sound_catalog[sid];
+            if (sc.category === cat) {
+              const sel = (p.sound_id === sid || p.sample_path === sc.sample_path) ? 'selected' : '';
+              optHtml += `<option value="${sid}" ${sel}>${sc.name}</option>`;
+            }
+          }
+          optHtml += `</optgroup>`;
+        }
+        soundSel.innerHTML = optHtml;
+      }
+
+      const spEl = document.getElementById("fxEditorSamplePath");
+      if (spEl) spEl.innerText = p.sample_path ? p.sample_path.split(/[\\/]/).pop() : "None";
+    }
+
+    function assignFxPadSound(soundId) {
+      if (!g_editingFxPadId || !g_fxPadsState.sound_catalog || !g_fxPadsState.sound_catalog[soundId]) return;
+      const s_meta = g_fxPadsState.sound_catalog[soundId];
+      const p = g_fxPadsState.pads[g_editingFxPadId];
+      p.sound_id = soundId;
+      p.name = s_meta.name;
+      p.sample_path = s_meta.sample_path;
+      p.category = s_meta.category;
+      document.getElementById("fxEditorName").value = p.name;
+      const spEl = document.getElementById("fxEditorSamplePath");
+      if (spEl) spEl.innerText = s_meta.sample_path.split(/[\\/]/).pop();
+      renderDesktopFxPads();
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_pad", pad_id: g_editingFxPadId, sound_id: soundId })
+      }).catch(console.error);
+    }
+
+    async function uploadCustomFxSample(inputEl) {
+      if (!inputEl.files || !inputEl.files[0] || !g_editingFxPadId) return;
+      const file = inputEl.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("pad_id", g_editingFxPadId);
+
+      try {
+        showAppToast("Uploading custom sample...");
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success && data.filename) {
+          const samplePath = `assets/fx-pads/custom/${data.filename}`;
+          saveFxPadField("sample_path", samplePath);
+          showAppToast(`Loaded ${data.filename} for ${g_editingFxPadId}`);
+          const spEl = document.getElementById("fxEditorSamplePath");
+          if (spEl) spEl.innerText = data.filename;
+        }
+      } catch (e) {
+        showAppToast("Upload failed: " + e);
+      }
+      inputEl.value = "";
+    }
+
+    function closeFxPadEditor() {
+      const card = document.getElementById("fxPadEditorCard");
+      if (card) card.style.display = "none";
+      g_editingFxPadId = null;
+    }
+
+    function saveFxPadField(field, val) {
+      if (!g_editingFxPadId || !g_fxPadsState.pads[g_editingFxPadId]) return;
+      g_fxPadsState.pads[g_editingFxPadId][field] = val;
+      renderDesktopFxPads();
+      fetch("/api/fx-pads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_pad", pad_id: g_editingFxPadId, [field]: val })
+      }).catch(console.error);
+    }
+
     const DRONE_ROOT_KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     let g_dronePadState = { active: false, root: "C", volume: 95, cutoff: 68 };
     let g_lastDroneUserInteraction = 0;
@@ -4528,6 +5036,43 @@
       e.preventDefault();
     }
 
+    function startDesktopFxTopFaderDrag(e) {
+      const wrap = document.getElementById("dtFxTopVolWrap");
+      if (!wrap) return;
+      const onMove = (ev) => {
+        const rect = wrap.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        valFx = ratio * 1.5;
+        const db = valFx > 0 ? (20 * Math.log10(valFx)).toFixed(1) : "-inf";
+        const el1 = document.getElementById("fxPadVolText");
+        if (el1) el1.innerText = `${db} dB`;
+        const el2 = document.getElementById("desktopFxBusVolText");
+        if (el2) el2.innerText = `${db} dB`;
+        
+        const pct = (valFx / 1.5) * 100;
+        const fTop = document.getElementById("dtFxTopVolFill");
+        const thTop = document.getElementById("dtFxTopVolThumb");
+        if (fTop) fTop.style.width = `${pct}%`;
+        if (thTop) thTop.style.left = `${pct}%`;
+
+        renderCustomFaders();
+
+        fetch("/api/fx-pads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "bus", volume: valFx })
+        }).catch(console.error);
+      };
+      const onUp = () => {
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      onMove(e);
+      e.preventDefault();
+    }
+
     function bindTitlebarDrag(titlebar, win) {
       titlebar.addEventListener("mousedown", (e) => {
         if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
@@ -4659,12 +5204,30 @@
         const b = document.getElementById(`sceneBtn_${s}`);
         if (b) b.classList.toggle("btn-active", s === sceneNum);
       }
+      renderScenesUI();
       try {
-        await fetch("/api/montage/scene", {
+        const res = await fetch("/api/montage/scene", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "recall", scene: sceneNum })
         });
+        const data = await res.json();
+        if (data.snapshot && data.snapshot.parts) {
+          for (const p in data.snapshot.parts) {
+            const partIdx = parseInt(p) - 1;
+            if (desktopPartsState[partIdx]) {
+              const val = data.snapshot.parts[p];
+              desktopPartsState[partIdx].val = val;
+              const t = document.getElementById(`dtPartVal_${p}`);
+              if (t) t.innerText = `Volume: ${val}`;
+              const pct = ((val / 127) * 100).toFixed(1);
+              const fill = document.getElementById(`dtVolFill_${p}`);
+              const thumb = document.getElementById(`dtVolThumb_${p}`);
+              if (fill) fill.style.width = `${pct}%`;
+              if (thumb) thumb.style.left = `${pct}%`;
+            }
+          }
+        }
       } catch (e) {
         console.error("Failed to recall scene:", e);
       }
@@ -4698,6 +5261,23 @@
 
       ws.onmessage = (evt) => {
         const msg = JSON.parse(evt.data);
+        if (msg.type === "fx_pad_pulse") {
+          const padId = msg.pad_id;
+          const padEl = document.getElementById(`dtFxPad_${padId}`);
+          const p = g_fxPadsState.pads ? g_fxPadsState.pads[padId] : null;
+          if (padEl && p && msg.action === "press") {
+            const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+            padEl.style.background = padColor.border;
+            padEl.style.boxShadow = `0 0 20px ${padColor.glow}`;
+            setTimeout(() => {
+              if (padEl) {
+                padEl.style.background = padColor.bg;
+                padEl.style.boxShadow = "none";
+              }
+            }, 140);
+          }
+          return;
+        }
         if (msg.type === "telemetry") renderTelemetry(msg);
         else if (msg.type === "midi_event") handleLiveMidiEvent(msg.data);
       };
@@ -4726,6 +5306,41 @@
           stageWarmthSettings.drive = Number(data.engine.warmth.drive);
           stageWarmthSettings.mode = Number(data.engine.warmth.mode);
           applyWarmthDomState();
+        }
+      }
+      if (data.fx_pads) {
+        let padsLoaded = false;
+        if (data.fx_pads.pads && Object.keys(data.fx_pads.pads).length > 0) {
+          const hadNoPads = !g_fxPadsState.pads || Object.keys(g_fxPadsState.pads).length === 0;
+          g_fxPadsState.pads = data.fx_pads.pads;
+          if (hadNoPads) padsLoaded = true;
+        }
+        if (data.fx_pads.sound_catalog) {
+          g_fxPadsState.sound_catalog = data.fx_pads.sound_catalog;
+        }
+        if (data.fx_pads.bus_volume !== undefined) g_fxPadsState.bus_volume = data.fx_pads.bus_volume;
+        if (data.fx_pads.bus_muted !== undefined) g_fxPadsState.bus_muted = data.fx_pads.bus_muted;
+        if (data.fx_pads.active_bank !== undefined) g_fxPadsState.active_bank = data.fx_pads.active_bank;
+        if (data.fx_pads.active_voices !== undefined) g_fxPadsState.active_voices = data.fx_pads.active_voices;
+        if (data.fx_pads.pad_indicators) g_fxPadsState.pad_indicators = data.fx_pads.pad_indicators;
+
+        if (padsLoaded) {
+          renderDesktopFxPads();
+        }
+
+        if (g_fxPadsState.pad_indicators) {
+          for (const pid in g_fxPadsState.pad_indicators) {
+            const el = document.getElementById(`dtFxPad_${pid}`);
+            const p = g_fxPadsState.pads ? g_fxPadsState.pads[pid] : null;
+            if (el && p) {
+              const active = Boolean(g_fxPadsState.pad_indicators[pid]);
+              const padColor = FX_PAD_PALETTE[p.pad_index % FX_PAD_PALETTE.length];
+              el.classList.toggle("is-playing", active);
+              el.style.background = active ? padColor.border : padColor.bg;
+              el.style.borderColor = padColor.border;
+              el.style.boxShadow = active ? `0 0 16px ${padColor.glow}` : "none";
+            }
+          }
         }
       }
       if (data.drone_pad) {
@@ -4771,6 +5386,20 @@
           valMaster = audio.master_volume;
           const db = valMaster > 0 ? (20 * Math.log10(valMaster)).toFixed(1) : "-inf";
           document.getElementById("masterVolText").innerText = `${db} dB`;
+          renderCustomFaders();
+        }
+        if (audio.fx_pad_volume !== undefined && Math.abs(audio.fx_pad_volume - valFx) > 0.02) {
+          valFx = audio.fx_pad_volume;
+          const db = valFx > 0 ? (20 * Math.log10(valFx)).toFixed(1) : "-inf";
+          const el = document.getElementById("fxPadVolText");
+          if (el) el.innerText = `${db} dB`;
+          const elTop = document.getElementById("desktopFxBusVolText");
+          if (elTop) elTop.innerText = `${db} dB`;
+          const pct = (valFx / 1.5) * 100;
+          const fTop = document.getElementById("dtFxTopVolFill");
+          const thTop = document.getElementById("dtFxTopVolThumb");
+          if (fTop) fTop.style.width = `${pct}%`;
+          if (thTop) thTop.style.left = `${pct}%`;
           renderCustomFaders();
         }
         if (montage && montage.master_volume !== undefined) {
@@ -4841,6 +5470,7 @@
             const b = document.getElementById(`sceneBtn_${s}`);
             if (b) b.classList.toggle("btn-active", s === activeScene);
           }
+          renderScenesUI();
         }
         if (sceneNamesChanged) {
           renderScenesUI();
@@ -4885,19 +5515,31 @@
         }
         if (montage.part_volumes) {
           for (let p = 1; p <= 8; p++) {
-            if (montage.part_volumes[p] !== undefined) {
-              desktopPartsState[p - 1].val = montage.part_volumes[p];
+            if (montage.part_volumes[p] !== undefined && g_activeDtPartDrag !== `vol_${p}`) {
+              const val = montage.part_volumes[p];
+              desktopPartsState[p - 1].val = val;
               const t = document.getElementById(`dtPartVal_${p}`);
-              if (t) t.innerText = `Volume: ${montage.part_volumes[p]}`;
+              if (t) t.innerText = `Volume: ${val}`;
+              const pct = ((val / 127) * 100).toFixed(1);
+              const fill = document.getElementById(`dtVolFill_${p}`);
+              const thumb = document.getElementById(`dtVolThumb_${p}`);
+              if (fill) fill.style.width = `${pct}%`;
+              if (thumb) thumb.style.left = `${pct}%`;
             }
           }
         }
         if (montage.part_reverbs) {
           for (let p = 1; p <= 8; p++) {
             if (montage.part_reverbs[p] !== undefined) {
-              desktopPartsState[p - 1].rev = montage.part_reverbs[p];
+              const rVal = montage.part_reverbs[p];
+              desktopPartsState[p - 1].rev = rVal;
               const t = document.getElementById(`dtPartRev_${p}`);
-              if (t) t.innerText = `Reverb: ${montage.part_reverbs[p]}`;
+              if (t) t.innerText = `Reverb: ${rVal}`;
+              const pct = ((rVal / 127) * 100).toFixed(1);
+              const fill = document.getElementById(`dtRevFill_${p}`);
+              const thumb = document.getElementById(`dtRevThumb_${p}`);
+              if (fill) fill.style.width = `${pct}%`;
+              if (thumb) thumb.style.left = `${pct}%`;
             }
           }
         }
@@ -4921,11 +5563,14 @@
       const dbToPercent = (db) => Math.max(0, Math.min(100, ((db + 55) / 55) * 100));
       const trkDb = audio.vu_track !== undefined ? audio.vu_track : -60.0;
       const synDb = audio.vu_synth !== undefined ? audio.vu_synth : -60.0;
+      const fxDb = audio.vu_fx !== undefined ? audio.vu_fx : -60.0;
       const mstLDb = audio.vu_master_l !== undefined ? audio.vu_master_l : -60.0;
       const mstRDb = audio.vu_master_r !== undefined ? audio.vu_master_r : -60.0;
 
       document.getElementById("vuTrack").style.height = `${dbToPercent(trkDb)}%`;
       document.getElementById("vuSynth").style.height = `${dbToPercent(synDb)}%`;
+      const vuFx = document.getElementById("vuFxPad");
+      if (vuFx) vuFx.style.height = `${dbToPercent(fxDb)}%`;
       document.getElementById("vuMasterL").style.height = `${dbToPercent(mstLDb)}%`;
       document.getElementById("vuMasterR").style.height = `${dbToPercent(mstRDb)}%`;
 
@@ -5359,6 +6004,15 @@
         } else {
           document.getElementById("chordNotesDisplay").innerText = "READY";
         }
+        const container = document.getElementById("pianoWrapper");
+        if (container) {
+          const currentActives = container.querySelectorAll(".active");
+          currentActives.forEach(el => el.classList.remove("active"));
+          data.active_notes.forEach(note => {
+            const el = document.getElementById(`key-${note}`);
+            if (el) el.classList.add("active");
+          });
+        }
       }
     }
 
@@ -5750,6 +6404,8 @@
 
     loadDevices();
     refreshVoicingVisualizer();
+    renderDesktopParts();
+    fetch("/api/fx-pads").then(r => r.json()).then(d => { g_fxPadsState = d; renderDesktopFxPads(); }).catch(() => {});
     setTimeout(initEqCanvas, 100);
   </script>
 </body>

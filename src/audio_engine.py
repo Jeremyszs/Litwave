@@ -18,6 +18,7 @@ from typing import Dict, Any, List, Optional
 from src.song_player import SongPlayer
 from src.metronome import Metronome
 from src.equalizer import ParametricEqualizer
+from src.fx_sampler import FxSampler
 
 class AudioEngine:
     def __init__(self, samplerate: int = 48000, blocksize: int = 256):
@@ -33,6 +34,7 @@ class AudioEngine:
         self.song_player = SongPlayer(target_samplerate=samplerate)
         self.metronome = Metronome(samplerate=samplerate)
         self.equalizer = ParametricEqualizer(samplerate=samplerate)
+        self.fx_sampler = FxSampler(target_samplerate=samplerate)
         
         # Mixer parameters
         self.master_volume: float = 1.0
@@ -45,6 +47,7 @@ class AudioEngine:
         self.peak_right_db: float = -60.0
         self.peak_track_db: float = -60.0
         self.peak_synth_db: float = -60.0
+        self.peak_fx_db: float = -60.0
         self.is_clipping: bool = False
         
         self.lock = threading.Lock()
@@ -152,8 +155,15 @@ class AudioEngine:
         # 2. Metronome (Clean uninterrupted steady clock)
         metro_buf = self.metronome.get_audio_block(frames) * self.metronome_volume
 
-        # Master mix
-        mix = (track_buf + metro_buf) * self.master_volume
+        # 3. FX Sampler Bus
+        fx_buf = self.fx_sampler.get_audio_block(frames)
+
+        # Compute real-time peak telemetry for FX bus
+        fx_peak = float(np.max(np.abs(fx_buf))) if frames > 0 else 0.0
+        self.peak_fx_db = 20.0 * np.log10(max(1e-4, fx_peak)) if fx_peak > 0 else -60.0
+
+        # Master mix: Song Track + Metronome + FX Sampler
+        mix = (track_buf + metro_buf + fx_buf) * self.master_volume
         
         # 3. Master Parametric Equalizer Filter Cascade
         mix = self.equalizer.process_block(mix)
@@ -268,10 +278,13 @@ class AudioEngine:
             "vu_master_r": round(self.peak_right_db, 1),
             "vu_track": round(self.peak_track_db, 1),
             "vu_synth": round(self.peak_synth_db, 1),
+            "vu_fx": round(self.peak_fx_db, 1),
             "is_clipping": self.is_clipping,
             "metronome_bpm": self.metronome.bpm,
             "metronome_enabled": self.metronome.enabled,
             "metronome_time_sig": self.metronome.time_sig_num,
             "metronome_profile": self.metronome.sound_profile,
+            "fx_pad_volume": round(self.fx_sampler.bus_volume, 2),
+            "fx_pad_muted": self.fx_sampler.bus_muted,
             "equalizer": self.equalizer.get_state()
         }
