@@ -1994,6 +1994,32 @@
               <span>Kill Engine Process</span>
             </button>
           </div>
+
+          <!-- SoundFont Library Manager Button -->
+          <button class="btn btn-secondary" onclick="openSoundFontsModal()" style="padding: 6px 10px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; border-color: var(--accent); color: var(--accent);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>SoundFont Library &amp; HD Expansion Packs</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SoundFonts Library & Expansion Packs Modal -->
+  <div class="modal-backdrop" id="soundfontsModal">
+    <div class="modal-window" style="width: 540px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title">SoundFont Library &amp; HD Expansion Packs</div>
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSoundFontsModal()" title="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 11px; color: var(--text-dim); line-height: 1.5;">
+          Litwave automatically loads all soundbanks placed into <code style="color: var(--accent); font-family: var(--font-mono);">cpp_host/soundfonts/</code>. Optional High-Definition expansions can be installed without restarting.
+        </div>
+        <div id="soundfontsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Loaded dynamically -->
         </div>
       </div>
     </div>
@@ -4091,6 +4117,57 @@
       }
     }
 
+    // SoundFonts Manager Modal Handlers
+    async function openSoundFontsModal() {
+      const modal = document.getElementById("soundfontsModal");
+      if (modal) modal.classList.add("modal-open");
+      loadSoundFontsList();
+    }
+
+    function closeSoundFontsModal() {
+      const modal = document.getElementById("soundfontsModal");
+      if (modal) modal.classList.remove("modal-open");
+    }
+
+    async function loadSoundFontsList() {
+      const container = document.getElementById("soundfontsListContainer");
+      if (!container) return;
+      container.innerHTML = `<div style="font-size: 11px; color: var(--text-dim); padding: 12px; text-align: center;">Loading soundbanks...</div>`;
+
+      try {
+        const res = await fetch("/api/montage/soundfonts");
+        const data = await res.json();
+        if (!data.soundfonts) return;
+
+        let html = "";
+        data.soundfonts.forEach(sf => {
+          const statusBadge = sf.installed 
+            ? `<span style="font-size: 9px; font-weight: 700; color: var(--success); background: rgba(34, 197, 94, 0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--success);">INSTALLED</span>`
+            : `<span style="font-size: 9px; font-weight: 700; color: var(--text-dim); background: var(--bg-sunken); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-dim);">OPTIONAL PACK</span>`;
+
+          const actionBtn = sf.installed
+            ? `<span style="font-size: 10px; color: var(--text-dim); font-family: var(--font-mono);">${sf.size_mb.toFixed(1)} MB</span>`
+            : `<a href="https://github.com/Jeremyszs/Litwave/releases" target="_blank" class="btn btn-secondary" style="padding: 2px 8px; font-size: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; border-color: var(--accent); color: var(--accent);">Get Pack (${sf.size_mb.toFixed(0)} MB)</a>`;
+
+          html += `
+            <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 12px; font-weight: 700; color: var(--text-main);">${sf.name}</span>
+                  ${statusBadge}
+                </div>
+                <div style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim);">${sf.filename}</div>
+              </div>
+              <div>${actionBtn}</div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch(e) {
+        container.innerHTML = `<div style="font-size: 11px; color: var(--danger); padding: 12px;">Failed to load soundfonts list.</div>`;
+      }
+    }
+
     async function toggleDesktopMute(partNum) {
       const p = desktopPartsState[partNum - 1];
       const newMute = !p.mute;
@@ -6102,10 +6179,13 @@
           btn.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</span>`;
           setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
         } else {
+          const errMsg = data.error || "Analysis failed";
+          alert(errMsg);
           btn.innerHTML = `<span style="color: var(--danger);">Error</span>`;
           setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
         }
       } catch (e) {
+        alert("Analysis request failed: " + e.message);
         btn.innerHTML = `<span style="color: var(--danger);">Failed</span>`;
         setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
       }

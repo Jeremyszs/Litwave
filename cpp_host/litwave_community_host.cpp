@@ -731,21 +731,36 @@ int main(int argc, char* argv[]) {
 
     std::cout << "[SoundFonts] Initializing high-definition sound banks..." << std::endl;
 
-    // Load master banks
+    // Load master banks (with fallback to bank_gu if optional banks are absent)
     bank_gu = tsf_load_filename("soundfonts/GeneralUser-GS.sf2");
-    bank_sy22 = tsf_load_filename("soundfonts/Yamaha-SY22.sf2");
-    bank_roland = tsf_load_filename("soundfonts/Roland_SC-88.sf2");
-    bank_yamaha_c5 = tsf_load_filename("soundfonts/Yamaha_Grand_v2.1.sf2");
-    bank_chateau = tsf_load_filename("soundfonts/Chateau_Grand_v2.2.sf2");
-    bank_nord_grand = tsf_load_filename("soundfonts/Nord_Stage_Romantic_Grand.sf2");
-    bank_roland_rd = tsf_load_filename("soundfonts/Roland_RD_PopGrand.sf2");
-    bank_rhodes_plus = tsf_load_filename("soundfonts/Rhodes_EPs_Plus.sf2");
-    bank_zenology = tsf_load_filename("soundfonts/Roland_Zenology_LiveHQ.sf2");
-
-    if (!bank_gu || !bank_sy22 || !bank_roland) {
-        std::cerr << "[ERROR] Could not load all SoundFont banks from /soundfonts" << std::endl;
+    if (!bank_gu) {
+        std::cerr << "[ERROR] Could not load essential SoundFont: soundfonts/GeneralUser-GS.sf2" << std::endl;
         return 1;
     }
+
+    bank_sy22 = tsf_load_filename("soundfonts/Yamaha-SY22.sf2");
+    if (!bank_sy22) bank_sy22 = bank_gu;
+
+    bank_roland = tsf_load_filename("soundfonts/Roland_SC-88.sf2");
+    if (!bank_roland) bank_roland = bank_gu;
+
+    bank_yamaha_c5 = tsf_load_filename("soundfonts/Yamaha_Grand_v2.1.sf2");
+    if (!bank_yamaha_c5) bank_yamaha_c5 = bank_gu;
+
+    bank_chateau = tsf_load_filename("soundfonts/Chateau_Grand_v2.2.sf2");
+    if (!bank_chateau) bank_chateau = bank_gu;
+
+    bank_nord_grand = tsf_load_filename("soundfonts/Nord_Stage_Romantic_Grand.sf2");
+    if (!bank_nord_grand) bank_nord_grand = bank_gu;
+
+    bank_roland_rd = tsf_load_filename("soundfonts/Roland_RD_PopGrand.sf2");
+    if (!bank_roland_rd) bank_roland_rd = bank_gu;
+
+    bank_rhodes_plus = tsf_load_filename("soundfonts/Rhodes_EPs_Plus.sf2");
+    if (!bank_rhodes_plus) bank_rhodes_plus = bank_gu;
+
+    bank_zenology = tsf_load_filename("soundfonts/Roland_Zenology_LiveHQ.sf2");
+    if (!bank_zenology) bank_zenology = bank_gu;
 
     // Check for saved Community session state (parity with Yamaha last_session_state.bin)
     CommunitySessionState savedState;

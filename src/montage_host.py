@@ -22,15 +22,16 @@ VST3_DIR = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin
 VST3_BIN = r"C:\Program Files\Common Files\VST3\Yamaha\Expanded Softsynth Plugin for MONTAGE M.vst3\Contents\x86_64-win\Expanded Softsynth Plugin for MONTAGE M.vst3"
 DATA_DIR = r"C:\ProgramData\Yamaha\Expanded Softsynth Plugin for MONTAGE M"
 STEINBERG_SAM = r"C:\Program Files\Steinberg\Activation Manager\SteinbergActivationManager.exe"
-YAMAHA_ENGINE_EXE = r"C:\Users\Jeremy Rukmana\Projects\montage-practice-daw\cpp_host\montage_live_engine.exe"
-COMMUNITY_ENGINE_EXE = r"C:\Users\Jeremy Rukmana\Projects\montage-practice-daw\cpp_host\litwave_community_engine.exe"
-MONTAGE_ENGINE_EXE = YAMAHA_ENGINE_EXE
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+YAMAHA_ENGINE_EXE = os.path.join(BASE_DIR, "cpp_host", "montage_live_engine.exe")
+COMMUNITY_ENGINE_EXE = os.path.join(BASE_DIR, "cpp_host", "litwave_community_engine.exe")
+MONTAGE_ENGINE_EXE = COMMUNITY_ENGINE_EXE
 
 class MontageHost:
     def __init__(self):
         self.vst_path = VST3_BIN
         self.data_dir = DATA_DIR
-        self.engine_type = "yamaha" # "yamaha" or "community"
+        self.engine_type = "community" # Default to open community soundfont engine
         self.editor_process = None
         self.master_vst_volume = 127
         self.part_volumes = {i: 100 for i in range(1, 9)}

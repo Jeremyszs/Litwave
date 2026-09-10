@@ -18,6 +18,7 @@ def get_btc_model():
     global _BTC_MODEL
     if _BTC_MODEL is None:
         try:
+            import torch  # Explicit check for PyTorch presence
             from transformers import AutoModel
             logger.info("Loading pinned BTC Transformer chord recognition model...")
             _BTC_MODEL = AutoModel.from_pretrained(
@@ -27,6 +28,9 @@ def get_btc_model():
                 large_voca=True,
             )
             logger.info("BTC model loaded successfully!")
+        except ImportError:
+            logger.warning("PyTorch or Transformers not installed. AI chord recognition is disabled.")
+            return None
         except Exception as error:
             logger.error(f"Failed to load BTC model: {error}")
             return None
@@ -236,7 +240,7 @@ def analyze_track(audio_path: str, max_duration: Optional[float] = None) -> Dict
 
     model = get_btc_model()
     if model is None:
-        raise RuntimeError("BTC chord model is unavailable; existing chart was preserved")
+        raise RuntimeError("PyTorch/BTC Chord AI is not installed. To enable automatic chord recognition, install the PyTorch ML pack.")
 
     try:
         logger.info("Running BTC Transformer inference...")

@@ -215,6 +215,7 @@ api_playlist, api_playlist_select, api_upload_song = create_playlist_handlers(
     api_play_voicing,
     api_master_dsp,
     api_launch_license_manager,
+    api_soundfonts_status,
 ) = create_montage_handlers(state)
 
 async def index(request):
@@ -390,6 +391,7 @@ routes = [
     Route("/api/montage/assign_voice", api_assign_voice, methods=["POST"]),
     Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
     Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
+    Route("/api/montage/soundfonts", api_soundfonts_status, methods=["GET"]),
     Route("/api/montage/names", api_custom_names, methods=["GET", "POST"]),
     Route("/api/montage/audition", api_play_voicing, methods=["POST"]),
     Route("/api/midi/panic", api_midi_panic, methods=["POST"]),

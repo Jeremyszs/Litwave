@@ -1,6 +1,6 @@
 {
   "analyzer_enabled": true,
-  "warmth_enabled": false,
-  "warmth_drive": 1.0,
-  "warmth_mode": 1
+  "warmth_enabled": true,
+  "warmth_drive": 1.35,
+  "warmth_mode": 0
 }

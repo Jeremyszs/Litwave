@@ -256,6 +256,34 @@ def create_montage_handlers(app_state, catalog_path: Optional[str] = None):
         except (TypeError, ValueError) as error:
             return JSONResponse({"error": str(error)}, status_code=400)
 
+    async def handle_soundfonts_status(request):
+        """Return installed soundfonts and expansion availability."""
+        sf_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cpp_host", "soundfonts")
+        known_banks = {
+            "GeneralUser-GS.sf2": {"name": "GeneralUser GS (Core GM)", "size_mb": 30.8, "core": True},
+            "Nord_Stage_Romantic_Grand.sf2": {"name": "Nord Stage 3 Romantic Grand", "size_mb": 19.5, "core": True},
+            "Yamaha-SY22.sf2": {"name": "Yamaha SY-22 Vector & FM Synth", "size_mb": 39.1, "core": True},
+            "Roland_SC-88.sf2": {"name": "Roland SC-88 Sound Canvas", "size_mb": 21.8, "core": True},
+            "Chateau_Grand_v2.2.sf2": {"name": "Chateau Concert Grand v2.2", "size_mb": 256.1, "core": False},
+            "Yamaha_Grand_v2.1.sf2": {"name": "Yamaha C5 Studio Grand v2.1", "size_mb": 232.1, "core": False},
+            "Roland_RD_PopGrand.sf2": {"name": "Roland RD-700/800 Pop Grand", "size_mb": 142.0, "core": False},
+            "Rhodes_EPs_Plus.sf2": {"name": "Rhodes & Vintage EPs Plus", "size_mb": 50.1, "core": False},
+            "Roland_Zenology_LiveHQ.sf2": {"name": "Roland Zenology Live HQ Synths", "size_mb": 902.1, "core": False},
+        }
+        res = []
+        for filename, meta in known_banks.items():
+            fpath = os.path.join(sf_dir, filename)
+            installed = os.path.exists(fpath)
+            res.append({
+                "filename": filename,
+                "name": meta["name"],
+                "size_mb": meta["size_mb"],
+                "core": meta["core"],
+                "installed": installed,
+                "path": fpath if installed else None,
+            })
+        return JSONResponse({"soundfonts": res, "directory": sf_dir})
+
     async def handle_launch_license_manager(request):
         """Launch Yamaha Montage M license manager executable."""
         ok = app_state.montage.open_license_manager()
@@ -271,4 +299,5 @@ def create_montage_handlers(app_state, catalog_path: Optional[str] = None):
         handle_play_voicing,
         handle_master_dsp,
         handle_launch_license_manager,
+        handle_soundfonts_status,
     )

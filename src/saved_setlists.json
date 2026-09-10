@@ -1,0 +1,63 @@
+[
+  {
+    "id": "setlist_1",
+    "name": "Main Setlist",
+    "songs": []
+  },
+  {
+    "id": "setlist_2",
+    "name": "Setlist 2",
+    "songs": [
+      {
+        "title": "JANGAN LELAH (LIVING ROOM WORSHIP SESSION FT. ELAINE TJOKRO).MP3",
+        "filename": "JANGAN LELAH (LIVING ROOM WORSHIP SESSION FT. ELAINE TJOKRO).MP3",
+        "key": "--",
+        "patch_snapshot": {
+          "engine_type": "yamaha",
+          "part_volumes": {
+            "1": 100,
+            "2": 100,
+            "3": 100,
+            "4": 100,
+            "5": 100,
+            "6": 100,
+            "7": 100,
+            "8": 11
+          },
+          "part_reverbs": {
+            "1": 40,
+            "2": 40,
+            "3": 40,
+            "4": 40,
+            "5": 40,
+            "6": 40,
+            "7": 40,
+            "8": 40
+          },
+          "part_mutes": {
+            "1": false,
+            "2": false,
+            "3": false,
+            "4": false,
+            "5": false,
+            "6": false,
+            "7": false,
+            "8": false
+          },
+          "part_names": {
+            "1": "Nord Stage 3 Romantic Grand",
+            "2": "Warm Pad",
+            "3": "Part 3",
+            "4": "Part 4",
+            "5": "Part 5",
+            "6": "Part 6",
+            "7": "Part 7",
+            "8": "Roland Warm Analog Pad"
+          },
+          "drone_root": "C"
+        },
+        "id": "song_2"
+      }
+    ]
+  }
+]

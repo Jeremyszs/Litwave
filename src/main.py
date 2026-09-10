@@ -18,8 +18,17 @@ def main():
     print(f"  Interface: {url}")
     print("=" * 60)
     
-    # Auto-launch browser
-    webbrowser.open(url)
+    # Auto-launch browser window (try Microsoft Edge in app mode first, fallback to system default)
+    edge_paths = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    ]
+    edge_bin = next((p for p in edge_paths if os.path.exists(p)), None)
+    if edge_bin:
+        import subprocess
+        subprocess.Popen([edge_bin, f"--app={url}", "--window-size=1280,820"])
+    else:
+        webbrowser.open(url)
     
     # Run uvicorn server on all network interfaces (0.0.0.0) so phone can connect via Wi-Fi LAN IP
     uvicorn.run("src.server:app", host="0.0.0.0", port=port, log_level="info")
