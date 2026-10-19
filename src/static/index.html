@@ -1261,7 +1261,7 @@
       </button>
 
       <!-- 3-line Hamburger Menu Button -->
-      <button class="btn-header-action" id="headerMenuBtn" onclick="toggleHeaderMenu(event)" title="Workstation Tools & Windows Menu" style="padding: 4px 8px;">
+      <button class="btn-header-action" id="headerMenuBtn" onclick="toggleHeaderMenu(event)" title="Workstation Tools & Windows Menu" aria-label="Workstation tools and windows menu" style="padding: 4px 8px;">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="6" x2="21" y2="6"/>
           <line x1="3" y1="12" x2="21" y2="12"/>
@@ -1635,7 +1635,7 @@
           <div class="panel-title">Key Shift</div>
           <div class="panel-header-actions">
             <button class="btn" style="padding: 1px 5px; font-size: 9px;" onclick="setTrackPitch(0)">Reset</button>
-            <button class="panel-collapse-btn" id="pitchCollapseBtn" onclick="toggleAccordion('pitchDeck')" title="Minimize / Expand Key Shift">
+            <button class="panel-collapse-btn" id="pitchCollapseBtn" onclick="toggleAccordion('pitchDeck')" title="Minimize / Expand Key Shift" aria-label="Minimize / Expand Key Shift">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
           </div>
@@ -1643,9 +1643,9 @@
 
         <div class="side-controls-body">
           <div class="pitch-stepper">
-            <button class="btn-step" onclick="stepTrackPitch(-1)">-</button>
+            <button class="btn-step" onclick="stepTrackPitch(-1)" aria-label="Pitch down one semitone">-</button>
             <div class="pitch-readout" id="trackPitchReadout">0 st</div>
-            <button class="btn-step" onclick="stepTrackPitch(+1)">+</button>
+            <button class="btn-step" onclick="stepTrackPitch(+1)" aria-label="Pitch up one semitone">+</button>
           </div>
           <div style="font-size: 9px; color: var(--text-faint); line-height: 1.3; text-align: center;">
             Transposes backing track (-12 to +12 semitones)
@@ -1659,7 +1659,7 @@
           <div class="panel-title">Output Mixer</div>
           <div class="panel-header-actions">
             <button class="btn" style="padding: 1px 5px; font-size: 9px;" onclick="resetEqFlat()" title="Reset Master EQ to Flat response">EQ Flat</button>
-            <button class="panel-collapse-btn" id="mixerCollapseBtn" onclick="toggleAccordion('mixerDeck')" title="Minimize / Expand Output Mixer">
+            <button class="panel-collapse-btn" id="mixerCollapseBtn" onclick="toggleAccordion('mixerDeck')" title="Minimize / Expand Output Mixer" aria-label="Minimize / Expand Output Mixer">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
           </div>
@@ -1809,7 +1809,7 @@
         <div class="panel-header">
           <div class="panel-title">Others</div>
           <div class="panel-header-actions">
-            <button class="panel-collapse-btn" id="othersCollapseBtn" onclick="toggleAccordion('othersDeck')" title="Minimize / Expand Others">
+            <button class="panel-collapse-btn" id="othersCollapseBtn" onclick="toggleAccordion('othersDeck')" title="Minimize / Expand Others" aria-label="Minimize / Expand Others">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
           </div>
@@ -1892,7 +1892,7 @@
           <div class="modal-title">Ear Training Studio</div>
           <span style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);" id="earScoreText">Score: 0/0 (Streak: 0)</span>
         </div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEarModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEarModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1937,7 +1937,7 @@
     <div class="modal-window" style="width: 480px; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div class="modal-title">VST Sound Engine Manager</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEngineModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeEngineModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1949,7 +1949,7 @@
         <!-- Engine Selection Cards -->
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <!-- Yamaha Option -->
-          <div id="engineOptYamaha" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px 12px; cursor: pointer; background: var(--bg-panel); transition: all 0.15s ease;" onclick="chooseEngine('yamaha')">
+          <div id="engineOptYamaha" role="button" tabindex="0" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px 12px; cursor: pointer; background: var(--bg-panel); transition: all 0.15s ease;" onclick="chooseEngine('yamaha')">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <input type="radio" name="vstEngineRadio" id="radioYamaha" style="cursor: pointer;" checked>
@@ -1963,7 +1963,7 @@
           </div>
 
           <!-- Community SoundFont Option -->
-          <div id="engineOptCommunity" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px 12px; cursor: pointer; background: var(--bg-panel); transition: all 0.15s ease;" onclick="chooseEngine('community')">
+          <div id="engineOptCommunity" role="button" tabindex="0" style="border: 1px solid var(--border-dim); border-radius: 6px; padding: 10px 12px; cursor: pointer; background: var(--bg-panel); transition: all 0.15s ease;" onclick="chooseEngine('community')">
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <input type="radio" name="vstEngineRadio" id="radioCommunity" style="cursor: pointer;">
@@ -2004,7 +2004,7 @@
     <div class="modal-window" style="width: 520px; max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div class="modal-title">Yamaha MONTAGE M Parts 1–8 Mixer</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closePartsModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closePartsModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2025,7 +2025,7 @@
     <div class="modal-window" style="width: 320px;">
       <div class="modal-header">
         <div class="modal-title">New Section Bookmark</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeMarkerModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeMarkerModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2061,7 +2061,7 @@
     <div class="modal-window" style="width: 380px;">
       <div class="modal-header">
         <div class="modal-title">Phone Remote Control</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeRemoteModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeRemoteModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2092,7 +2092,7 @@
     <div class="modal-window" style="width: 320px;">
       <div class="modal-header">
         <div class="modal-title" id="renameSceneModalTitle">Rename Scene</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeRenameSceneModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeRenameSceneModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2119,7 +2119,7 @@
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <button class="btn btn-danger" style="padding: 2px 7px; font-size: 10px; font-weight: 700;" onclick="stopAllFxPads()" title="Stop all playing voices immediately">Stop All</button>
-          <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="toggleFxPadsModal()" title="Close">
+          <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="toggleFxPadsModal()" title="Close" aria-label="Close">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -2220,7 +2220,7 @@
           <span id="droneModalStatusDot" class="status-dot" style="background: var(--text-muted);"></span>
           <span>Ambient Worship Drone Pad (Root + 5th)</span>
         </div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="toggleDronePadModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="toggleDronePadModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2278,7 +2278,7 @@
     <div class="modal-window" style="width: 520px; max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div class="modal-title">Live Setlist & Library Manager</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSetlistModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSetlistModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2327,7 +2327,7 @@
     <div class="modal-window" style="width: 340px;">
       <div class="modal-header">
         <div class="modal-title">Create New Setlist</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeNewSetlistModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeNewSetlistModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2349,7 +2349,7 @@
     <div class="modal-window" style="width: 440px; max-height: 80vh; display: flex; flex-direction: column;">
       <div class="modal-header">
         <div class="modal-title">Add Track from Library to Setlist</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeAddFromPlaylistModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeAddFromPlaylistModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2372,7 +2372,7 @@
     <div class="modal-window" style="width: 340px;">
       <div class="modal-header">
         <div class="modal-title" id="setlistConfirmTitle">Confirm Action</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSetlistConfirmModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSetlistConfirmModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2393,7 +2393,7 @@
     <div class="modal-window">
       <div class="modal-header">
         <div class="modal-title">Studio Preferences</div>
-        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSettingsModal()" title="Close">
+        <button class="btn" style="padding: 2px 4px; display: inline-flex; align-items: center;" onclick="closeSettingsModal()" title="Close" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2506,6 +2506,25 @@
         toast.style.opacity = "0";
       }, durationMs);
     }
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    }
+    // Encode a untrusted string for use inside an inline handler as decodeURIComponent('...')
+    function encArg(s) {
+      return encodeURIComponent(String(s ?? "")).replace(/'/g, "%27");
+    }
+    // fetch wrapper: throws on HTTP/network failure after showing a toast
+    async function api(path, opts = {}) {
+      try {
+        const res = await fetch(path, opts);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res;
+      } catch (err) {
+        console.error(`Request failed: ${path}`, err);
+        showAppToast(`Request failed (${path.replace(/^\/api\//, "")})`);
+        throw err;
+      }
+    }
     let ws = null;
     let waveformPeaks = [];
     const START_KEY = 21;
@@ -2574,20 +2593,20 @@
         const db = valSynth > 0 ? (20 * Math.log10(valSynth)).toFixed(1) : "-inf";
         document.getElementById("synthVolText").innerText = `${db} dB`;
         const vst127 = Math.round(valSynth * 127);
-        fetch("/api/montage/volume", {
+        api("/api/montage/volume", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ master_volume: vst127 })
-        }).catch(console.error);
+        }).catch(() => {});
       } else if (type === 'fx') {
         valFx = ratio * 1.5;
         const db = valFx > 0 ? (20 * Math.log10(valFx)).toFixed(1) : "-inf";
         document.getElementById("fxPadVolText").innerText = `${db} dB`;
-        fetch("/api/fx-pads", {
+        api("/api/fx-pads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "bus", volume: valFx })
-        }).catch(console.error);
+        }).catch(() => {});
       } else {
         valMaster = ratio * 1.2;
         const db = valMaster > 0 ? (20 * Math.log10(valMaster)).toFixed(1) : "-inf";
@@ -2658,7 +2677,7 @@
         sel.innerHTML = '<option value="">None (Keep current scene)</option>';
         for (let s = 1; s <= 8; s++) {
           const sName = desktopSceneNames[s] || `Scene ${s}`;
-          sel.innerHTML += `<option value="${s}">${sName !== `Scene ${s}` ? `Scene ${s} (${sName})` : sName}</option>`;
+          sel.innerHTML += `<option value="${s}">${sName !== `Scene ${s}` ? `Scene ${s} (${escapeHtml(sName)})` : escapeHtml(sName)}</option>`;
         }
       }
       document.getElementById("bookmarkModal").style.display = "flex";
@@ -2736,12 +2755,12 @@
     document.addEventListener("click", (e) => {
       const pop = document.getElementById("enginePopover");
       const btn = document.getElementById("engineStatusBtn");
-      if (pop && pop.style.display === "flex" && !pop.contains(e.target) && !btn.contains(e.target)) {
+      if (pop && pop.style.display === "flex" && !pop.contains(e.target) && !(btn && btn.contains(e.target))) {
         pop.style.display = "none";
       }
       const menu = document.getElementById("headerMenuDropdown");
       const menuBtn = document.getElementById("headerMenuBtn");
-      if (menu && menu.classList.contains("is-open") && !menu.contains(e.target) && !menuBtn.contains(e.target)) {
+      if (menu && menu.classList.contains("is-open") && !menu.contains(e.target) && !(menuBtn && menuBtn.contains(e.target))) {
         closeHeaderMenu();
       }
     });
@@ -3004,11 +3023,11 @@
       eqBands.forEach(b => b.gain = 0.0);
       drawEqSpline();
       renderEqInspectors();
-      await fetch("/api/mixer", {
+      await api("/api/mixer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ equalizer_reset: true })
-      });
+      }).catch(() => {});
     }
 
     function freqToX(freq, w) {
@@ -3251,11 +3270,11 @@
           const b = eqBands[draggedEqBandIdx];
           draggedEqBandIdx = null;
           drawEqSpline();
-          await fetch("/api/mixer", {
+          await api("/api/mixer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ equalizer_band: { index: b.id - 1, freq: b.freq, gain: b.gain, q: b.q } })
-          });
+          }).catch(() => {});
         }
       };
 
@@ -3281,11 +3300,11 @@
           b.q = Math.max(0.2, Math.min(8.0, b.q + delta));
           drawEqSpline();
           renderEqInspectors();
-          await fetch("/api/mixer", {
+          await api("/api/mixer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ equalizer_band: { index: b.id - 1, q: b.q } })
-          });
+          }).catch(() => {});
         }
       };
 
@@ -3329,7 +3348,7 @@
 
         lineDiv.innerHTML = `
           <div class="lyric-text" style="font-size: 13px; font-weight: 500; color: var(--text-dim); line-height: 1.4;">
-            ${row.text}
+            ${escapeHtml(row.text)}
           </div>
         `;
         container.appendChild(lineDiv);
@@ -3615,8 +3634,8 @@
           const bg = isNow ? "rgba(56, 189, 248, 0.15)" : (isNext ? "rgba(56, 189, 248, 0.08)" : "var(--bg-sunken)");
           const border = isNow ? "var(--accent)" : (isNext ? "rgba(56, 189, 248, 0.4)" : "var(--border-subtle)");
           const title = isNow ? "NOW" : (isNext ? "NEXT" : `BAR +${b}`);
-          const cText = item ? item.chord : "--";
-          const nash = item && item.nashville ? `[${item.nashville}]` : "";
+          const cText = item ? escapeHtml(item.chord) : "--";
+          const nash = item && item.nashville ? `[${escapeHtml(item.nashville)}]` : "";
           const tCode = item ? formatTime(item.time) : "--:--";
 
           html += `
@@ -3766,8 +3785,8 @@
           if (data.exercise.choices) {
             grid.innerHTML = data.exercise.choices.map(c => `
               <button class="btn" style="padding: 10px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;" onclick="submitEarAnswer('${c.id}')">
-                <span style="font-weight: 600; font-size: 12px;">${c.label || c.nashville || c.id}</span>
-                <span style="font-size: 10px; color: var(--text-dim); font-family: var(--font-mono);">${c.abbr || c.roman || c.deg || ''}</span>
+                <span style="font-weight: 600; font-size: 12px;">${escapeHtml(c.label || c.nashville || c.id)}</span>
+                <span style="font-size: 10px; color: var(--text-dim); font-family: var(--font-mono);">${escapeHtml(c.abbr || c.roman || c.deg || '')}</span>
               </button>
             `).join("");
           } else if (currentEarModule === "melodic_response") {
@@ -3884,9 +3903,9 @@
               cats[v.category].push(v);
             });
             for (const c in cats) {
-              voiceOptions += `<optgroup label="${c}">`;
+              voiceOptions += `<optgroup label="${escapeHtml(c)}">`;
               cats[c].forEach(v => {
-                voiceOptions += `<option value="${v.bank}:${v.preset}:${v.name}">${v.name}</option>`;
+                voiceOptions += `<option value="${escapeHtml(v.bank + ":" + v.preset + ":" + v.name)}">${escapeHtml(v.name)}</option>`;
               });
               voiceOptions += `</optgroup>`;
             }
@@ -3901,7 +3920,7 @@
         row.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 6px;">
-              <input type="text" value="${p.name}" class="modal-input" style="padding: 2px 6px; font-size: 11px; font-weight: 600; width: ${isCommunity ? '100px' : '135px'}; height: 22px; background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; color: var(--text-main);" onchange="renamePart(${p.part}, this.value)" title="Click to rename part">
+              <input type="text" value="${escapeHtml(p.name)}" class="modal-input" style="padding: 2px 6px; font-size: 11px; font-weight: 600; width: ${isCommunity ? '100px' : '135px'}; height: 22px; background: var(--bg-sunken); border: 1px solid var(--border-dim); border-radius: 4px; color: var(--text-main);" onchange="renamePart(${p.part}, this.value)" title="Click to rename part">
               ${voiceSelectorHtml}
               <button class="btn ${p.mute ? 'btn-danger' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.mute ? 'var(--danger)' : 'var(--border-subtle)'};" onclick="toggleDesktopMute(${p.part})">M</button>
               <button class="btn ${p.solo ? 'btn-active' : ''}" style="padding: 2px 7px; font-size: 10px; font-weight: 700; border-color: ${p.solo ? 'var(--accent)' : 'var(--border-subtle)'};" onclick="toggleDesktopSolo(${p.part})">S</button>
@@ -4276,7 +4295,7 @@
             </div>
           </div>
           <div style="font-size: 11px; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.2; word-break: break-word; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-            ${p.name}
+            ${escapeHtml(p.name)}
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-family: var(--font-mono); color: #e2e8f0; text-shadow: 0 1px 2px #000;">
             <span>VOL</span>
@@ -4319,7 +4338,7 @@
             const sc = g_fxPadsState.sound_catalog[sid];
             if (sc.category === cat) {
               const sel = (p.sound_id === sid || p.sample_path === sc.sample_path) ? 'selected' : '';
-              optHtml += `<option value="${sid}" ${sel}>${sc.name}</option>`;
+              optHtml += `<option value="${escapeHtml(sid)}" ${sel}>${escapeHtml(sc.name)}</option>`;
             }
           }
           optHtml += `</optgroup>`;
@@ -4599,7 +4618,7 @@
       const dd = document.getElementById("setlistSelectDropdown");
       if (!dd) return;
       dd.innerHTML = g_allSetlists.map(s => `
-        <option value="${s.id}" ${s.id === g_activeSetlistId ? 'selected' : ''}>${s.name} (${(s.songs || []).length} songs)</option>
+        <option value="${escapeHtml(s.id)}" ${s.id === g_activeSetlistId ? 'selected' : ''}>${escapeHtml(s.name)} (${(s.songs || []).length} songs)</option>
       `).join("");
     }
 
@@ -4618,20 +4637,20 @@
       }
       container.innerHTML = cur.songs.map((song, idx) => `
         <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">
+          <div role="button" tabindex="0" style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">
             <span style="font-size: 12px; font-weight: 700; color: var(--accent); width: 20px; text-align: center;">${idx + 1}</span>
             <div style="display: flex; flex-direction: column; min-width: 0;">
-              <span style="font-size: 11px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${song.title || song.filename}</span>
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(song.title || song.filename)}</span>
               <span style="font-size: 10px; color: var(--text-dim);">
-                Key: <b style="color: var(--accent);">${song.key || '--'}</b> · Pad: <b style="color: var(--text-main);">${song.patch_snapshot?.drone_root || '--'}</b> · Engine: ${song.patch_snapshot?.engine_type || 'yamaha'}
+                Key: <b style="color: var(--accent);">${escapeHtml(song.key || '--')}</b> · Pad: <b style="color: var(--text-main);">${escapeHtml(song.patch_snapshot?.drone_root || '--')}</b> · Engine: ${escapeHtml(song.patch_snapshot?.engine_type || 'yamaha')}
               </span>
             </div>
           </div>
           <div style="display: flex; gap: 3px; align-items: center; flex-shrink: 0;">
-            <button class="btn" style="padding: 2px 5px; font-size: 9px;" onclick="moveSongInSetlist('${cur.id}', '${song.id}', 'up')" title="Move Up" ${idx === 0 ? 'disabled' : ''}>▲</button>
-            <button class="btn" style="padding: 2px 5px; font-size: 9px;" onclick="moveSongInSetlist('${cur.id}', '${song.id}', 'down')" title="Move Down" ${idx === cur.songs.length - 1 ? 'disabled' : ''}>▼</button>
+            <button class="btn" style="padding: 2px 5px; font-size: 9px;" onclick="moveSongInSetlist('${cur.id}', '${song.id}', 'up')" title="Move Up" aria-label="Move song up" ${idx === 0 ? 'disabled' : ''}>▲</button>
+            <button class="btn" style="padding: 2px 5px; font-size: 9px;" onclick="moveSongInSetlist('${cur.id}', '${song.id}', 'down')" title="Move Down" aria-label="Move song down" ${idx === cur.songs.length - 1 ? 'disabled' : ''}>▼</button>
             <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; font-weight: 600;" onclick="loadAndApplySetlistSong('${cur.id}', '${song.id}')">Load</button>
-            <button class="btn" style="padding: 3px 6px; color: var(--danger); font-size: 10px;" onclick="confirmRemoveSong('${cur.id}', '${song.id}', '${(song.title || song.filename).replace(/'/g, "\\'")}')" title="Remove">✕</button>
+            <button class="btn" style="padding: 3px 6px; color: var(--danger); font-size: 10px;" onclick="confirmRemoveSong('${cur.id}', '${song.id}', decodeURIComponent('${encArg(song.title || song.filename)}'))" title="Remove" aria-label="Remove song from setlist">✕</button>
           </div>
         </div>
       `).join("");
@@ -4755,16 +4774,16 @@
           return;
         }
         container.innerHTML = tracks.map(t => {
-          const cleanName = t.filename.replace(/'/g, "\\'");
-          const title = (t.title || t.filename).replace(/'/g, "\\'");
-          const key = t.key || "C";
+          const cleanName = encArg(t.filename);
+          const title = encArg(t.title || t.filename);
+          const key = encArg(t.key || "C");
           return `
             <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
-                <span style="font-size: 11px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.title || t.filename}</span>
-                <span style="font-size: 10px; color: var(--text-dim);">Key: ${t.key || '--'} · ${t.size_mb || 0} MB</span>
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(t.title || t.filename)}</span>
+                <span style="font-size: 10px; color: var(--text-dim);">Key: ${escapeHtml(t.key || '--')} · ${t.size_mb || 0} MB</span>
               </div>
-              <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; font-weight: 600;" onclick="confirmAddTrackFromPlaylist('${cleanName}', '${title}', '${key}')">+ Add</button>
+              <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; font-weight: 600;" onclick="confirmAddTrackFromPlaylist(decodeURIComponent('${cleanName}'), decodeURIComponent('${title}'), decodeURIComponent('${key}'))" aria-label="Add track to setlist">+ Add</button>
             </div>
           `;
         }).join("");
@@ -4879,22 +4898,22 @@
           return;
         }
         listEl.innerHTML = data.tracks.map(t => {
-          const cleanName = t.filename.replace(/'/g, "\\'");
+          const cleanName = encArg(t.filename);
           return `
           <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; transition: all 0.1s ease;">
-            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadPlaylistTrack('${cleanName}')">
+            <div role="button" tabindex="0" style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadPlaylistTrack(decodeURIComponent('${cleanName}'))">
               <span style="color: ${t.is_current ? 'var(--accent)' : 'var(--text-faint)'}; display: inline-flex; align-items: center;">
                 ${t.is_current 
                   ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
                   : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
                 }
               </span>
-              <span style="font-size: 11px; font-weight: ${t.is_current ? '600' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.filename}</span>
+              <span style="font-size: 11px; font-weight: ${t.is_current ? '600' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(t.filename)}</span>
               <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim); margin-left: 6px;">${t.size_mb} MB</span>
             </div>
             <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-              <button class="btn btn-primary" style="padding: 2px 7px; font-size: 10px;" onclick="loadPlaylistTrack('${cleanName}')">Load</button>
-              <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="quickAddPlaylistTrackToSetlist('${cleanName}')" title="Add to current setlist with VST snapshot">+ Setlist</button>
+              <button class="btn btn-primary" style="padding: 2px 7px; font-size: 10px;" onclick="loadPlaylistTrack(decodeURIComponent('${cleanName}'))">Load</button>
+              <button class="btn" style="padding: 2px 7px; font-size: 10px;" onclick="quickAddPlaylistTrackToSetlist(decodeURIComponent('${cleanName}'))" title="Add to current setlist with VST snapshot">+ Setlist</button>
             </div>
           </div>
         `}).join("");
@@ -5288,12 +5307,17 @@
     }
     renderScenesUI();
 
+    let wsRetryDelay = 1500;
     function connectWS() {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
+      ws.onopen = () => { wsRetryDelay = 1500; };
+      ws.onerror = (e) => { console.warn("WebSocket error", e); ws.close(); };
+
       ws.onmessage = (evt) => {
-        const msg = JSON.parse(evt.data);
+        let msg;
+        try { msg = JSON.parse(evt.data); } catch (err) { console.warn("Bad WS message", err); return; }
         if (msg.type === "fx_pad_pulse") {
           const padId = msg.pad_id;
           const padEl = document.getElementById(`dtFxPad_${padId}`);
@@ -5315,7 +5339,10 @@
         else if (msg.type === "midi_event") handleLiveMidiEvent(msg.data);
       };
 
-      ws.onclose = () => setTimeout(connectWS, 1500);
+      ws.onclose = () => {
+        setTimeout(connectWS, wsRetryDelay);
+        wsRetryDelay = Math.min(wsRetryDelay * 2, 15000);
+      };
     }
     connectWS();
 
@@ -5810,8 +5837,8 @@
         pill.className = "marker-pill";
         const scNum = m.scene ? parseInt(m.scene, 10) : null;
         const sName = scNum ? (desktopSceneNames[scNum] || `Scene ${scNum}`) : '';
-        const sceneBadge = scNum ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${scNum}${sName && sName !== `Scene ${scNum}` ? `: ${sName}` : ''}</span>` : '';
-        pill.innerHTML = `<span>${m.name}${sceneBadge} (${formatTime(m.time)})</span><span class="del-btn" style="display: inline-flex; align-items: center;" onclick="event.stopPropagation(); deleteMarker(${m.id})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
+        const sceneBadge = scNum ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${scNum}${sName && sName !== `Scene ${scNum}` ? `: ${escapeHtml(sName)}` : ''}</span>` : '';
+        pill.innerHTML = `<span>${escapeHtml(m.name)}${sceneBadge} (${formatTime(m.time)})</span><span class="del-btn" role="button" tabindex="0" aria-label="Delete marker" style="display: inline-flex; align-items: center;" onclick="event.stopPropagation(); deleteMarker(${Number(m.id)})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>`;
         pill.onclick = () => jumpToMarker(m.time, idx < markers.length - 1 ? markers[idx + 1].time : null, scNum);
         ribbon.appendChild(pill);
 
@@ -6093,11 +6120,11 @@
     }
 
     async function transportAction(action, extra = {}) {
-      await fetch("/api/transport", {
+      await api("/api/transport", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ...extra })
-      });
+      }).catch(() => {});
     }
 
     async function clearSongTrack() { 
@@ -6197,20 +6224,22 @@
     async function updateMixer(key, val) {
       const payload = {};
       payload[key] = val;
-      await fetch("/api/mixer", {
+      await api("/api/mixer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
-      });
+      }).catch(() => {});
     }
 
     async function toggleMetronome() {
-      await fetch("/api/mixer", {
+      const btn = document.getElementById("metroBtn");
+      const prevText = btn.innerText;
+      const ok = await api("/api/mixer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toggle_metronome: true })
-      });
-      const btn = document.getElementById("metroBtn");
+      }).then(() => true, () => false);
+      if (!ok) { btn.innerText = prevText; return; }
       btn.innerText = btn.innerText.includes("Off") ? "Click [On]" : "Click [Off]";
     }
 
@@ -6453,13 +6482,23 @@
       return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
     }
 
+    // Keyboard activation for clickable non-button elements (role="button")
+    document.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target.getAttribute && e.target.getAttribute("role") === "button" && e.target.tagName !== "BUTTON") {
+        e.preventDefault();
+        e.target.click();
+      }
+    });
     window.addEventListener("keydown", (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+      const tag = e.target.tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || e.target.isContentEditable) return;
+      if (e.target.getAttribute && e.target.getAttribute("role") === "button") return;
       if (e.code === "F12" || (e.code === "KeyP" && (e.ctrlKey || e.metaKey) && e.shiftKey)) {
         e.preventDefault();
         triggerMidiPanic();
         return;
       }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.code === "Space") { e.preventDefault(); transportAction("toggle"); }
       else if (e.key === "[") transportAction("loop_a");
       else if (e.key === "]") transportAction("loop_b");
@@ -6469,9 +6508,13 @@
       else if (e.code === "Escape") transportAction("seek", { seconds: 0 });
     });
 
+    let resizeRedrawTimer = null;
     window.addEventListener("resize", () => {
-      if (waveformPeaks.length > 0) drawWaveform();
-      drawEqSpline();
+      clearTimeout(resizeRedrawTimer);
+      resizeRedrawTimer = setTimeout(() => {
+        if (waveformPeaks.length > 0) drawWaveform();
+        drawEqSpline();
+      }, 150);
     });
 
     loadDevices();

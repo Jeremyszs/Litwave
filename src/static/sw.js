@@ -1,5 +1,5 @@
 // Litwave Stage Remote - Service Worker (Offline PWA)
-const CACHE_NAME = "litwave-remote-v1";
+const CACHE_NAME = "litwave-remote-v2";
 const STATIC_ASSETS = [
   "/remote",
   "/static/remote.html",
@@ -16,7 +16,8 @@ const STATIC_ASSETS = [
 self.addEventListener("install", (evt) => {
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      // Precache each asset independently so one missing file does not abort the whole install
+      return Promise.allSettled(STATIC_ASSETS.map((asset) => cache.add(asset)));
     }).then(() => self.skipWaiting())
   );
 });
@@ -39,6 +40,19 @@ self.addEventListener("activate", (evt) => {
 // Fetch: Cache-First for static UI, Network-Only bypass for live API/WebSocket calls
 self.addEventListener("fetch", (evt) => {
   const url = new URL(evt.request.url);
+
+  // Google Fonts: cache-first at runtime (cross-origin, so they are not part of the precache)
+  if (evt.request.method === "GET" && (url.origin === "https://fonts.googleapis.com" || url.origin === "https://fonts.gstatic.com")) {
+    evt.respondWith(
+      caches.open(CACHE_NAME).then((cache) =>
+        cache.match(evt.request).then((cached) => cached || fetch(evt.request).then((res) => {
+          if (res && (res.ok || res.type === "opaque")) cache.put(evt.request, res.clone());
+          return res;
+        }))
+      ).catch(() => fetch(evt.request))
+    );
+    return;
+  }
 
   // Always bypass cache for API routes, uploads, WebSocket, or non-GET requests
   if (evt.request.method !== "GET" || url.pathname.startsWith("/api/") || url.pathname.startsWith("/ws") || url.pathname.startsWith("/static/uploads/")) {

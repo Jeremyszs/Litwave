@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Litwave Remote</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#000000">
@@ -191,6 +191,11 @@
     }
     .btn-play:active {
       opacity: 0.85;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .btn.is-active-loop {
@@ -483,7 +488,7 @@
     <div class="card" style="width: 100%; max-width: 380px; background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.8);">
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-dim); padding-bottom: 8px;">
         <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">VST Sound Engine</span>
-        <button class="btn" style="padding: 2px 6px; font-size: 11px;" onclick="closeRemoteEngineModal()">✕</button>
+        <button class="btn" style="padding: 2px 6px; font-size: 11px;" aria-label="Close engine dialog" onclick="closeRemoteEngineModal()">✕</button>
       </div>
       <div style="font-size: 11px; color: var(--text-dim);">
         Choose active synthesizer engine for phone remote & keyboard:
@@ -526,7 +531,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e222a; padding-bottom: 8px; flex-shrink: 0; z-index: 10;">
       <!-- Left: Prev Page & Page Header Title -->
       <div style="display: flex; align-items: center; gap: 8px;">
-        <button class="stage-nav-btn" onclick="prevStagePage()" title="Previous Stage Page" id="stagePrevBtn">
+        <button class="stage-nav-btn" onclick="prevStagePage()" title="Previous Stage Page" aria-label="Previous stage page" id="stagePrevBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
         <div style="display: flex; flex-direction: column;">
@@ -546,7 +551,7 @@
         <button class="btn btn-primary" onclick="installLitwavePwa()" title="Install Standalone App" id="remotePwaInstallBtn" style="display: none; padding: 3px 6px; font-size: 10px; font-weight: 700; background: #38bdf8; color: #000;">
           Install App
         </button>
-        <button class="stage-nav-btn" onclick="refreshRemotePage()" title="Refresh Remote" id="remoteRefreshBtn" style="width: 30px; height: 28px;">
+        <button class="stage-nav-btn" onclick="refreshRemotePage()" title="Refresh Remote" aria-label="Refresh remote" id="remoteRefreshBtn" style="width: 30px; height: 28px;">
           <svg id="refreshIconSvg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
           </svg>
@@ -554,10 +559,10 @@
         <button class="btn" style="padding: 3px 6px; font-size: 10px; font-weight: 600;" onclick="openRemoteEngineModal()" title="VST Engine Manager">
           <span id="remoteVstCycleText">VST</span>
         </button>
-        <button class="stage-nav-btn" onclick="togglePhoneFullscreen()" title="Toggle Phone Fullscreen" style="width: 30px; height: 28px;">
+        <button class="stage-nav-btn" onclick="togglePhoneFullscreen()" title="Toggle Phone Fullscreen" aria-label="Toggle phone fullscreen" style="width: 30px; height: 28px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
-        <button class="stage-nav-btn" onclick="nextStagePage()" title="Next Stage Page" id="stageNextBtn">
+        <button class="stage-nav-btn" onclick="nextStagePage()" title="Next Stage Page" aria-label="Next stage page" id="stageNextBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
         <div class="status-badge" style="padding: 2px 6px;">
@@ -971,7 +976,7 @@
     <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 320px; display: flex; flex-direction: column; overflow: hidden;">
       <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
         <span style="font-size: 13px; font-weight: 600;">Add Section Bookmark</span>
-        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteMarkerModal()">
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" aria-label="Close dialog" onclick="closeRemoteMarkerModal()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1007,7 +1012,7 @@
     <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 320px; display: flex; flex-direction: column; overflow: hidden;">
       <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
         <span style="font-size: 13px; font-weight: 600;" id="remoteRenamePartTitle">Rename Part</span>
-        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteRenamePartModal()">
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" aria-label="Close dialog" onclick="closeRemoteRenamePartModal()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1027,7 +1032,7 @@
     <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 320px; display: flex; flex-direction: column; overflow: hidden;">
       <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
         <span style="font-size: 13px; font-weight: 600;" id="remoteRenameSceneTitle">Rename Scene</span>
-        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteRenameSceneModal()">
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" aria-label="Close dialog" onclick="closeRemoteRenameSceneModal()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1048,7 +1053,7 @@
     <div style="background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: 8px; width: 100%; max-width: 400px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;">
       <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: space-between;">
         <span style="font-size: 13px; font-weight: 600;">Live Setlist & Patches</span>
-        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteSetlistModal()">
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" aria-label="Close dialog" onclick="closeRemoteSetlistModal()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1081,7 +1086,7 @@
           <span style="font-size: 13px; font-weight: 600;">Ear Training</span>
           <span style="font-size: 10px; font-family: var(--font-mono); color: var(--accent);" id="remoteEarScore">0/0</span>
         </div>
-        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" onclick="closeRemoteEarModal()">
+        <button class="btn" style="padding: 2px 5px; display: inline-flex; align-items: center;" aria-label="Close dialog" onclick="closeRemoteEarModal()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1108,7 +1113,7 @@
   </div>
 
   <!-- In-App Notification Toast Banner -->
-  <div id="remoteToastNotice" style="position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #111317; border: 1px solid var(--accent); color: var(--text-main); padding: 8px 16px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--font-sans); box-shadow: 0 4px 16px rgba(0,0,0,0.7); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;">
+  <div id="remoteToastNotice" role="status" aria-live="polite" style="position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #111317; border: 1px solid var(--accent); color: var(--text-main); padding: 8px 16px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: var(--font-sans); box-shadow: 0 4px 16px rgba(0,0,0,0.7); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;">
     Notification
   </div>
 
@@ -1116,6 +1121,32 @@
   <script src="/static/browser_api.js"></script>
   <script src="/static/ws_telemetry.js"></script>
   <script>
+    function escapeHtml(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    }
+
+    // Shared helper for user-action requests: returns null and shows the toast on network or HTTP failure
+    async function remoteFetch(url, init) {
+      try {
+        const res = await fetch(url, init);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res;
+      } catch (err) {
+        console.error(`Remote request failed: ${url}`, err);
+        showRemoteToast("Command failed. Check connection.");
+        return null;
+      }
+    }
+
+    // Keyboard activation for clickable rows rendered as role="button" divs
+    document.addEventListener("keydown", (e) => {
+      if ((e.key === "Enter" || e.key === " ") && e.target instanceof HTMLElement &&
+          e.target.tagName === "DIV" && e.target.getAttribute("role") === "button") {
+        e.preventDefault();
+        e.target.click();
+      }
+    });
+
     function showRemoteToast(msg, durationMs = 2500) {
       const toast = document.getElementById("remoteToastNotice");
       if (!toast) return;
@@ -1352,7 +1383,7 @@
       }
       renderRemoteScenes();
       try {
-        const res = await fetch("/api/montage/scene", {
+        const res = await remoteFetch("/api/montage/scene", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "recall", scene: sceneNum })
@@ -1402,7 +1433,7 @@
       partsState[renamingPartTarget - 1].name = newName;
       renderParts();
       showRemoteToast(`Renamed Part ${renamingPartTarget} to ${newName}`);
-      await fetch("/api/montage/names", {
+      await remoteFetch("/api/montage/names", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ parts: { [renamingPartTarget]: newName } })
@@ -1421,7 +1452,7 @@
         sel.innerHTML = '<option value="">None (Keep current scene)</option>';
         for (let s = 1; s <= 8; s++) {
           const sName = remoteSceneNames[s] || `Scene ${s}`;
-          sel.innerHTML += `<option value="${s}">${sName !== `Scene ${s}` ? `Scene ${s} (${sName})` : sName}</option>`;
+          sel.innerHTML += `<option value="${s}">${sName !== `Scene ${s}` ? `Scene ${s} (${escapeHtml(sName)})` : escapeHtml(sName)}</option>`;
         }
         sel.value = "";
       }
@@ -1451,6 +1482,7 @@
     }
 
     let lastTriggeredRemoteMarkerId = null;
+    let g_lastMarkersKey = null;
     let lastRemoteMarkerCheckTime = -1;
 
     function checkRemoteMarkerAutoSceneTrigger(curSec, markers) {
@@ -1527,7 +1559,7 @@
       if (thumb) thumb.style.left = `${pct}%`;
 
       try {
-        await fetch("/api/mixer", {
+        await remoteFetch("/api/mixer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1539,7 +1571,7 @@
             }
           })
         });
-      } catch (e) {}
+      } catch (e) { console.error("EQ update failed:", e); }
     }
 
     async function resetRemoteEqFlat() {
@@ -1555,12 +1587,12 @@
       }
       showRemoteToast("Master EQ reset to Flat");
       try {
-        await fetch("/api/mixer", {
+        await remoteFetch("/api/mixer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ equalizer_reset: true })
         });
-      } catch (e) {}
+      } catch (e) { console.error("EQ update failed:", e); }
     }
 
     function initRemoteEqSliders() {
@@ -1612,7 +1644,7 @@
       renderRemoteScenes();
       const sText = document.getElementById("stageActiveSceneText");
       if (sText) sText.innerText = newName;
-      await fetch("/api/montage/names", {
+      await remoteFetch("/api/montage/names", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scenes: { [remoteActiveScene]: newName } })
@@ -1622,7 +1654,7 @@
     async function saveRemoteCurrentScene() {
       const btn = document.getElementById("remoteSaveSceneBtn");
       try {
-        const res = await fetch("/api/montage/scene", {
+        const res = await remoteFetch("/api/montage/scene", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "save", scene: remoteActiveScene })
@@ -1665,9 +1697,9 @@
             cats[v.category].push(v);
           });
           for (const c in cats) {
-            voiceOptions += `<optgroup label="${c}">`;
+            voiceOptions += `<optgroup label="${escapeHtml(c)}">`;
             cats[c].forEach(v => {
-              voiceOptions += `<option value="${v.bank}:${v.preset}:${v.name}">${v.name}</option>`;
+              voiceOptions += `<option value="${v.bank}:${v.preset}:${escapeHtml(v.name)}">${escapeHtml(v.name)}</option>`;
             });
             voiceOptions += `</optgroup>`;
           }
@@ -1698,7 +1730,7 @@
           <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span class="part-num" style="font-size: 13px; font-weight: 700; color: ${p.mute ? 'var(--text-faint)' : 'var(--text-main)'}; font-family: var(--font-sans); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openRemoteRenamePartModal(${p.part})" title="Tap to rename part">
-                <span>${p.name}</span>
+                <span>${escapeHtml(p.name)}</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
               </span>
               ${voiceSelectorHtml}
@@ -1826,7 +1858,7 @@
         if (thumb) thumb.style.left = pct + "%";
         if (text) text.innerText = val;
 
-        fetch("/api/montage/volume", {
+        remoteFetch("/api/montage/volume", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ part: partNum, [paramName]: val })
@@ -1872,7 +1904,7 @@
         if (thumb) thumb.style.left = pct + "%";
         if (text) text.innerText = `Rev: ${val}`;
 
-        fetch("/api/montage/volume", {
+        remoteFetch("/api/montage/volume", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ part: partNum, reverb: val })
@@ -1908,7 +1940,7 @@
       const preset = parseInt(parts[1]);
       const name = parts[2];
       try {
-        const res = await fetch("/api/montage/assign_voice", {
+        const res = await remoteFetch("/api/montage/assign_voice", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ part: partNum, bank: bank, preset: preset, name: name })
@@ -1929,7 +1961,7 @@
       p.mute = newMute;
       renderParts();
       try {
-        await fetch("/api/montage/volume", {
+        await remoteFetch("/api/montage/volume", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ part: partNum, mute: newMute })
@@ -1943,7 +1975,7 @@
       const p = partsState[partNum - 1];
       p.solo = !p.solo;
       try {
-        const res = await fetch("/api/montage/volume", {
+        const res = await remoteFetch("/api/montage/volume", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ part: partNum, solo: true })
@@ -2005,7 +2037,7 @@
     }
 
     function sendPartVolume(part, volume) {
-      fetch("/api/montage/volume", {
+      remoteFetch("/api/montage/volume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ part: part, volume: volume })
@@ -2018,22 +2050,31 @@
       sendTransport(action);
     }
 
+    function applyLoopUi() {
+      const loopBtn = document.getElementById("remoteLoopBtn");
+      if (!loopBtn) return;
+      loopBtn.querySelector("#loopText").innerText = isLooping ? "Loop [On]" : "Loop [Off]";
+      loopBtn.classList.toggle("is-active-loop", isLooping);
+    }
+
     function sendTransport(action, extra = {}) {
-      // Optimistic local state update so loop / play reflects instantly
+      // Optimistic local state update so loop reflects instantly; reverted if the request fails
+      const prevLooping = isLooping;
       if (action === "toggle_loop") {
         isLooping = !isLooping;
-        const loopBtn = document.getElementById("remoteLoopBtn");
-        if (loopBtn) {
-          loopBtn.querySelector("#loopText").innerText = isLooping ? "Loop [On]" : "Loop [Off]";
-          if (isLooping) loopBtn.classList.add("is-active-loop");
-          else loopBtn.classList.remove("is-active-loop");
-        }
+        applyLoopUi();
       }
-      fetch("/api/transport", {
+      return remoteFetch("/api/transport", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: action, ...extra })
-      }).catch(console.error);
+      }).then((res) => {
+        if (!res && action === "toggle_loop") {
+          isLooping = prevLooping;
+          applyLoopUi();
+        }
+        return res;
+      });
     }
 
     function handleSeekTap(e) {
@@ -2157,7 +2198,7 @@
         if (btn) btn.classList.toggle("btn-active", b === bank);
       });
       renderRemoteFxPads();
-      fetch("/api/fx-pads", {
+      remoteFetch("/api/fx-pads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "bank", bank: bank })
@@ -2178,7 +2219,7 @@
           }
         }, 140);
       }
-      fetch("/api/fx-pads", {
+      remoteFetch("/api/fx-pads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "trigger", pad_id: padId, velocity: 127, press_type: pressType })
@@ -2186,7 +2227,7 @@
     }
 
     function stopAllRemoteFxPads() {
-      fetch("/api/fx-pads", {
+      remoteFetch("/api/fx-pads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "stop_all" })
@@ -2227,8 +2268,8 @@
 
         padBtn.innerHTML = `
           <span style="font-size: 11px; font-family: var(--font-mono); color: #ffffff; font-weight: 800; text-shadow: 0 1px 2px #000;">${p.bank}${p.pad_index + 1}</span>
-          <span style="font-size: 14px; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.15; padding: 0 4px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${p.name}</span>
-          <span style="font-size: 9px; font-family: var(--font-mono); color: #e2e8f0; text-shadow: 0 1px 2px #000;">${p.trigger_mode.toUpperCase()}</span>
+          <span style="font-size: 14px; font-weight: 800; color: #ffffff; text-align: center; line-height: 1.15; padding: 0 4px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${escapeHtml(p.name)}</span>
+          <span style="font-size: 9px; font-family: var(--font-mono); color: #e2e8f0; text-shadow: 0 1px 2px #000;">${escapeHtml(String(p.trigger_mode).toUpperCase())}</span>
         `;
 
         padBtn.addEventListener("touchstart", (e) => {
@@ -2333,7 +2374,7 @@
       const parts = val.split(":");
       const bank = parseInt(parts[0]);
       const preset = parseInt(parts[1]);
-      fetch("/api/drone-pad", {
+      remoteFetch("/api/drone-pad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "set_voice", bank: bank, preset: preset })
@@ -2345,7 +2386,7 @@
       g_rDroneState.volume = parseInt(val);
       const vText = document.getElementById("rDroneVolText");
       if (vText) vText.innerText = `${Math.round((val / 127) * 100)}%`;
-      fetch("/api/drone-pad", {
+      remoteFetch("/api/drone-pad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "set_volume", volume: parseInt(val) })
@@ -2356,7 +2397,7 @@
       g_lastRemoteDroneInteraction = performance.now();
       const action = g_rDroneState.active ? "stop" : "start";
       try {
-        const res = await fetch("/api/drone-pad", {
+        const res = await remoteFetch("/api/drone-pad", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: action, root: g_rDroneState.root })
@@ -2376,7 +2417,7 @@
       g_rDroneState.root = k;
       renderRemoteDroneRoots();
       try {
-        const res = await fetch("/api/drone-pad", {
+        const res = await remoteFetch("/api/drone-pad", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "set_root", root: k })
@@ -2439,14 +2480,14 @@
       remoteActiveEngine = remotePendingEngine;
       closeRemoteEngineModal();
       if (remoteActiveEngine === "yamaha") {
-        await fetch("/api/montage/editor", {
+        await remoteFetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "show", engine: "yamaha" })
         });
         showRemoteToast("Opened Yamaha MONTAGE M GUI");
       } else {
-        await fetch("/api/montage/editor", {
+        await remoteFetch("/api/montage/editor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "start", engine: "community", hidden: true })
@@ -2457,7 +2498,7 @@
     }
 
     async function remoteVstActionKill() {
-      await fetch("/api/montage/editor", {
+      await remoteFetch("/api/montage/editor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "kill" })
@@ -2480,7 +2521,7 @@
     // Remote Metronome Controls
     async function toggleRemoteMetronome() {
       try {
-        await fetch("/api/mixer", {
+        await remoteFetch("/api/mixer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ toggle_metronome: true })
@@ -2504,7 +2545,7 @@
           const bpm = Math.round(60000.0 / avgMs);
           currentBpm = bpm;
           document.getElementById("remoteBpmText").innerText = `${bpm} BPM`;
-          fetch("/api/mixer", {
+          remoteFetch("/api/mixer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ metronome_bpm: bpm })
@@ -2514,7 +2555,7 @@
     }
 
     function handleRemoteTimeSigChange(val) {
-      fetch("/api/mixer", {
+      remoteFetch("/api/mixer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ metronome_time_sig: parseInt(val) })
@@ -2522,7 +2563,7 @@
     }
 
     function handleRemoteMetroSoundChange(val) {
-      fetch("/api/mixer", {
+      remoteFetch("/api/mixer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ metronome_profile: val })
@@ -2562,7 +2603,7 @@
       grid.innerHTML = "";
 
       try {
-        const res = await fetch("/api/ear-training", {
+        const res = await remoteFetch("/api/ear-training", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "generate", module: rEarModule })
@@ -2575,9 +2616,9 @@
           }
           if (data.exercise.choices) {
             grid.innerHTML = data.exercise.choices.map(c => `
-              <button class="btn" style="padding: 8px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;" onclick="submitRemoteEarAnswer('${c.id}')">
-                <span style="font-weight: 600; font-size: 11px;">${c.label || c.nashville || c.id}</span>
-                <span style="font-size: 9px; color: var(--text-dim); font-family: var(--font-mono);">${c.abbr || c.roman || c.deg || ''}</span>
+              <button class="btn" style="padding: 8px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;" data-ans="${escapeHtml(c.id)}" onclick="submitRemoteEarAnswer(this.dataset.ans)">
+                <span style="font-weight: 600; font-size: 11px;">${escapeHtml(c.label || c.nashville || c.id)}</span>
+                <span style="font-size: 9px; color: var(--text-dim); font-family: var(--font-mono);">${escapeHtml(c.abbr || c.roman || c.deg || '')}</span>
               </button>
             `).join("");
           }
@@ -2591,7 +2632,7 @@
       if (rEarLocked) return;
       rEarLocked = true;
       try {
-        const res = await fetch("/api/ear-training", {
+        const res = await remoteFetch("/api/ear-training", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "check", answer: ansId })
@@ -2601,7 +2642,7 @@
         if (data.is_correct) {
           fb.innerHTML = `<span style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Correct!</span>`;
         } else {
-          fb.innerHTML = `<span style="color: var(--danger); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Correct: ${data.correct_answer}</span>`;
+          fb.innerHTML = `<span style="color: var(--danger); display: inline-flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Correct: ${escapeHtml(data.correct_answer)}</span>`;
         }
         if (data.score) {
           document.getElementById("remoteEarScore").innerText = `${data.score.correct}/${data.score.total}`;
@@ -2675,7 +2716,7 @@
         const dd = document.getElementById("remoteSetlistDropdown");
         if (dd) {
           dd.innerHTML = rAllSetlists.map(s => `
-            <option value="${s.id}" ${s.id === rActiveSetlistId ? 'selected' : ''}>${s.name} (${(s.songs || []).length} songs)</option>
+            <option value="${escapeHtml(s.id)}" ${s.id === rActiveSetlistId ? 'selected' : ''}>${escapeHtml(s.name)} (${(s.songs || []).length} songs)</option>
           `).join("");
         }
         renderRemoteSetlistSongs();
@@ -2693,14 +2734,14 @@
       }
       container.innerHTML = active.songs.map((s, idx) => `
         <div style="background: var(--bg-panel); border: 1px solid var(--border-dim); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="loadAndApplyRemoteSong('${active.id}', '${s.id}')">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" role="button" tabindex="0" data-setlist="${escapeHtml(active.id)}" data-song="${escapeHtml(s.id)}" onclick="loadAndApplyRemoteSong(this.dataset.setlist, this.dataset.song)">
             <span style="font-size: 12px; font-weight: 800; color: var(--accent); width: 18px; text-align: center;">${idx + 1}</span>
             <div style="display: flex; flex-direction: column; min-width: 0;">
-              <span style="font-size: 11px; font-weight: 700; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.title || s.filename}</span>
-              <span style="font-size: 10px; color: var(--text-dim);">Key: <b style="color: var(--accent);">${s.key || '--'}</b> · Pad: ${s.patch_snapshot?.drone_root || '--'}</span>
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.title || s.filename)}</span>
+              <span style="font-size: 10px; color: var(--text-dim);">Key: <b style="color: var(--accent);">${escapeHtml(s.key || '--')}</b> · Pad: ${escapeHtml(s.patch_snapshot?.drone_root || '--')}</span>
             </div>
           </div>
-          <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; flex-shrink: 0;" onclick="loadAndApplyRemoteSong('${active.id}', '${s.id}')">Load</button>
+          <button class="btn btn-primary" style="padding: 3px 8px; font-size: 10px; flex-shrink: 0;" data-setlist="${escapeHtml(active.id)}" data-song="${escapeHtml(s.id)}" onclick="loadAndApplyRemoteSong(this.dataset.setlist, this.dataset.song)">Load</button>
         </div>
       `).join("");
     }
@@ -2717,16 +2758,15 @@
           return;
         }
         container.innerHTML = tracks.map(t => {
-          const cleanName = t.filename.replace(/'/g, "\\'");
           return `
           <div style="background: var(--bg-panel); border: 1px solid ${t.is_current ? 'var(--accent)' : 'var(--border-dim)'}; border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" onclick="selectRemoteTrack('${cleanName}')">
-              <span style="font-size: 11px; font-weight: ${t.is_current ? '700' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t.filename}</span>
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; cursor: pointer;" role="button" tabindex="0" data-filename="${escapeHtml(t.filename)}" onclick="selectRemoteTrack(this.dataset.filename)">
+              <span style="font-size: 11px; font-weight: ${t.is_current ? '700' : '500'}; color: ${t.is_current ? 'var(--accent)' : 'var(--text-main)'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(t.filename)}</span>
               <span style="font-size: 10px; font-family: var(--font-mono); color: var(--text-dim);">${t.size_mb} MB</span>
             </div>
             <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
-              <button class="btn btn-primary" style="padding: 2px 6px; font-size: 10px;" onclick="selectRemoteTrack('${cleanName}')">Play</button>
-              <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="addTrackToRemoteActiveSetlist('${cleanName}')" title="Add to setlist">+ Setlist</button>
+              <button class="btn btn-primary" style="padding: 2px 6px; font-size: 10px;" data-filename="${escapeHtml(t.filename)}" onclick="selectRemoteTrack(this.dataset.filename)">Play</button>
+              <button class="btn" style="padding: 2px 6px; font-size: 10px;" data-filename="${escapeHtml(t.filename)}" onclick="addTrackToRemoteActiveSetlist(this.dataset.filename)" title="Add to setlist">+ Setlist</button>
             </div>
           </div>
         `}).join("");
@@ -2737,7 +2777,7 @@
 
     async function addTrackToRemoteActiveSetlist(filename) {
       try {
-        const res = await fetch("/api/setlist", {
+        const res = await remoteFetch("/api/setlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2770,7 +2810,7 @@
           await selectRemoteTrack(song.filename);
         }
         if (song.patch_snapshot) {
-          await fetch("/api/setlist", {
+          await remoteFetch("/api/setlist", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "apply_song_patch", patch_snapshot: song.patch_snapshot })
@@ -2784,7 +2824,7 @@
 
     async function selectRemoteTrack(filename) {
       try {
-        await fetch("/api/playlist/select", {
+        await remoteFetch("/api/playlist/select", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename })
@@ -2802,20 +2842,63 @@
       return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     }
 
-    // WebSocket Telemetry Connection
+    // WebSocket Telemetry Connection (exponential backoff, liveness watchdog)
     let ws = null;
+    let wsRetryDelay = 2000;
+    let wsReconnectTimer = null;
+    let wsLastMessageAt = 0;
+    const WS_RETRY_MIN_MS = 2000;
+    const WS_RETRY_MAX_MS = 15000;
+    const WS_STALE_MS = 5000;
+
+    function setConnStatus(connected) {
+      document.getElementById("connDot").classList.toggle("active", connected);
+      document.getElementById("connText").innerText = connected ? "Connected" : "Disconnected";
+    }
+
+    function scheduleWsReconnect() {
+      if (wsReconnectTimer) return;
+      wsReconnectTimer = setTimeout(() => { wsReconnectTimer = null; connectWS(); }, wsRetryDelay);
+      wsRetryDelay = Math.min(wsRetryDelay * 2, WS_RETRY_MAX_MS);
+    }
+
+    function forceWsReconnect() {
+      clearTimeout(wsReconnectTimer);
+      wsReconnectTimer = null;
+      if (ws) {
+        const old = ws;
+        ws = null;
+        old.onopen = old.onmessage = old.onerror = old.onclose = null;
+        try { old.close(); } catch (e) {}
+      }
+      wsRetryDelay = WS_RETRY_MIN_MS;
+      connectWS();
+    }
+
     function connectWS() {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(`${proto}//${window.location.host}/ws`);
+      let sock;
+      try {
+        sock = new WebSocket(`${proto}//${window.location.host}/ws`);
+      } catch (e) {
+        console.error("WebSocket init failed:", e);
+        scheduleWsReconnect();
+        return;
+      }
+      ws = sock;
+      wsLastMessageAt = Date.now();
 
-      ws.onopen = () => {
-        document.getElementById("connDot").classList.add("active");
-        document.getElementById("connText").innerText = "Connected";
+      sock.onopen = () => {
+        wsRetryDelay = WS_RETRY_MIN_MS;
+        wsLastMessageAt = Date.now();
+        setConnStatus(true);
       };
 
-      ws.onmessage = (evt) => {
+      sock.onmessage = (evt) => {
+        wsLastMessageAt = Date.now();
+        let msg;
+        try { msg = JSON.parse(evt.data); } catch (e) { console.warn("Malformed telemetry frame:", e); return; }
         try {
-          const msg = JSON.parse(evt.data);
           if (msg.type === "fx_pad_pulse") {
             const padId = msg.pad_id;
             const el = document.getElementById(`rFxPad_${padId}`);
@@ -2890,8 +2973,10 @@
             // Update mobile Static Lyrics Container
             if (song.lyrics_sheet && song.lyrics_sheet.length > 0) {
               const staticL = document.getElementById("remoteStaticLyricsContainer");
-              if (staticL && staticL.children.length !== song.lyrics_sheet.length) {
-                staticL.innerHTML = song.lyrics_sheet.map(l => `<div>${l.text}</div>`).join("");
+              const lyricsKey = JSON.stringify(song.lyrics_sheet.map(l => l.text));
+              if (staticL && staticL.dataset.lyricsKey !== lyricsKey) {
+                staticL.dataset.lyricsKey = lyricsKey;
+                staticL.innerHTML = song.lyrics_sheet.map(l => `<div>${escapeHtml(l.text)}</div>`).join("");
               }
             }
 
@@ -2931,32 +3016,38 @@
               checkRemoteMarkerAutoSceneTrigger(currentPosition, song.markers);
             }
 
-            // 2. Section Markers (Pills)
+            // 2. Section Markers (Pills); rebuild only when marker data or scene names change
             const markersSec = document.getElementById("markersSection");
             const container = document.getElementById("markersContainer");
             if (song.markers && song.markers.length > 0) {
               markersSec.style.display = "flex";
-              container.innerHTML = song.markers.map(m => {
-                const scNum = m.scene ? parseInt(m.scene, 10) : null;
-                const sName = scNum ? (remoteSceneNames[scNum] || `Scene ${scNum}`) : '';
-                const badge = scNum ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${scNum}${sName && sName !== `Scene ${scNum}` ? `: ${sName}` : ''}</span>` : '';
-                return `
-                  <div class="marker-pill" onclick="jumpToRemoteMarker(${m.time}, ${scNum})">
-                    <span>${m.name}${badge}</span>
-                    <span style="color: var(--text-faint); font-family: var(--font-mono);">${formatTime(m.time)}</span>
-                  </div>
-                `;
-              }).join("");
+              const markersKey = JSON.stringify([song.markers, remoteSceneNames]);
+              if (markersKey !== g_lastMarkersKey) {
+                g_lastMarkersKey = markersKey;
+                container.innerHTML = song.markers.map(m => {
+                  const scNum = m.scene ? parseInt(m.scene, 10) : null;
+                  const sName = scNum ? (remoteSceneNames[scNum] || `Scene ${scNum}`) : '';
+                  const badge = scNum ? `<span style="background: rgba(56,189,248,0.2); color: #38bdf8; padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; margin-left: 4px;">S${scNum}${sName && sName !== `Scene ${scNum}` ? `: ${escapeHtml(sName)}` : ''}</span>` : '';
+                  return `
+                    <div class="marker-pill" role="button" tabindex="0" onclick="jumpToRemoteMarker(${Number(m.time) || 0}, ${scNum})">
+                      <span>${escapeHtml(m.name)}${badge}</span>
+                      <span style="color: var(--text-faint); font-family: var(--font-mono);">${formatTime(m.time)}</span>
+                    </div>
+                  `;
+                }).join("");
+              }
             } else {
               markersSec.style.display = "none";
+              g_lastMarkersKey = null;
             }
           }
 
           // 3. Live MIDI Chord Recognition & Notes Display
           if (midi) {
             const activeNotes = midi.active_notes || [];
-            if (song.analysis && (song.analysis.key_root || song.analysis.key)) {
-              const detectedRoot = (song.analysis.key_root || song.analysis.key).replace("m", "");
+            const analysisKey = song && song.analysis ? (song.analysis.key_root || song.analysis.key) : null;
+            if (typeof analysisKey === "string" && analysisKey) {
+              const detectedRoot = analysisKey.replace("m", "");
               if (detectedRoot && remoteNashvilleKey !== detectedRoot) {
                 remoteNashvilleKey = detectedRoot;
                 const rSel = document.getElementById("remoteNashvilleKeySelect");
@@ -3189,20 +3280,68 @@
         }
       };
 
-      ws.onclose = () => {
-        document.getElementById("connDot").classList.remove("active");
-        document.getElementById("connText").innerText = "Disconnected";
-        setTimeout(connectWS, 2000);
+      sock.onerror = () => { try { sock.close(); } catch (e) {} };
+
+      sock.onclose = () => {
+        if (ws !== sock) return;
+        ws = null;
+        setConnStatus(false);
+        scheduleWsReconnect();
       };
     }
 
+    // Liveness: reconnect if telemetry goes silent while the socket still reports OPEN
+    setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN && Date.now() - wsLastMessageAt > WS_STALE_MS) {
+        console.warn("Telemetry stale; reconnecting");
+        forceWsReconnect();
+      }
+    }, 1000);
+
+    // Foreground recovery when the phone screen wakes or the tab becomes visible again
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && (!ws || ws.readyState !== WebSocket.OPEN)) {
+        forceWsReconnect();
+      }
+    });
+
     // Mix Fader Bindings (Track, Synth, Master, Metronome)
     let activeMixerDrag = null;
+
+    // Trailing throttle: runs immediately, then at most once per window, always ending on the latest args
+    function throttleTrailing(fn, ms) {
+      let last = 0;
+      let timer = null;
+      let pending = null;
+      const run = () => {
+        timer = null;
+        last = Date.now();
+        fn(...pending);
+      };
+      return (...args) => {
+        pending = args;
+        const remain = ms - (Date.now() - last);
+        if (remain <= 0) {
+          clearTimeout(timer);
+          run();
+        } else if (!timer) {
+          timer = setTimeout(run, remain);
+        }
+      };
+    }
 
     function setupMixerFaders() {
       ['track', 'synth', 'master', 'metro', 'fx', 'top_fx'].forEach(type => {
         const wrap = document.getElementById(`sliderWrap_${type}`);
         if (!wrap) return;
+
+        // Network writes are throttled to ~50ms; the UI still updates on every move
+        const sendMix = throttleTrailing((url, body) => remoteFetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        }), 50);
+        let lastTouchAt = 0;
 
         function update(clientX) {
           const rect = wrap.getBoundingClientRect();
@@ -3219,39 +3358,23 @@
             const vol = ratio * 1.0;
             const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
             document.getElementById("remoteTrackVolText").innerText = `${db} dB`;
-            fetch("/api/mixer", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ track_volume: vol })
-            }).catch(console.error);
+            sendMix("/api/mixer", { track_volume: vol });
           } else if (type === 'synth') {
             const vol = ratio * 1.0;
             const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
             document.getElementById("remoteSynthVolText").innerText = `${db} dB`;
             const vst127 = Math.round(vol * 127);
-            fetch("/api/montage/volume", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ master_volume: vst127 })
-            }).catch(console.error);
+            sendMix("/api/montage/volume", { master_volume: vst127 });
           } else if (type === 'master') {
             const vol = ratio * 1.2;
             const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
             document.getElementById("remoteMasterVolText").innerText = `${db} dB`;
-            fetch("/api/mixer", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ master_volume: vol })
-            }).catch(console.error);
+            sendMix("/api/mixer", { master_volume: vol });
           } else if (type === 'metro') {
             const vol = ratio * 2.0; // 0 to 2.0x boost
             const pctVal = Math.round(vol * 100);
             document.getElementById("remoteMetroVolText").innerText = vol > 1.0 ? `Boost ${pctVal}%` : `${pctVal}%`;
-            fetch("/api/mixer", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ metronome_volume: vol })
-            }).catch(console.error);
+            sendMix("/api/mixer", { metronome_volume: vol });
           } else if (type === 'fx' || type === 'top_fx') {
             const vol = ratio * 1.5;
             const db = vol > 0 ? (20 * Math.log10(vol)).toFixed(1) : "-inf";
@@ -3259,7 +3382,7 @@
             if (el1) el1.innerText = `${db} dB`;
             const el2 = document.getElementById("remoteFxTopVolText");
             if (el2) el2.innerText = `${db} dB`;
-            
+
             // Mirror to both sliders on remote
             ['fx', 'top_fx'].forEach(st => {
               const f = document.getElementById(`sliderFill_${st}`);
@@ -3268,19 +3391,17 @@
               if (th) th.style.left = pct + "%";
             });
 
-            fetch("/api/fx-pads", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "bus", volume: vol })
-            }).catch(console.error);
+            sendMix("/api/fx-pads", { action: "bus", volume: vol });
           }
         }
 
-        wrap.addEventListener("touchstart", (e) => { activeMixerDrag = type; update(e.touches[0].clientX); }, { passive: true });
+        wrap.addEventListener("touchstart", (e) => { lastTouchAt = Date.now(); activeMixerDrag = type; update(e.touches[0].clientX); }, { passive: true });
         wrap.addEventListener("touchmove", (e) => { if (activeMixerDrag === type) update(e.touches[0].clientX); }, { passive: true });
         window.addEventListener("touchend", () => { activeMixerDrag = null; });
 
         wrap.addEventListener("mousedown", (e) => {
+          // Ignore the mouse events the browser emits after a touch (ghost clicks)
+          if (Date.now() - lastTouchAt < 500) return;
           activeMixerDrag = type;
           update(e.clientX);
           const onMv = (m) => { if (activeMixerDrag === type) update(m.clientX); };
