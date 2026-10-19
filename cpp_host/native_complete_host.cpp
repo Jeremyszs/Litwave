@@ -286,6 +286,46 @@ public:
 
 static std::atomic<bool> g_drone_isolation{false};
 
+// Velocity Curve Processing:
+// 0: Linear (y = x)
+// 1: Heavy 1 (y = x^1.4, requires harder touch to reach high velocity)
+// 2: Heavy 2 (y = x^1.8, significantly harder touch needed)
+// 3: Light 1 (y = x^0.7, soft touch boosts to high velocity)
+// 4: Light 2 (y = x^0.5, very sensitive)
+// 5: Fixed (always 127)
+static std::atomic<int> g_velocity_curve{1}; // Default to Heavy 1 to tame overly hard keyboards
+static std::atomic<float> g_velocity_scale{1.0f};
+static std::atomic<int> g_velocity_offset{0};
+
+inline float apply_velocity_curve(float rawVel) {
+    if (rawVel <= 0.0001f) return 0.0f;
+    int curve = g_velocity_curve.load(std::memory_order_relaxed);
+    float scale = g_velocity_scale.load(std::memory_order_relaxed);
+    int offset = g_velocity_offset.load(std::memory_order_relaxed);
+
+    float y = rawVel;
+    if (curve == 1) {
+        y = powf(rawVel, 1.4f); // Heavy 1
+    } else if (curve == 2) {
+        y = powf(rawVel, 1.8f); // Heavy 2
+    } else if (curve == 3) {
+        y = powf(rawVel, 0.7f); // Light 1
+    } else if (curve == 4) {
+        y = powf(rawVel, 0.5f); // Light 2
+    } else if (curve == 5) {
+        return 1.0f; // Fixed
+    }
+
+    y = y * scale;
+    if (offset != 0) {
+        y += ((float)offset / 127.0f);
+    }
+
+    if (y < 0.01f) y = 0.01f;
+    if (y > 1.0f) y = 1.0f;
+    return y;
+}
+
 void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2) {
     if (wMsg == MIM_DATA) {
         unsigned char status = (unsigned char)(dwParam1 & 0xFF);
@@ -297,6 +337,7 @@ void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg, DWORD_PTR dwInstance, DWORD
         if (type == 0x90) {
             float vel = (float)data2 / 127.0f;
             if (data2 > 0) {
+                vel = apply_velocity_curve(vel);
                 g_active_plugin_notes[channel][data1].store(true, std::memory_order_relaxed);
                 enqueue_midi_note(Event::kNoteOnEvent, channel, (int16)data1, vel);
             } else {
@@ -1011,6 +1052,15 @@ void UdpControlServerThread() {
                         uint8 ccVal = (uint8)((sceneNum - 1) * 16);
                         enqueue_midi_note((int16)Event::kLegacyMIDICCOutEvent, 0, 92, (float)ccVal / 127.0f);
                     }
+                } else if (cmd == 0x76) { // 'v' Velocity Curve Config: [ 'v', curveIdx (0-5), scaleByte (100 = 1.0f), offsetSigned (-64..64 + 64) ]
+                    int curve = (int)ch;
+                    float scale = (float)d1 / 100.0f;
+                    int offset = (int)d2 - 64;
+                    g_velocity_curve.store(curve, std::memory_order_relaxed);
+                    g_velocity_scale.store(scale > 0.05f ? scale : 1.0f, std::memory_order_relaxed);
+                    g_velocity_offset.store(offset, std::memory_order_relaxed);
+                    std::cout << "[UDP] Set Velocity Curve: mode=" << curve << " scale=" << scale << " offset=" << offset << std::endl;
+                    continue;
                 } else if (cmd == 0x90) { // Note On
                     float vel = (float)d2 / 127.0f;
                     int targetCh = (ch >= 1 && ch <= 8) ? ((int)ch - 1) : (int)ch;

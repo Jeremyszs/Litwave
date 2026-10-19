@@ -2427,6 +2427,37 @@
         </div>
 
         <div class="pref-group">
+          <label class="pref-label">MIDI Touch Velocity Curve</label>
+          <div class="pref-desc">Atur sensitivitas tuts keyboard (Heavy = butuh tekan lebih keras untuk velocity tinggi):</div>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+            <select id="prefVelocityCurveSelect" class="studio-select" style="padding: 6px 8px; flex: 1;" onchange="onVelocityConfigChange()">
+              <option value="heavy1" selected>Heavy 1 (Default - Tuts Keras / Butuh Tekan Kuat)</option>
+              <option value="heavy2">Heavy 2 (Ultra Heavy - Sangat Resisten)</option>
+              <option value="linear">Linear (Dynamic 1:1 Passthrough)</option>
+              <option value="light1">Light 1 (Sensitif / Tekan Pelan Sudah Keras)</option>
+              <option value="light2">Light 2 (Ultra Light / Super Sensitive)</option>
+              <option value="fixed">Fixed Velocity (Full 127)</option>
+            </select>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); margin-bottom: 2px;">
+                <span>Velocity Scale</span>
+                <span id="velScaleVal" style="font-family: var(--font-mono); color: var(--accent);">1.0x</span>
+              </div>
+              <input type="range" id="prefVelocityScale" min="0.5" max="2.0" step="0.05" value="1.0" style="width: 100%; accent-color: var(--accent);" oninput="onVelocityConfigChange()" />
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); margin-bottom: 2px;">
+                <span>Velocity Offset</span>
+                <span id="velOffsetVal" style="font-family: var(--font-mono); color: var(--accent);">0</span>
+              </div>
+              <input type="range" id="prefVelocityOffset" min="-40" max="40" step="1" value="0" style="width: 100%; accent-color: var(--accent);" oninput="onVelocityConfigChange()" />
+            </div>
+          </div>
+        </div>
+
+        <div class="pref-group">
           <label class="pref-label">Practice Shortcuts</label>
           <div class="hotkey-list">
             <div class="hotkey-item"><span>Space</span> : Play / Pause</div>
@@ -5993,7 +6024,8 @@
 
     function handleLiveMidiEvent(data) {
       if (data.type === "note_on") {
-        document.getElementById("lastNoteDisplay").innerText = `NOTE ${data.note_name} · VEL ${data.velocity}`;
+        const velInfo = data.raw_velocity ? `VEL ${data.velocity} (${data.raw_velocity})` : `VEL ${data.velocity}`;
+        document.getElementById("lastNoteDisplay").innerText = `NOTE ${data.note_name} · ${velInfo}`;
       }
       if (data.active_notes) {
         const cName = detectAdvancedChord(data.active_notes);
@@ -6245,6 +6277,45 @@
       if (data.audio && data.audio.blocksize) {
         const bufSelect = document.getElementById("prefBufferSelect");
         if (bufSelect) bufSelect.value = data.audio.blocksize;
+      }
+
+      if (data.midi && data.midi.velocity_config) {
+        const vc = data.midi.velocity_config;
+        const curveSel = document.getElementById("prefVelocityCurveSelect");
+        if (curveSel && vc.curve) curveSel.value = vc.curve;
+        const scaleRange = document.getElementById("prefVelocityScale");
+        if (scaleRange && vc.scale !== undefined) {
+          scaleRange.value = vc.scale;
+          const lbl = document.getElementById("velScaleVal");
+          if (lbl) lbl.innerText = `${parseFloat(vc.scale).toFixed(2)}x`;
+        }
+        const offsetRange = document.getElementById("prefVelocityOffset");
+        if (offsetRange && vc.offset !== undefined) {
+          offsetRange.value = vc.offset;
+          const lbl = document.getElementById("velOffsetVal");
+          if (lbl) lbl.innerText = `${vc.offset > 0 ? "+" : ""}${vc.offset}`;
+        }
+      }
+    }
+
+    async function onVelocityConfigChange() {
+      const curve = document.getElementById("prefVelocityCurveSelect").value;
+      const scale = parseFloat(document.getElementById("prefVelocityScale").value);
+      const offset = parseInt(document.getElementById("prefVelocityOffset").value);
+
+      const lblScale = document.getElementById("velScaleVal");
+      if (lblScale) lblScale.innerText = `${scale.toFixed(2)}x`;
+      const lblOffset = document.getElementById("velOffsetVal");
+      if (lblOffset) lblOffset.innerText = `${offset > 0 ? "+" : ""}${offset}`;
+
+      try {
+        await fetch("/api/midi/velocity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ curve, scale, offset })
+        });
+      } catch (err) {
+        console.error("Failed to update velocity config:", err);
       }
     }
 

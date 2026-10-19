@@ -4,6 +4,9 @@ Auto-detects CASIO USB-MIDI or any plugged-in keyboard/pedalboard.
 """
 
 import time
+import os
+import json
+import math
 import threading
 from typing import Callable, Optional, List, Dict, Any
 import mido
@@ -37,10 +40,89 @@ class MidiManager:
         self.available_ports: List[str] = []
         self._last_scan_time: float = 0.0
         
+        # Velocity Curve Processing Settings
+        # curve: "linear", "heavy1" (harder touch), "heavy2" (much harder touch), "light1" (softer touch), "light2", "fixed"
+        self.velocity_curve: str = "heavy1"
+        self.velocity_scale: float = 1.0
+        self.velocity_offset: int = 0
+        self.velocity_min: int = 1
+        self.velocity_max: int = 127
+        self.settings_file = os.path.join(os.path.dirname(__file__), "midi_settings.json")
+        self._load_settings()
+
         # Background worker for auto-detect and reading
         self._running = True
         self._thread = threading.Thread(target=self._worker_loop, daemon=True)
         self._thread.start()
+
+    def _load_settings(self):
+        try:
+            if os.path.exists(self.settings_file):
+                with open(self.settings_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.velocity_curve = str(data.get("velocity_curve", "heavy1"))
+                    self.velocity_scale = float(data.get("velocity_scale", 1.0))
+                    self.velocity_offset = int(data.get("velocity_offset", 0))
+                    self.velocity_min = int(data.get("velocity_min", 1))
+                    self.velocity_max = int(data.get("velocity_max", 127))
+        except Exception:
+            pass
+
+    def _save_settings(self):
+        try:
+            temp = self.settings_file + ".tmp"
+            with open(temp, "w", encoding="utf-8") as f:
+                json.dump({
+                    "velocity_curve": self.velocity_curve,
+                    "velocity_scale": round(self.velocity_scale, 2),
+                    "velocity_offset": self.velocity_offset,
+                    "velocity_min": self.velocity_min,
+                    "velocity_max": self.velocity_max
+                }, f, indent=2)
+            os.replace(temp, self.settings_file)
+        except Exception:
+            pass
+
+    def set_velocity_config(self, curve: Optional[str] = None, scale: Optional[float] = None, offset: Optional[int] = None, min_v: Optional[int] = None, max_v: Optional[int] = None):
+        with self.lock:
+            if curve is not None:
+                self.velocity_curve = str(curve).lower()
+            if scale is not None:
+                self.velocity_scale = max(0.1, min(3.0, float(scale)))
+            if offset is not None:
+                self.velocity_offset = max(-64, min(64, int(offset)))
+            if min_v is not None:
+                self.velocity_min = max(1, min(127, int(min_v)))
+            if max_v is not None:
+                self.velocity_max = max(1, min(127, int(max_v)))
+            self._save_settings()
+
+    def transform_velocity(self, raw_vel: int) -> int:
+        if raw_vel <= 0:
+            return 0
+        x = float(raw_vel) / 127.0
+        curve = self.velocity_curve
+        if curve == "linear":
+            y = x
+        elif curve == "heavy1": # Requires harder press to reach loud velocities (convex)
+            y = math.pow(x, 1.4)
+        elif curve == "heavy2": # Requires significantly harder press
+            y = math.pow(x, 1.8)
+        elif curve == "light1": # Soft touch boosts to higher velocity (concave)
+            y = math.pow(x, 0.7)
+        elif curve == "light2": # Very sensitive
+            y = math.pow(x, 0.5)
+        elif curve == "fixed":
+            return int(self.velocity_max)
+        else:
+            y = x
+
+        y = y * self.velocity_scale
+        if self.velocity_offset != 0:
+            y += (float(self.velocity_offset) / 127.0)
+
+        out_v = int(round(y * 127.0))
+        return max(self.velocity_min, min(self.velocity_max, out_v))
 
     def get_available_ports(self, force_refresh: bool = False) -> List[str]:
         now = time.time()
@@ -160,13 +242,15 @@ class MidiManager:
         
         if msg.type == 'note_on':
             if msg.velocity > 0:
-                self.active_notes[msg.note] = msg.velocity
+                curved_vel = self.transform_velocity(msg.velocity)
+                self.active_notes[msg.note] = curved_vel
                 event_dict.update({
                     "type": "note_on",
                     "note": msg.note,
                     "original_note": msg.note,
                     "note_name": midi_note_to_name(msg.note),
-                    "velocity": msg.velocity
+                    "velocity": curved_vel,
+                    "raw_velocity": msg.velocity
                 })
             else:
                 self.active_notes.pop(msg.note, None)
@@ -251,5 +335,12 @@ class MidiManager:
                 "active_note_names": active_names,
                 "pedals": dict(self.pedals),
                 "pitch_bend": self.pitch_bend,
-                "modulation": self.modulation
+                "modulation": self.modulation,
+                "velocity_config": {
+                    "curve": self.velocity_curve,
+                    "scale": self.velocity_scale,
+                    "offset": self.velocity_offset,
+                    "min": self.velocity_min,
+                    "max": self.velocity_max
+                }
             }

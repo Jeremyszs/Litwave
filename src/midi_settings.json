@@ -1,0 +1,7 @@
+{
+  "velocity_curve": "heavy2",
+  "velocity_scale": 0.85,
+  "velocity_offset": -3,
+  "velocity_min": 1,
+  "velocity_max": 127
+}

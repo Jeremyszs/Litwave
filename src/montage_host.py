@@ -518,6 +518,27 @@ class MontageHost:
             print(f"Failed to send Drone Isolation: {e}")
             return False
 
+    def sync_velocity_curve(self, curve_name: str, scale: float = 1.0, offset: int = 0) -> bool:
+        """Sync velocity curve to native C++ engine over UDP command 'v' (0x76)"""
+        try:
+            curve_map = {
+                "linear": 0,
+                "heavy1": 1,
+                "heavy2": 2,
+                "light1": 3,
+                "light2": 4,
+                "fixed": 5
+            }
+            c_idx = curve_map.get(curve_name.lower(), 1)
+            scale_byte = max(10, min(255, int(round(scale * 100))))
+            offset_byte = max(0, min(128, int(offset + 64)))
+            packet = bytes([0x76, c_idx & 0xFF, scale_byte & 0xFF, offset_byte & 0xFF])
+            self._send_udp(packet)
+            return True
+        except Exception as e:
+            print(f"Failed to sync velocity curve to native host: {e}")
+            return False
+
     def assign_part_voice(self, part_num: int, bank_idx: int, preset_idx: int) -> bool:
         """Assign voice preset to a part over UDP command 'K' (0x4B)"""
         try:

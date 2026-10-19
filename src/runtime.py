@@ -72,6 +72,15 @@ class AppState:
         # Start audio with default ASIO or system device
         self.audio.start_stream()
 
+        # Sync velocity curve to native engine
+        if self.montage and self.midi:
+            cfg = self.midi.get_snapshot().get("velocity_config", {})
+            self.montage.sync_velocity_curve(
+                curve_name=cfg.get("curve", "heavy1"),
+                scale=cfg.get("scale", 1.0),
+                offset=cfg.get("offset", 0)
+            )
+
         # Open first MIDI port if any available
         ports = self.midi.get_available_ports()
         if ports:

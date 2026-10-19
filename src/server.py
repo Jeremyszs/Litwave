@@ -200,6 +200,23 @@ async def api_midi_device(request):
         state.midi.open_port(port)
     return JSONResponse({"success": True, "snapshot": state.midi.get_snapshot()})
 
+async def api_midi_velocity(request):
+    body = await request.json()
+    curve = body.get("curve")
+    scale = body.get("scale")
+    offset = body.get("offset")
+    min_v = body.get("min")
+    max_v = body.get("max")
+    state.midi.set_velocity_config(curve=curve, scale=scale, offset=offset, min_v=min_v, max_v=max_v)
+    cfg = state.midi.get_snapshot().get("velocity_config", {})
+    if state.montage:
+        state.montage.sync_velocity_curve(
+            curve_name=cfg.get("curve", "heavy1"),
+            scale=cfg.get("scale", 1.0),
+            offset=cfg.get("offset", 0)
+        )
+    return JSONResponse({"success": True, "velocity_config": cfg, "snapshot": state.midi.get_snapshot()})
+
 api_playlist, api_playlist_select, api_upload_song = create_playlist_handlers(
     state,
     upload_dir=os.path.join(STATIC_DIR, "uploads")
@@ -381,6 +398,7 @@ routes = [
     Route("/api/mixer", api_mixer, methods=["POST"]),
     Route("/api/audio/device", api_audio_device, methods=["POST"]),
     Route("/api/midi/device", api_midi_device, methods=["POST"]),
+    Route("/api/midi/velocity", api_midi_velocity, methods=["POST"]),
     Route("/api/upload", api_upload_song, methods=["POST"]),
     Route("/api/playlist", api_playlist, methods=["GET"]),
     Route("/api/playlist/select", api_playlist_select, methods=["POST"]),
