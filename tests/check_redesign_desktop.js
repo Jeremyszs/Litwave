@@ -118,3 +118,26 @@ run("lyric line lookup finds the line playing at a time", () => {
   assert.strictEqual(ctx.LW.lyrics.indexAt(sheet, 12), 2);
   assert.strictEqual(ctx.LW.lyrics.indexAt([], 3), -1);
 });
+
+const T5 = [...KIT, "js/desktop/state.js", "js/desktop/telemetry.js", "js/desktop/mixer.js", "js/desktop/eq.js", "js/desktop/metronome.js", "js/desktop/scenes.js"];
+
+run("EQ response is flat at 0 dB and follows a peaking band", () => {
+  const ctx = load(T5);
+  assert.strictEqual(ctx.LW.eq.responseAt(1000), 0);
+  ctx.LW.eq.bands[2].gain = 6; ctx.LW.eq.bands[2].freq = 1000;
+  const r = ctx.LW.eq.responseAt(1000);
+  assert(r > 5.9 && r < 6.1, `got ${r}`);
+});
+
+run("tap tempo averages taps into BPM and ignores long gaps", () => {
+  const ctx = load(T5);
+  assert.strictEqual(ctx.LW.metronome.bpmFromTaps([0, 500, 1000, 1500]), 120);
+  assert.strictEqual(ctx.LW.metronome.bpmFromTaps([0, 3000]), null);
+});
+
+run("scene telemetry updates the active scene and names", () => {
+  const ctx = load(T5);
+  ctx.renderTelemetry({ montage: { current_scene: 5, scene_names: { 5: "<i>Bridge</i>" } } });
+  assert.strictEqual(ctx.LW.state.scenes.active, 5);
+  assert.strictEqual(ctx.LW.sceneName(5), "<i>Bridge</i>");
+});

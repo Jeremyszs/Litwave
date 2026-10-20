@@ -219,7 +219,8 @@ def test_chord_debounce_variable_scope():
 
 def test_canvas_eq_no_css_vars():
     """drawEqSpline must not use var(--...) in Canvas API calls."""
-    index_path = os.path.join(REPO_ROOT, "src", "static", "index.html")
+    # The redesigned desktop keeps the EQ canvas in its own script.
+    index_path = os.path.join(REPO_ROOT, "src", "static", "js", "desktop", "eq.js")
     with open(index_path, "r", encoding="utf-8") as f:
         source = f.read()
 
@@ -241,13 +242,12 @@ def test_canvas_eq_no_css_vars():
     assert len(matches) == 0, \
         f"drawEqSpline must not use CSS custom properties in Canvas context: found in {matches}"
 
-    # Verify concrete values are used instead
-    assert "'Geist Mono'" in fn_body or '"Geist Mono"' in fn_body, \
-        "drawEqSpline must use concrete font names, not var(--font-mono)"
-    assert "#e2e8f0" in fn_body, \
-        "drawEqSpline must use concrete color #e2e8f0 for accent"
-    assert "#f3f4f6" in fn_body, \
-        "drawEqSpline must use concrete color #f3f4f6 for text-main"
+    # Verify concrete values are used instead: theme colours are resolved to real values
+    # (LW.token reads the computed custom property) and the font is named explicitly.
+    assert "LW.token(" in fn_body, \
+        "drawEqSpline must resolve theme colours to concrete values via LW.token"
+    assert "Inter" in fn_body and "var(--font" not in fn_body, \
+        "drawEqSpline must use concrete font names, not var(--font)"
 
     print("PASS: Canvas EQ uses concrete values, not CSS custom properties")
 

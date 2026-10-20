@@ -56,9 +56,10 @@
       const t = e.target.closest(".tab");
       if (!t || !bar.contains(t)) return;
       down = tabs.indexOf(t);
+      moved = false;
       if (o.draggable === false) return;
-      bar.setPointerCapture(e.pointerId);
-      startX = e.clientX; moved = false; hist = [[e.clientX, performance.now()]];
+      try { bar.setPointerCapture(e.pointerId); } catch (_) { return; }
+      startX = e.clientX; hist = [[e.clientX, performance.now()]];
       grab = e.clientX - bar.getBoundingClientRect().left - x;
     });
     bar.addEventListener("pointermove", (e) => {
@@ -74,12 +75,22 @@
       if (nx > max) nx = max + LW.rubber(nx - max, 80);
       sx.to(nx, { response: 0.12, damping: 1 });
     });
+    // A plain click (mouse, touch, Enter or Space) selects; only real drags take the projection path below.
+    let suppressClick = false;
+    bar.addEventListener("click", (e) => {
+      const t = e.target.closest(".tab");
+      if (!t || !bar.contains(t)) return;
+      if (suppressClick) { suppressClick = false; return; }
+      api.select(tabs.indexOf(t));
+    });
     const finish = (e) => {
-      if (o.draggable === false) { if (down >= 0) api.select(down); down = -1; return; }
+      if (o.draggable === false) { down = -1; return; }
       if (!bar.hasPointerCapture || !bar.hasPointerCapture(e.pointerId)) return;
       bar.releasePointerCapture(e.pointerId);
       dragging = false; drop.classList.remove("live");
-      if (!moved) { if (down >= 0) api.select(down); down = -1; return; }
+      if (!moved) { down = -1; return; }
+      suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 0);
       const a = hist[0], b = hist[hist.length - 1];
       const v = ((b[0] - a[0]) / Math.max(1, b[1] - a[1])) * 1000;
       const proj = x + w / 2 + LW.project(v, 0.99);
