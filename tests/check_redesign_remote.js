@@ -88,3 +88,23 @@ run("phone seek drag sends at most one seek per 100 ms, then the exact release p
   assert(sent.length <= 2, `a fast drag sent ${sent.length} seeks`);
   assert.deepStrictEqual(sent[sent.length - 1], ["seek", 100]);
 });
+
+run("phone seek: a plain tap sends one seek, not one on press and another on release", () => {
+  const ctx = load(R);
+  const sent = [];
+  ctx.LW.R.transport = (a, b) => { sent.push([a, b && b.seconds]); return Promise.resolve(); };
+  ctx.LW.R.state.song = { duration_seconds: 200 };
+  ctx.LW.R.song.scrub(0.5);
+  ctx.LW.R.song.scrub(0.5, true);
+  assert.deepStrictEqual(sent, [["seek", 100]]);
+});
+
+run("phone seek: tapping the same spot again in a new gesture seeks again", () => {
+  const ctx = load(R);
+  const sent = [];
+  ctx.LW.R.transport = (a, b) => { sent.push(b.seconds); return Promise.resolve(); };
+  ctx.LW.R.state.song = { duration_seconds: 200 };
+  ctx.LW.R.song.scrubBegin(); ctx.LW.R.song.scrub(0.5); ctx.LW.R.song.scrub(0.5, true);
+  ctx.LW.R.song.scrubBegin(); ctx.LW.R.song.scrub(0.5); ctx.LW.R.song.scrub(0.5, true);
+  assert.deepStrictEqual(sent, [100, 100]);
+});

@@ -51,21 +51,30 @@
     root.requestAnimationFrame(() => place(true));
     if (root.ResizeObserver) new root.ResizeObserver(() => place(true)).observe(bar);
 
-    let startX = 0, grab = 0, moved = false, hist = [], down = -1;
+    // The pointer is only captured once a press turns into a real drag. Capturing on pointerdown would
+    // retarget the click to the bar itself and plain clicks would stop selecting.
+    let startX = 0, grab = 0, moved = false, hist = [], down = -1, pid = null, captured = false;
+    const release = () => {
+      if (captured) { try { bar.releasePointerCapture(pid); } catch (_) {} }
+      captured = false; pid = null;
+    };
     bar.addEventListener("pointerdown", (e) => {
       const t = e.target.closest(".tab");
       if (!t || !bar.contains(t)) return;
       down = tabs.indexOf(t);
-      moved = false;
+      moved = false; captured = false;
       if (o.draggable === false) return;
-      try { bar.setPointerCapture(e.pointerId); } catch (_) { return; }
+      pid = e.pointerId;
       startX = e.clientX; hist = [[e.clientX, performance.now()]];
       grab = e.clientX - bar.getBoundingClientRect().left - x;
     });
     bar.addEventListener("pointermove", (e) => {
-      if (!bar.hasPointerCapture || !bar.hasPointerCapture(e.pointerId)) return;
+      if (pid === null || e.pointerId !== pid) return;
       hist.push([e.clientX, performance.now()]); if (hist.length > 5) hist.shift();
-      if (!moved && (Math.abs(e.clientX - startX) < 8 || down !== idx)) return;
+      if (!moved) {
+        if (Math.abs(e.clientX - startX) < 8 || down !== idx) return;
+        try { bar.setPointerCapture(pid); captured = true; } catch (_) { return; }
+      }
       moved = true; dragging = true; drop.classList.add("live");
       const r = bar.getBoundingClientRect();
       const scale = r.width / (bar.offsetWidth || r.width || 1);
@@ -84,9 +93,8 @@
       api.select(tabs.indexOf(t));
     });
     const finish = (e) => {
-      if (o.draggable === false) { down = -1; return; }
-      if (!bar.hasPointerCapture || !bar.hasPointerCapture(e.pointerId)) return;
-      bar.releasePointerCapture(e.pointerId);
+      if (pid === null || e.pointerId !== pid) { down = -1; return; }
+      release();
       dragging = false; drop.classList.remove("live");
       if (!moved) { down = -1; return; }
       suppressClick = true;
@@ -101,7 +109,7 @@
       down = -1;
     };
     bar.addEventListener("pointerup", finish);
-    bar.addEventListener("pointercancel", (e) => { dragging = false; drop.classList.remove("live"); if (bar.hasPointerCapture && bar.hasPointerCapture(e.pointerId)) bar.releasePointerCapture(e.pointerId); place(false); });
+    bar.addEventListener("pointercancel", () => { dragging = false; drop.classList.remove("live"); release(); down = -1; moved = false; place(false); });
     bar.addEventListener("keydown", (e) => {
       if (e.key === "ArrowRight") { api.select(Math.min(tabs.length - 1, idx + 1)); e.preventDefault(); }
       if (e.key === "ArrowLeft") { api.select(Math.max(0, idx - 1)); e.preventDefault(); }

@@ -6,7 +6,7 @@
   const $ = (id) => document.getElementById(id);
   const S = R.state;
   let pitch = null, marksKey = "", lyricsKey = "", activeLine = -1, dlg = null, analyzing = false;
-  let lastTriggered = null, lastCheck = -1, size = 15, seekLast = 0, seekTimer = null, seekTo = 0;
+  let lastTriggered = null, lastCheck = -1, size = 15, seekLast = 0, seekTimer = null, seekTo = 0, seekSent = -1;
 
   const song = () => S.song || {};
   const sorted = () => [...(song().markers || [])].sort((a, b) => a.time - b.time);
@@ -69,11 +69,12 @@
 
   R.song = {
     /* Scrubbing sends at most one seek per 100 ms; the release always lands on the exact spot. */
+    scrubBegin() { seekSent = -1; seekLast = 0; },
     scrub(fraction, final) {
       const d = song().duration_seconds || 0;
       if (!d) return;
       seekTo = LW.clamp(fraction, 0, 1) * d;
-      const fire = () => { seekTimer = null; seekLast = Date.now(); R.transport("seek", { seconds: seekTo }); };
+      const fire = () => { seekTimer = null; if (seekTo === seekSent) return; seekSent = seekTo; seekLast = Date.now(); R.transport("seek", { seconds: seekTo }); };
       const remain = 100 - (Date.now() - seekLast);
       if (final || remain <= 0) { clearTimeout(seekTimer); fire(); } else if (!seekTimer) seekTimer = setTimeout(fire, remain);
     },
@@ -134,7 +135,7 @@
     // Seek: tap or drag along the bar.
     const seek = $("seek");
     const at = (e) => { const r = seek.getBoundingClientRect(); return (e.clientX - r.left) / r.width; };
-    seek.addEventListener("pointerdown", (e) => { seek.setPointerCapture(e.pointerId); seek.classList.add("live"); R.song.scrub(at(e)); });
+    seek.addEventListener("pointerdown", (e) => { seek.setPointerCapture(e.pointerId); seek.classList.add("live"); R.song.scrubBegin(); R.song.scrub(at(e)); });
     seek.addEventListener("pointermove", (e) => { if (seek.hasPointerCapture(e.pointerId)) R.song.scrub(at(e)); });
     seek.addEventListener("pointerup", (e) => { seek.classList.remove("live"); R.song.scrub(at(e), true); });
     seek.addEventListener("pointercancel", () => seek.classList.remove("live"));

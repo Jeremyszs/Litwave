@@ -101,3 +101,50 @@ run("island escapes untrusted text", () => {
   isl.alert({ title: "<img src=x>", sub: "s" }, 10);
   assert.strictEqual(isl.refs.a1.textContent, "<img src=x>");
 });
+
+function fakeTabBar() {
+  const bar = fakeElement("div");
+  const tabs = [0, 1, 2].map((i) => {
+    const t = fakeElement("button");
+    t.dataset.k = "k" + i; t.offsetLeft = i * 100; t.offsetWidth = 100;
+    t.closest = (s) => (s === ".tab" ? t : null);
+    return t;
+  });
+  tabs[0].classList.add("on");
+  const cap = { on: false, calls: 0 };
+  Object.assign(bar, {
+    querySelectorAll: () => tabs, contains: () => true, offsetWidth: 300, scrollWidth: 300,
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 40 }),
+    setPointerCapture() { cap.on = true; cap.calls++; }, hasPointerCapture: () => cap.on, releasePointerCapture() { cap.on = false; },
+  });
+  const fire = (t, e) => (bar._listeners[t] || []).forEach((f) => f(e));
+  return { bar, tabs, cap, fire };
+}
+
+run("tabs: a plain click selects and never captures the pointer (capture would retarget the click to the bar)", () => {
+  const { bar, tabs, cap, fire } = fakeTabBar();
+  const picked = [];
+  LW.ui.tabs(bar, (i) => picked.push(i));
+  fire("pointerdown", { target: tabs[2], pointerId: 1, clientX: 250 });
+  fire("pointerup", { target: tabs[2], pointerId: 1, clientX: 250 });
+  assert.strictEqual(cap.calls, 0, "pointer captured on a plain press");
+  fire("click", { target: tabs[2] });
+  assert.deepStrictEqual(picked, [2]);
+});
+
+run("tabs: dragging the selected droplet past the threshold captures the pointer once and swallows the click", () => {
+  const { bar, tabs, cap, fire } = fakeTabBar();
+  const picked = [];
+  LW.ui.tabs(bar, (i) => picked.push(i));
+  fire("pointerdown", { target: tabs[0], pointerId: 1, clientX: 50 });
+  fire("pointermove", { target: tabs[0], pointerId: 1, clientX: 54 });
+  assert.strictEqual(cap.calls, 0, "captured before the 8 px threshold");
+  fire("pointermove", { target: tabs[0], pointerId: 1, clientX: 160 });
+  fire("pointermove", { target: tabs[0], pointerId: 1, clientX: 170 });
+  assert.strictEqual(cap.calls, 1, "should capture exactly once when the drag starts");
+  fire("pointerup", { target: bar, pointerId: 1, clientX: 170 });
+  const afterDrag = picked.length;
+  fire("click", { target: tabs[1] });
+  assert.strictEqual(picked.length, afterDrag, "the click that ends a drag must not select again");
+  assert.strictEqual(cap.on, false, "capture released on pointerup");
+});

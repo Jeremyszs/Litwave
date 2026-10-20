@@ -219,6 +219,10 @@
                 <button class="btn sm plain" id="btnPitchReset" data-feature="key-shift-reset">Reset</button></div>
             </div>
             <p class="faint hint">Key shift transposes the backing track from −12 to +12 semitones.</p>
+            <div class="ip-h"><span class="title">Scenes</span><span class="chip accent" id="sceneActive">Scene 1</span><span class="grow"></span>
+              <button class="btn sm plain" id="btnSceneRename" data-feature="scene-rename">Rename</button></div>
+            <div class="scenes" id="scenesGrid" data-feature="scenes"></div>
+            <button class="btn tinted wide" id="btnSceneSave" data-feature="scene-save"><span data-icon="save"></span><span id="btnSceneSaveTxt">Save mix to scene</span></button>
           </div>
 
           <div class="ip" data-p="eq">
@@ -244,10 +248,6 @@
               <div class="gr"><span class="k">Time</span><select class="sel grow" id="timeSig" data-feature="time-sig"><option value="4">4/4</option><option value="3">3/4</option><option value="6">6/8</option><option value="5">5/4</option><option value="7">7/8</option><option value="2">2/4</option></select></div>
               <div class="gr"><span class="k">Level</span><div class="grow" id="clickLevel" data-feature="click-level"></div><span class="v num" id="clickLevelV">100%</span></div>
             </div>
-            <div class="ip-h"><span class="title">Scenes</span><span class="chip accent" id="sceneActive">Scene 1</span><span class="grow"></span>
-              <button class="btn sm plain" id="btnSceneRename" data-feature="scene-rename">Rename</button></div>
-            <div class="scenes" id="scenesGrid" data-feature="scenes"></div>
-            <button class="btn tinted wide" id="btnSceneSave" data-feature="scene-save"><span data-icon="save"></span><span id="btnSceneSaveTxt">Save mix to scene</span></button>
           </div>
         </div>
       </div>

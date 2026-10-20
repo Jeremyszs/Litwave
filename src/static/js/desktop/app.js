@@ -31,7 +31,15 @@
   }
 
   function shortcuts() {
-    root.addEventListener("keydown", (e) => {
+    root.addEventListener("keydown", LW.keys.handle);
+  }
+
+  LW.keys = { handle(e) {
+      // Dialogs focus a text field, so Escape must still close them while typing. It never rewinds from a field.
+      if (e.key === "Escape" && LW.isTyping(e)) {
+        if (LW.sheets.closeTop()) { e.preventDefault(); if (e.target.blur) e.target.blur(); }
+        return;
+      }
       if (LW.isTyping(e)) return;
       if (e.target.getAttribute && e.target.getAttribute("role") === "button" && (e.key === "Enter" || e.key === " ")) {
         e.preventDefault(); e.target.click(); return;
@@ -54,8 +62,7 @@
       else if (e.key === "t" || e.key === "T") { if (LW.metronome) LW.metronome.tap(); }
       else if (e.key === "b" || e.key === "B") LW.markers.openDialog();
       else if (e.key === "p" || e.key === "P") { if (LW.stage) LW.stage.active ? LW.stage.exit() : LW.stage.enter(); }
-    });
-  }
+  } };
 
   function boot() {
     LW.layout.init();

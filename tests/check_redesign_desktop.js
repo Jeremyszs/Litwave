@@ -24,10 +24,10 @@ function el() {
   return e;
 }
 
-function load(files) {
+function load(files, opts) {
   const byId = {};
   const documentStub = {
-    documentElement: el(), body: el(), createElement: el, createElementNS: () => el(),
+    readyState: (opts && opts.readyState) || undefined, documentElement: el(), body: el(), createElement: el, createElementNS: () => el(),
     addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; },
     getElementById(id) { return byId[id] || (byId[id] = el()); },
   };
@@ -189,4 +189,23 @@ run("stage hero falls back to the live MIDI chord without a chart", () => {
   ctx.LW.state.midi = { active_notes: [57, 60, 64], active_note_names: ["A3", "C4", "E4"] };
   assert.strictEqual(ctx.LW.stage.hero().chord, "Am");
   assert.strictEqual(ctx.LW.stage.hero().runway, false);
+});
+
+run("Escape closes the top sheet even while a text field has focus, and never rewinds then", () => {
+  const ctx = load([...KIT, "js/desktop/app.js"], { readyState: "loading" });
+  const LW = ctx.LW;
+  let closed = 0, seeks = 0, blurred = 0;
+  LW.sheets = { closeTop() { closed++; return true; } };
+  LW.transport = { seek() { seeks++; }, toggle() { seeks += 100; } };
+  LW.layout = {};
+  const input = { tagName: "INPUT", blur() { blurred++; }, getAttribute() { return null; }, closest() { return null; } };
+  const ev = (key, target) => ({ key, code: key, target, preventDefault() {} });
+  LW.keys.handle(ev("Escape", input));
+  assert.strictEqual(closed, 1, "Escape in an input must close the open dialog");
+  assert.strictEqual(seeks, 0, "Escape in an input must not rewind");
+  LW.sheets.closeTop = () => false;
+  LW.keys.handle(ev("Escape", input));
+  assert.strictEqual(seeks, 0, "Escape in an input with nothing open must not rewind");
+  LW.keys.handle({ key: " ", code: "Space", target: input, preventDefault() {} });
+  assert.strictEqual(seeks, 0, "Space typed into a field must not toggle playback");
 });
