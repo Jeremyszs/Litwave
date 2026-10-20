@@ -151,6 +151,7 @@ html[data-theme="light"] .sl.live .sl-th { box-shadow: inset 0 0 0 .5px rgba(0, 
 
 /* ---------- rolling text ---------- */
 .roll { position: relative; overflow: hidden; }
+.roll.fit { flex: none; min-width: 24px; transition: width .35s var(--ease); }
 .roll > span { position: absolute; left: 0; top: 0; white-space: nowrap; }
 .roll > .cur { animation: rIn .45s var(--ease) both; }
 .roll > .out { animation: rOut .3s var(--ease) both; }

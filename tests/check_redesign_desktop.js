@@ -82,3 +82,39 @@ run("remote-origin scene change raises an island alert, local one does not", () 
   ctx.renderTelemetry({ montage: { current_scene: 4 } });
   assert.strictEqual(alerts.length, 1, "local change should not alert");
 });
+
+const T4 = [...KIT, "js/desktop/state.js", "js/desktop/telemetry.js", "js/desktop/song.js", "js/desktop/keyboard.js", "js/desktop/progression.js", "js/desktop/voicing.js", "js/desktop/lyrics.js"];
+
+run("empty states: no chart and no lyrics render without errors", () => {
+  const ctx = load(T4);
+  ctx.LW.state.chart = [];
+  ctx.LW.state.lyrics = null;
+  ctx.LW.progression.render(0);
+  ctx.LW.lyrics.render();
+  const meta = ctx.document.getElementById("progMeta").textContent;
+  assert(/analysis/i.test(meta), `progress meta was "${meta}"`);
+  assert(/lyrics/i.test(ctx.document.getElementById("lyrics").textContent), "lyrics empty state missing");
+});
+
+run("chords.current falls back to the live MIDI chord when there is no chart", () => {
+  const ctx = load(T4);
+  ctx.LW.state.chart = [];
+  ctx.LW.state.midi = { active_notes: [60, 64, 67], active_note_names: ["C4", "E4", "G4"] };
+  assert.strictEqual(ctx.LW.chords.current().chord, "C");
+});
+
+run("voicing presets spell inversions and extensions", () => {
+  const ctx = load(T4);
+  assert.deepStrictEqual(Array.from(ctx.LW.voicing.get("C", "root").notes), ["C", "E", "G"]);
+  assert.deepStrictEqual(Array.from(ctx.LW.voicing.get("C", "inv1").notes), ["E", "G", "C"]);
+  assert.strictEqual(ctx.LW.voicing.get("Am", "ext1").name, "Am7");
+  assert(Array.from(ctx.LW.voicing.get("C", "ext2").notes).includes("D"), "add9 needs D");
+});
+
+run("lyric line lookup finds the line playing at a time", () => {
+  const ctx = load(T4);
+  const sheet = [{ time: 0, text: "a" }, { time: 5, text: "b" }, { time: 9, text: "c" }];
+  assert.strictEqual(ctx.LW.lyrics.indexAt(sheet, 6), 1);
+  assert.strictEqual(ctx.LW.lyrics.indexAt(sheet, 12), 2);
+  assert.strictEqual(ctx.LW.lyrics.indexAt([], 3), -1);
+});

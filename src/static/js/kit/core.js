@@ -61,6 +61,10 @@
     const s = document.createElement("span");
     s.className = "cur"; s.textContent = t;
     el.appendChild(s);
+    // .fit rolls size themselves to the new text so neighbours (e.g. Nashville numbers) sit right beside it
+    if (el.classList && el.classList.contains("fit") && typeof root.requestAnimationFrame === "function") {
+      root.requestAnimationFrame(() => { el.style.width = Math.ceil(s.offsetWidth) + 2 + "px"; });
+    }
   };
   LW.setText = (el, text) => { if (el && el.textContent !== String(text)) el.textContent = String(text); };
 
