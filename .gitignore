@@ -60,3 +60,6 @@ community_session_state.bin
 cpp_host/litwave_community_engine.exe
 cpp_host/litwave_community_host.obj
 cpp_host/soundfonts/
+
+# Brainstorming mockups (local only)
+.superpowers/
