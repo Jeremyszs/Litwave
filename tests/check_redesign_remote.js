@@ -77,3 +77,14 @@ run("phone live chord falls back to MIDI chord and Nashville from the song key",
   assert.strictEqual(c.chord, "D");
   assert.strictEqual(c.nashville, "[5]");
 });
+
+run("phone seek drag sends at most one seek per 100 ms, then the exact release position", () => {
+  const ctx = load(R);
+  const sent = [];
+  ctx.LW.R.transport = (a, b) => { sent.push([a, b && b.seconds]); return Promise.resolve(); };
+  ctx.LW.R.state.song = { duration_seconds: 200 };
+  for (let i = 1; i <= 30; i++) ctx.LW.R.song.scrub(i / 60);
+  ctx.LW.R.song.scrub(0.5, true);
+  assert(sent.length <= 2, `a fast drag sent ${sent.length} seeks`);
+  assert.deepStrictEqual(sent[sent.length - 1], ["seek", 100]);
+});
