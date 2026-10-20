@@ -18,7 +18,7 @@
 
 :root, html[data-theme="dark"] {
   --bg: #000; --s1: #0F0F11; --s2: #1C1C1E; --s3: #2C2C2E; --sheet: #1C1C1E;
-  --ink: #F5F5F7; --ink2: rgba(235, 235, 245, .62); --ink3: rgba(235, 235, 245, .34);
+  --ink: #F5F5F7; --ink2: rgba(235, 235, 245, .66); --ink3: rgba(235, 235, 245, .5);
   --accent: #0A84FF; --accent-ink: #4DA2FF; --on-accent: #fff;
   --tint: rgba(10, 132, 255, .16); --tint2: rgba(10, 132, 255, .3);
   --sep: rgba(255, 255, 255, .08); --track: rgba(255, 255, 255, .12); --fill: rgba(255, 255, 255, .06);
@@ -31,7 +31,7 @@
 html[data-theme="light"] {
   color-scheme: light;
   --bg: #FFFFFF; --s1: #F5F5F7; --s2: #E8E8ED; --s3: #DCDCE1; --sheet: #FFFFFF;
-  --ink: #1D1D1F; --ink2: #6E6E73; --ink3: #A1A1A6;
+  --ink: #1D1D1F; --ink2: #515156; --ink3: #737378;
   --accent: #0071E3; --accent-ink: #0066CC; --on-accent: #fff;
   --tint: rgba(0, 113, 227, .1); --tint2: rgba(0, 113, 227, .2);
   --sep: rgba(0, 0, 0, .08); --track: rgba(0, 0, 0, .08); --fill: rgba(0, 0, 0, .04);

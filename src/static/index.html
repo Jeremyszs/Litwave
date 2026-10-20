@@ -1,11 +1,496 @@
 <!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Litwave</title></head>
-<body>
-  <p>Redesign in progress. Classic UI: <a href="/static/classic/index.html">desktop</a> · <a href="/static/classic/remote.html">remote</a></p>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Litwave Studio</title>
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="preload" href="/static/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/kit.css">
+  <link rel="stylesheet" href="/static/css/studio.css">
+  <link rel="stylesheet" href="/static/css/stage.css">
+</head>
+<body class="studio">
+  <div class="app" id="app">
+
+    <!-- ========== Sidebar ========== -->
+    <aside class="card sb" id="sidebar" aria-label="Library and instruments">
+      <div class="sb-in">
+        <div class="sb-brand">
+          <span class="logo" aria-hidden="true"></span>
+          <b>Litwave</b>
+          <button class="ib sm" id="btnTheme" data-feature="theme" aria-label="Switch light or dark appearance" data-press="sink"></button>
+        </div>
+
+        <section class="sb-sec">
+          <div class="sb-h"><span class="lbl">Setlist</span>
+            <span class="sb-acts">
+              <button class="ib sm" id="sbNewSetlist" data-feature="setlist-new" aria-label="New setlist" data-press="sink"></button>
+              <button class="ib sm" id="sbSetlistManage" data-feature="sheet-setlist" aria-label="Manage setlists" data-press="sink"></button>
+            </span>
+          </div>
+          <select class="sel sb-select" id="sbSetlistSelect" data-feature="setlist-select" aria-label="Active setlist"></select>
+          <div class="list sb-songs" id="sbSongs"></div>
+          <button class="btn sm plain sb-add" id="sbAddSong" data-feature="setlist-add"></button>
+        </section>
+
+        <section class="sb-sec sb-grow">
+          <div class="sb-h"><span class="lbl">Library</span>
+            <span class="sb-acts"><button class="ib sm" id="sbUpload" data-feature="library-upload" aria-label="Upload audio file" data-press="sink"></button></span>
+          </div>
+          <div class="list sb-lib" id="sbLibrary" data-feature="library"></div>
+        </section>
+
+        <section class="sb-sec">
+          <div class="sb-h"><span class="lbl">Instruments</span></div>
+          <div class="list">
+            <div class="row inst" id="sbDrone" data-feature="sheet-drone" role="button" tabindex="0">
+              <span class="ic" data-icon="wave"></span>
+              <span class="grow"><b>Drone Pad</b><em id="sbDroneSub">Off</em></span>
+              <button class="sw sm" id="sbDroneSwitch" data-feature="drone-toggle" aria-label="Drone pad on or off"></button>
+            </div>
+            <button class="row inst" data-open="fxpads" data-feature="sheet-fxpads"><span class="ic" data-icon="grid"></span><span class="grow"><b>FX Pads</b><em id="sbFxSub">Bank A</em></span><span class="chev" data-icon="chev"></span></button>
+            <button class="row inst" data-open="parts" data-feature="sheet-parts"><span class="ic" data-icon="sliders"></span><span class="grow"><b>Parts Mixer</b><em>Parts 1–8</em></span><span class="chev" data-icon="chev"></span></button>
+            <button class="row inst" data-open="engine" data-feature="sheet-engine"><span class="ic" data-icon="synth"></span><span class="grow"><b>Sound Engine</b><em id="sbEngineSub">MONTAGE M</em></span><span class="chev" data-icon="chev"></span></button>
+            <button class="row inst" data-open="ear" data-feature="sheet-ear"><span class="ic" data-icon="ear"></span><span class="grow"><b>Ear Training</b><em>Chords, progressions, intervals</em></span><span class="chev" data-icon="chev"></span></button>
+          </div>
+        </section>
+
+        <button class="sb-foot" id="engineStatusBtn" data-feature="engine-status" aria-haspopup="dialog">
+          <span class="dot" id="engineDot"></span><span id="engineSummary">Audio status</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ========== Toolbar ========== -->
+    <header class="tb" id="toolbar">
+      <button class="ib" id="btnSidebar" data-feature="sidebar-toggle" aria-label="Show or hide sidebar" data-press="sink"></button>
+      <div class="card cap tb-group" id="transport" role="group" aria-label="Transport">
+        <button class="ib" id="btnRewind" data-feature="rewind" aria-label="Back to start" data-press="sink"></button>
+        <button class="ib play" id="btnPlay" data-feature="play" aria-label="Play or pause" data-press="grow"></button>
+        <button class="ib" id="btnLoop" data-feature="loop-toggle" aria-label="Loop A–B" aria-pressed="false" data-press="sink"></button>
+        <button class="btn sm plain ab" id="btnLoopA" data-feature="loop-a" title="Set loop start ( [ )">A</button>
+        <button class="btn sm plain ab" id="btnLoopB" data-feature="loop-b" title="Set loop end ( ] )">B</button>
+        <button class="ib sm" id="btnLoopReset" data-feature="loop-reset" aria-label="Reset loop" data-press="sink"></button>
+        <span class="tb-sep"></span>
+        <button class="ib" id="tbMetro" data-feature="metro-toggle" aria-label="Metronome on or off" aria-pressed="false" data-press="sink"></button>
+        <span class="metro-pulse" id="metroPulse" data-feature="metro-pulse" aria-hidden="true"></span>
+      </div>
+      <span class="tb-spacer"></span>
+      <button class="btn tinted" id="btnStage" data-feature="stage-mode" title="Stage mode (P)"><span data-icon="stage"></span>Perform</button>
+      <button class="ib" id="tbRemote" data-open="remote" data-feature="sheet-remote" aria-label="Phone remote" data-press="sink"></button>
+      <button class="btn danger" id="btnPanic" data-feature="panic" title="Panic: all notes off (F12)"><span data-icon="alert"></span>Panic</button>
+      <button class="ib" id="tbMenu" data-feature="menu" aria-label="More" data-press="sink"></button>
+      <button class="ib" id="btnInspector" aria-label="Show or hide inspector" data-press="sink"></button>
+    </header>
+
+    <!-- ========== Main ========== -->
+    <main class="main" id="main">
+      <section class="card song" id="songCard" aria-label="Backing track">
+        <div class="song-h">
+          <div class="song-title">
+            <span class="dot" id="songDot"></span>
+            <div class="st-txt"><b id="songTitle">No track loaded</b><em id="songSub">Load an audio file or pick one from the library</em></div>
+          </div>
+          <div class="intel" id="intel" hidden>
+            <span class="chip accent" id="intelKey" data-feature="intel-key">Key --</span>
+            <span class="chip" id="intelBpm" data-feature="intel-bpm">-- BPM</span>
+            <span class="chip" id="intelMeter" data-feature="intel-meter">4/4</span>
+            <button class="btn sm plain" id="btnSyncClick" data-feature="sync-click" title="Set the metronome to the track tempo">Sync click</button>
+          </div>
+          <span class="grow"></span>
+          <div class="timecode" id="timecode" data-feature="timecode" aria-label="Position"><span id="tcNow">0:00.0</span><span class="faint"> / </span><span id="tcDur">0:00</span></div>
+          <select class="sel speed" id="speedSelect" data-feature="speed" aria-label="Playback speed">
+            <option value="0.75">0.75×</option><option value="0.85">0.85×</option><option value="1.0" selected>1.0×</option><option value="1.15">1.15×</option><option value="1.25">1.25×</option>
+          </select>
+          <div class="song-acts">
+            <button class="btn sm" id="btnLoad" data-feature="song-load"><span data-icon="upload"></span>Load</button>
+            <button class="btn sm tinted" id="btnAnalyze" data-feature="song-analyze" disabled><span data-icon="sparkle"></span><span id="btnAnalyzeTxt">Analyze</span></button>
+            <button class="btn sm" id="btnBookmark" data-feature="bookmark-add" disabled title="Add a section bookmark at the playhead (B)"><span data-icon="bookmark"></span>Bookmark</button>
+            <button class="btn sm danger" id="btnClear" data-feature="song-clear" disabled>Clear</button>
+          </div>
+          <input type="file" id="songFileInput" accept=".mp3,.wav,.flac,.ogg,.m4a" hidden>
+        </div>
+        <div class="arr" id="arr">
+          <div class="ruler" id="ruler" aria-hidden="true"></div>
+          <div class="wave" id="waveWrap" data-feature="waveform" aria-label="Waveform. Click to jump.">
+            <canvas id="waveCanvas"></canvas>
+            <div class="loopband" id="loopBand"></div>
+            <div class="flags" id="markerFlags" data-feature="markers"></div>
+            <div class="wave-empty" id="waveEmpty"><span data-icon="note"></span>Import an audio file to start practising</div>
+          </div>
+          <div class="lane chords" id="chordLane" aria-label="Chords"></div>
+          <div class="lane sections" id="sectionLane" data-feature="sections" aria-label="Sections"></div>
+          <div class="playhead" id="playhead"><span></span></div>
+        </div>
+      </section>
+
+      <div class="mid" id="mid">
+        <section class="card panel prog" id="progPanel" aria-label="Song chords">
+          <div class="ph">
+            <span class="title">Chords</span><span class="chip" id="progMeta">No analysis</span>
+            <span class="grow"></span>
+            <button class="ib sm" data-expand="progPanel" aria-label="Expand chords panel"></button>
+          </div>
+          <div class="pbody prog-body">
+            <div class="prog-now" data-feature="prog-current">
+              <div class="lbl">Now <span class="faint num" id="progNowTime">0:00</span></div>
+              <div class="prog-chord"><div class="roll big" id="progNow"></div><span class="nash" id="progNowNash"></span></div>
+              <div class="notes" id="progNowNotes"></div>
+            </div>
+            <div class="prog-next" data-feature="prog-next">
+              <div class="ring" id="progRing"><svg viewBox="0 0 56 56"><circle class="t" cx="28" cy="28" r="23"/><circle class="p" cx="28" cy="28" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/></svg><b id="progNextIn">--</b></div>
+              <div><div class="lbl">Next</div><div class="roll nc" id="progNext"></div><div class="lead" data-feature="voice-leading"><span class="lbl">Lead</span> <span id="voiceLead">--</span></div></div>
+            </div>
+            <div class="measure" id="measureGrid" data-feature="measure-grid"></div>
+            <div class="voicing">
+              <div class="seg" id="voicingSeg" data-feature="voicing-presets">
+                <button class="tab on" data-k="root">Root</button><button class="tab" data-k="inv1">1st</button><button class="tab" data-k="inv2">2nd</button><button class="tab" data-k="ext1">7th</button><button class="tab" data-k="ext2">Add9</button>
+              </div>
+              <div class="vrow">
+                <div class="vtxt"><div id="voicingFormula" class="vf">Root position [1 - 3 - 5]</div><div class="faint">Notes <b id="voicingNotes">--</b></div></div>
+                <svg class="mini-piano" id="miniPiano" data-feature="voicing-piano" viewBox="0 0 168 44" preserveAspectRatio="none" aria-label="Voicing keys"></svg>
+                <button class="btn sm tinted" id="btnAudition" data-feature="audition" title="Play this voicing on the sound engine"><span data-icon="play"></span>Audition</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card panel lyr" id="lyricsPanel" aria-label="Lyrics">
+          <div class="ph">
+            <span class="title">Lyrics</span>
+            <span class="grow"></span>
+            <div id="lyricsFont" data-feature="lyrics-font"></div>
+            <button class="btn sm" id="btnFollow" data-feature="lyrics-follow" aria-pressed="false">Follow</button>
+            <button class="ib sm" data-expand="lyricsPanel" aria-label="Expand lyrics panel"></button>
+          </div>
+          <div class="pbody lyrics" id="lyrics" data-feature="lyrics"><div class="empty">Load and analyze a backing track to see synced lyrics.</div></div>
+        </section>
+      </div>
+
+      <section class="card panel kb" id="keysPanel" aria-label="Keyboard input">
+        <div class="kb-info">
+          <div class="kb-top">
+            <span class="dot ok" id="midiDot"></span>
+            <span class="lbl">Input</span>
+            <span class="faint last-note num" id="lastNote" data-feature="last-note">Standby</span>
+          </div>
+          <div class="kb-chord" data-feature="live-chord"><div class="roll big" id="liveChord"></div><span class="nash" id="liveNash"></span></div>
+          <div class="faint kb-notes" id="liveNotes">Ready</div>
+          <div class="kb-row">
+            <label class="kb-key"><span class="lbl">Key</span>
+              <select class="sel sm" id="nashKeySelect" data-feature="nashville-root" aria-label="Key for Nashville numbers">
+                <option value="C">C</option><option value="C#">C♯/D♭</option><option value="D">D</option><option value="D#">D♯/E♭</option><option value="E">E</option><option value="F">F</option><option value="F#">F♯/G♭</option><option value="G">G</option><option value="G#">G♯/A♭</option><option value="A">A</option><option value="A#">A♯/B♭</option><option value="B">B</option>
+              </select>
+            </label>
+            <button class="btn sm" id="btnLearn" data-feature="learn-chords" aria-pressed="false" title="Record the chords you play into the song timeline"><span class="rec-dot"></span><span id="btnLearnTxt">Learn chords</span></button>
+          </div>
+          <div class="chip accent next-att" id="nextAttention" data-feature="next-chord-attention" hidden>Next <b id="nextAttName">--</b> <span id="nextAttIn"></span></div>
+        </div>
+        <div class="kb-main">
+          <div class="piano" id="piano" data-feature="piano" aria-hidden="true"></div>
+          <div class="pedals">
+            <div class="pedal" data-feature="pedal-sustain"><span>Sustain <i class="faint">CC64</i></span><div class="meter h"><i id="pedSustain"></i></div><b id="pedSustainV">Off</b></div>
+            <div class="pedal" data-feature="pedal-expression"><span>Expression <i class="faint">CC11</i></span><div class="meter h"><i id="pedExpr"></i></div><b id="pedExprV">100%</b></div>
+            <div class="pedal" data-feature="pedal-soft"><span>Soft <i class="faint">CC67</i></span><div class="meter h"><i id="pedSoft"></i></div><b id="pedSoftV">Off</b></div>
+            <div class="pedal" data-feature="pedal-volume"><span>Volume <i class="faint">CC7</i></span><div class="meter h"><i id="pedVol"></i></div><b id="pedVolV">100%</b></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========== Inspector ========== -->
+    <aside class="card insp" id="inspector" aria-label="Inspector">
+      <div class="insp-in">
+        <div class="seg" id="inspTabs"><button class="tab on" data-k="mix">Mix</button><button class="tab" data-k="eq">EQ</button><button class="tab" data-k="click">Click</button></div>
+        <div class="ipanes">
+          <div class="ip on" data-p="mix">
+            <div class="strips">
+              <div class="strip"><span class="nm">Track</span><div class="fw"><div class="meter"><i id="vuTrack"></i></div><div id="fdTrack" data-feature="fader-track"></div></div><span class="dbv" id="dbTrack">0.0</span></div>
+              <div class="strip"><span class="nm">Synth</span><div class="fw"><div class="meter"><i id="vuSynth"></i></div><div id="fdSynth" data-feature="fader-synth"></div></div><span class="dbv" id="dbSynth">0.0</span></div>
+              <div class="strip"><span class="nm">FX Pads</span><div class="fw"><div class="meter"><i id="vuFx"></i></div><div id="fdFx" data-feature="fader-fx"></div></div><span class="dbv" id="dbFx">0.0</span></div>
+              <div class="strip master"><span class="nm">Master</span><div class="fw"><div class="meter"><i id="vuMasterL"></i></div><div class="meter"><i id="vuMasterR"></i></div><div id="fdMaster" data-feature="fader-master"></div></div><span class="dbv" id="dbMaster">0.0</span></div>
+            </div>
+            <div class="grp">
+              <div class="gr"><span class="k">Key shift</span><span class="v"><span id="keyShift" data-feature="key-shift"></span></span>
+                <button class="btn sm plain" id="btnPitchReset" data-feature="key-shift-reset">Reset</button></div>
+            </div>
+            <p class="faint hint">Key shift transposes the backing track from −12 to +12 semitones.</p>
+          </div>
+
+          <div class="ip" data-p="eq">
+            <div class="ip-h"><span class="title">Master EQ</span><span class="grow"></span>
+              <button class="btn sm" id="btnSpectrum" data-feature="spectrum" aria-pressed="true">Spectrum</button>
+              <button class="btn sm" id="btnEqFlat" data-feature="eq-flat">Flat</button></div>
+            <div class="eq-wrap"><canvas id="eqCanvas" data-feature="eq-canvas" aria-label="Equaliser curve. Drag points to change, scroll to adjust width."></canvas></div>
+            <div class="eq-axis faint"><span>20</span><span>100</span><span>1k</span><span>10k</span><span>20k</span></div>
+            <div class="eq-bands" id="eqBands"></div>
+            <div class="ip-h warm-h"><span class="title">Stage Warmth</span><span class="grow"></span><button class="sw sm" id="warmthSwitch" data-feature="warmth-toggle" aria-label="Stage warmth on or off"></button></div>
+            <div class="grp">
+              <div class="gr"><span class="k">Drive</span><div class="grow" id="warmthDrive" data-feature="warmth-drive"></div><span class="v num" id="warmthDriveV">1.20×</span></div>
+              <div class="gr"><span class="k">Mode</span><div class="seg grow" id="warmthMode" data-feature="warmth-mode"><button class="tab on" data-k="0">Tape</button><button class="tab" data-k="1">Crisp</button></div></div>
+              <div class="gr"><span class="k">Saturation</span><div class="meter h grow" data-feature="warmth-meter"><i id="warmthSat"></i></div><span class="v faint">IEM safe</span></div>
+            </div>
+          </div>
+
+          <div class="ip" data-p="click">
+            <div class="ip-h"><span class="title">Metronome</span><span class="grow"></span><button class="sw sm" id="metroSwitch" data-feature="metro-toggle" aria-label="Metronome on or off"></button></div>
+            <div class="grp">
+              <div class="gr"><span class="k">Tempo</span><input class="field num" type="number" id="bpmInput" data-feature="bpm" min="40" max="280" value="120" aria-label="Tempo in BPM"><span class="faint">BPM</span><button class="btn sm tinted" id="btnTap" data-feature="tap-tempo" title="Tap tempo (T)">Tap</button></div>
+              <div class="gr"><span class="k">Sound</span><select class="sel grow" id="metroSound" data-feature="metro-sound"><option value="treble">Treble click</option><option value="woodblock">Woodblock</option><option value="beep">Digital beep</option></select></div>
+              <div class="gr"><span class="k">Time</span><select class="sel grow" id="timeSig" data-feature="time-sig"><option value="4">4/4</option><option value="3">3/4</option><option value="6">6/8</option><option value="5">5/4</option><option value="7">7/8</option><option value="2">2/4</option></select></div>
+              <div class="gr"><span class="k">Level</span><div class="grow" id="clickLevel" data-feature="click-level"></div><span class="v num" id="clickLevelV">100%</span></div>
+            </div>
+            <div class="ip-h"><span class="title">Scenes</span><span class="chip accent" id="sceneActive">Scene 1</span><span class="grow"></span>
+              <button class="btn sm plain" id="btnSceneRename" data-feature="scene-rename">Rename</button></div>
+            <div class="scenes" id="scenesGrid" data-feature="scenes"></div>
+            <button class="btn tinted wide" id="btnSceneSave" data-feature="scene-save"><span data-icon="save"></span><span id="btnSceneSaveTxt">Save mix to scene</span></button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Dynamic Island (positioned over the toolbar centre, or the screen centre in Stage) -->
+  <div class="island-host" id="islandHost"><div id="island" data-feature="island"></div><button class="bubble" id="bubble" aria-label="Drone pad running. Open drone pad."></button></div>
+
+  <!-- Engine popover -->
+  <div class="popover" id="enginePopover" data-feature="engine-popover" role="dialog" aria-label="Audio engine status">
+    <div class="kv"><span class="title">Audio engine</span><span id="epState">Stable</span></div>
+    <div class="kv"><span>Driver / host</span><span id="epDriver">--</span></div>
+    <div class="kv"><span>Device</span><span id="epDevice">--</span></div>
+    <div class="kv"><span>Sample rate</span><span id="epSr">--</span></div>
+    <div class="kv"><span>Buffer</span><span id="epBuf">--</span></div>
+    <div class="kv"><span>Buffer / out latency</span><span id="epLat">--</span></div>
+    <div class="kv"><span>DSP load / peak</span><span id="epDsp">--</span></div>
+    <div class="kv"><span>Dropouts (XRUNs)</span><span id="epXruns">0</span></div>
+  </div>
+
+  <!-- ========== Stage mode ========== -->
+  <div class="stage" id="stage" aria-hidden="true">
+    <div class="stg-top">
+      <div class="solid cap stg-song"><span class="isl-art sm" data-icon="note"></span><div><b id="stgTitle">No track loaded</b><em id="stgSub">--</em></div></div>
+      <div class="stg-tr">
+        <button class="solid round" id="stgTheme" aria-label="Switch light or dark appearance" data-press="grow"></button>
+        <button class="solid round" id="stgExit" aria-label="Exit stage mode (Esc)" data-press="grow"></button>
+      </div>
+    </div>
+    <div class="stg-hero">
+      <div class="stg-meta"><span class="chip accent" id="stgSect">--</span><span class="faint" id="stgKey"></span></div>
+      <div class="roll big stg-chord" id="stgChord"></div>
+      <div class="roll stg-lyric" id="stgLyric"></div>
+    </div>
+    <div class="card stg-next">
+      <div class="ring big"><svg viewBox="0 0 64 64"><circle class="t" cx="32" cy="32" r="27"/><circle class="p" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"/></svg><b id="stgNextIn">--</b></div>
+      <div><div class="lbl">Next</div><div class="roll nc" id="stgNext"></div></div>
+    </div>
+    <div class="card stg-runway" id="stgRunway"><div class="rw-track" id="stgTrack"></div><div class="rw-now"></div></div>
+    <div class="stg-dock">
+      <div class="lg cap stg-tp">
+        <button class="ib" id="stgRew" aria-label="Back to start" data-press="sink"></button>
+        <button class="ib play" id="stgPlay" aria-label="Play or pause" data-press="grow"></button>
+        <button class="ib" id="stgLoop" aria-label="Loop" aria-pressed="false" data-press="sink"></button>
+      </div>
+      <nav class="lg cap tabbar" id="stgTabs">
+        <button class="tab on" data-k="play"><span data-icon="note"></span><span>Play</span></button>
+        <button class="tab" data-k="mix"><span data-icon="sliders"></span><span>Mix</span></button>
+        <button class="tab" data-k="pads"><span data-icon="grid"></span><span>Pads</span></button>
+        <button class="tab" data-k="drone"><span data-icon="wave"></span><span>Drone</span></button>
+        <button class="tab" data-k="setlist"><span data-icon="list"></span><span>Setlist</span></button>
+      </nav>
+      <button class="lg round stg-panic" id="stgPanic" aria-label="Panic: all notes off" data-press="grow"></button>
+    </div>
+    <section class="sheet stg-sheet" id="stgSheet"><div class="grab"><i></i></div><div class="sheet-h"><h2 id="stgSheetTitle"></h2></div><div class="sheet-b" id="stgSheetBody"></div></section>
+  </div>
+
+  <!-- ========== Sheets ========== -->
+  <section class="sheet" id="sheetFx" style="--w:760px" data-feature="sheet-fxpads" aria-labelledby="fxTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="fxTitle">FX Pads</h2>
+      <button class="btn sm danger" id="fxStopAll" data-feature="fx-stop-all">Stop all</button>
+      <button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="seg" id="fxBanks" data-feature="fx-bank">
+        <button class="tab on" data-k="A">A · Perc</button><button class="tab" data-k="B">B · Hits</button><button class="tab" data-k="C">C · Trans</button><button class="tab" data-k="D">D · Special</button><button class="tab" data-k="E">E · Wide</button><button class="tab" data-k="F">F · Live</button>
+      </div>
+      <div class="grp"><div class="gr"><span class="k">Pads level</span><div class="grow" id="fxBus" data-feature="fx-bus"></div><span class="v num" id="fxBusV">-1.4 dB</span></div></div>
+      <div class="fx-grid" id="fxGrid"></div>
+      <div class="card fx-editor" id="fxEditor" data-feature="fx-pad-editor" hidden>
+        <div class="ip-h"><span class="title" id="fxEdTitle">Configure pad</span><span class="grow"></span><button class="btn sm" id="fxEdDone">Done</button></div>
+        <div class="fx-ed-grid">
+          <label class="row-l"><span class="lbl">Sound</span><select class="sel" id="fxEdSound"></select></label>
+          <label class="row-l"><span class="lbl">Trigger mode</span><select class="sel" id="fxEdMode"><option value="oneshot">One shot</option><option value="gate">Gate (hold to play)</option><option value="toggle">Toggle (start/stop)</option></select></label>
+          <label class="row-l"><span class="lbl">Label</span><input class="field" id="fxEdName" maxlength="32"></label>
+          <label class="row-l"><span class="lbl">Choke group</span><select class="sel" id="fxEdChoke"><option value="0">None (polyphonic)</option><option value="1">Group 1 (sub/bass)</option><option value="2">Group 2 (transitions)</option><option value="3">Group 3</option><option value="4">Group 4</option></select></label>
+          <label class="row-l"><span class="lbl">Pitch (semitones)</span><input class="field" type="number" id="fxEdPitch" min="-12" max="12"></label>
+          <div class="row-l"><span class="lbl">Sample file</span><div class="fx-sample"><span class="faint" id="fxEdSample">None</span><button class="btn sm" id="fxEdReplace" data-feature="fx-sample-upload">Replace…</button></div></div>
+        </div>
+        <input type="file" id="fxSampleInput" accept=".wav,.mp3,.flac" hidden>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheetDrone" style="--w:540px" data-feature="sheet-drone" aria-labelledby="droneTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><span class="dot" id="droneDot"></span><h2 id="droneTitle">Drone Pad</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <p class="muted">A continuous root and fifth pad (part 8) that crossfades over two seconds when you change key.</p>
+      <div class="drone-keys" id="droneKeys" data-feature="drone-roots"></div>
+      <div class="grp">
+        <div class="gr"><span class="k">Voice</span><select class="sel grow" id="droneVoice" data-feature="drone-voice">
+          <option value="6:4" selected>Chateau ultra-soft ambient pad</option>
+          <option value="17:89">Zenology pure warm pad</option>
+          <option value="17:94">Zenology halo pad</option>
+          <option value="17:49">Zenology slow swell strings</option>
+          <option value="17:53">Zenology choir oohs</option>
+          <option value="2:89">SC-88 warm analog pad</option>
+          <option value="2:91">Soft choir pad</option>
+          <option value="2:92">Bowed silk string pad</option>
+          <option value="1:11">Yamaha DynaPad soft</option>
+          <option value="1:56">Yamaha atmosphere wash</option>
+        </select></div>
+        <div class="gr"><span class="k">Volume</span><div class="grow" id="droneVol" data-feature="drone-volume"></div><span class="v num" id="droneVolV">75%</span></div>
+        <div class="gr"><span class="k">Warmth</span><div class="grow" id="droneCut" data-feature="drone-cutoff"></div><span class="v num" id="droneCutV">54%</span></div>
+      </div>
+      <button class="btn primary lgx" id="droneToggle" data-feature="drone-toggle">Start drone pad</button>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheetParts" style="--w:820px" data-feature="sheet-parts" aria-labelledby="partsTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="partsTitle">Parts mixer</h2><span class="chip" id="partsEngine">MONTAGE M</span><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b"><p class="muted">Levels, reverb, tone and mute/solo for the eight sound-engine parts.</p><div class="parts" id="partsList"></div></div>
+  </section>
+
+  <section class="sheet" id="sheetEngine" style="--w:520px" data-feature="sheet-engine" aria-labelledby="engineTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="engineTitle">Sound engine</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="list eng-opts">
+        <button class="row eng" data-engine="yamaha"><span class="radio"></span><span class="grow"><b>Yamaha MONTAGE M E.S.P. VST3</b><em>Full 16-part workstation, factory sounds and presets</em></span><span class="chip ok" data-badge="yamaha" hidden>Running</span></button>
+        <button class="row eng" data-engine="community"><span class="radio"></span><span class="grow"><b>Litwave Community SoundFont</b><em>Lightweight: Romantic grand, RD, Chateau, Zenology pads</em></span><span class="chip ok" data-badge="community" hidden>Running</span></button>
+      </div>
+      <div class="kv"><span>Status</span><span id="engineStatusTxt">Checking…</span></div>
+      <div class="eng-acts"><button class="btn primary lgx" id="engineOpen"><span data-icon="synth"></span>Launch / open window</button><button class="btn danger lgx" id="engineKill"><span data-icon="power"></span>Stop engine</button></div>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheetEar" style="--w:560px" data-feature="sheet-ear" aria-labelledby="earTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="earTitle">Ear training</h2><span class="chip accent num" id="earScore">0/0 · streak 0</span><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="seg" id="earTabs"><button class="tab on" data-k="chord_quality">Chords</button><button class="tab" data-k="progression">Progressions</button><button class="tab" data-k="melodic_response">Melody</button><button class="tab" data-k="relative_interval">Intervals</button></div>
+      <div class="card ear-q"><div class="ear-qrow"><b id="earQuestion">Loading exercise…</b><button class="btn sm" id="earReplay"><span data-icon="play"></span>Replay</button></div><div id="earFeedback" class="ear-fb" aria-live="polite"></div></div>
+      <div class="ear-choices" id="earChoices"></div>
+      <button class="btn primary lgx" id="earNext">Next question</button>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheetSetlist" style="--w:640px" aria-labelledby="setlistTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="setlistTitle">Setlists &amp; library</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="seg" id="setlistTabs"><button class="tab on" data-k="setlist">Setlist</button><button class="tab" data-k="library">Library</button></div>
+      <div id="slPaneSetlist" class="sl-pane">
+        <div class="sl-bar"><select class="sel grow" id="slSelect" aria-label="Setlist"></select>
+          <button class="btn sm" id="slNew">New</button><button class="btn sm" id="slAdd">Add song</button><button class="btn sm danger" id="slDelete" data-feature="setlist-delete">Delete</button></div>
+        <div class="list" id="slSongs"></div>
+      </div>
+      <div id="slPaneLibrary" class="sl-pane" hidden>
+        <div class="sl-bar"><span class="muted grow">Load a track, or add it to the active setlist.</span><button class="btn sm" id="slUpload"><span data-icon="upload"></span>Upload</button></div>
+        <div class="list" id="slLibrary"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheetPrefs" style="--w:560px" data-feature="sheet-prefs" aria-labelledby="prefsTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="prefsTitle">Preferences</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="grp">
+        <div class="gr"><span class="k">Audio output</span><select class="sel grow" id="prefAudio" data-feature="pref-audio"><option>Scanning devices…</option></select></div>
+        <div class="gr"><span class="k">Buffer size</span><select class="sel grow" id="prefBuffer" data-feature="pref-buffer"><option value="128">128 samples (2.7 ms)</option><option value="256" selected>256 samples (5.8 ms, recommended)</option><option value="512">512 samples (11.6 ms)</option><option value="1024">1024 samples (23.2 ms)</option></select></div>
+        <div class="gr"><span class="k">MIDI input</span><select class="sel grow" id="prefMidi" data-feature="pref-midi"><option>Scanning…</option></select></div>
+      </div>
+      <div class="grp">
+        <div class="gr"><span class="k">Velocity curve</span><select class="sel grow" id="prefVelCurve"><option value="linear">Linear</option><option value="soft">Soft</option><option value="hard">Hard</option><option value="fixed">Fixed</option></select></div>
+        <div class="gr"><span class="k">Velocity scale</span><div class="grow" id="prefVelScale"></div><span class="v num" id="prefVelScaleV">1.00×</span></div>
+        <div class="gr"><span class="k">Velocity offset</span><div class="grow" id="prefVelOffset"></div><span class="v num" id="prefVelOffsetV">0</span></div>
+      </div>
+      <div class="grp"><div class="gr"><span class="k">Appearance</span><div class="seg grow" id="prefTheme"><button class="tab on" data-k="system">System</button><button class="tab" data-k="light">Light</button><button class="tab" data-k="dark">Dark</button></div></div></div>
+      <div>
+        <div class="lbl">Shortcuts</div>
+        <div class="keys">
+          <span><kbd>Space</kbd> Play / pause</span><span><kbd>[</kbd> <kbd>]</kbd> Loop start / end</span><span><kbd>L</kbd> Loop on/off</span>
+          <span><kbd>Esc</kbd> Stop &amp; rewind</span><span><kbd>T</kbd> Tap tempo</span><span><kbd>B</kbd> Bookmark</span><span><kbd>P</kbd> Stage mode</span><span><kbd>F12</kbd> Panic</span>
+        </div>
+      </div>
+      <p class="faint">Classic interface: <a href="/static/classic/index.html">desktop</a> · <a href="/static/classic/remote.html">phone remote</a></p>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheetRemote" style="--w:420px" aria-labelledby="remoteTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="remoteTitle">Phone remote</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b remote-b">
+      <p class="muted">Scan with your phone camera to control playback, pads, parts and the mix from the stage.</p>
+      <div class="qr"><img id="qrImg" width="200" height="200" alt="QR code for the phone remote" data-feature="remote-qr" hidden></div>
+      <div class="sl-bar"><input class="field grow" id="remoteUrl" readonly aria-label="Remote address"><button class="btn tinted" id="remoteCopy" data-feature="remote-copy"><span data-icon="copy"></span>Copy</button></div>
+    </div>
+  </section>
+
+  <!-- ========== Dialogs ========== -->
+  <section class="sheet dialog" id="dlgBookmark" data-feature="dialog-bookmark" aria-labelledby="dlgBmTitle">
+    <div class="sheet-h"><h2 id="dlgBmTitle">New section bookmark</h2></div>
+    <div class="sheet-b">
+      <label class="row-l"><span class="lbl">Section name</span><input class="field" id="bmName" maxlength="24" placeholder="Verse, Chorus, Solo" autofocus></label>
+      <label class="row-l"><span class="lbl">Recall a scene when playback reaches it</span><select class="sel" id="bmScene"></select></label>
+      <div class="actions"><button class="btn" data-close>Cancel</button><button class="btn primary" id="bmSave">Save</button></div>
+    </div>
+  </section>
+  <section class="sheet dialog" id="dlgRenameScene" data-feature="dialog-rename-scene" aria-labelledby="dlgRsTitle">
+    <div class="sheet-h"><h2 id="dlgRsTitle">Rename scene</h2></div>
+    <div class="sheet-b">
+      <label class="row-l"><span class="lbl">Scene label</span><input class="field" id="rsName" maxlength="24" placeholder="Intro, Verse, Solo" autofocus></label>
+      <div class="actions"><button class="btn" data-close>Cancel</button><button class="btn primary" id="rsSave">Save</button></div>
+    </div>
+  </section>
+  <section class="sheet dialog" id="dlgNewSetlist" data-feature="dialog-new-setlist" aria-labelledby="dlgNsTitle">
+    <div class="sheet-h"><h2 id="dlgNsTitle">New setlist</h2></div>
+    <div class="sheet-b">
+      <label class="row-l"><span class="lbl">Setlist name</span><input class="field" id="nsName" maxlength="40" placeholder="Sunday evening rehearsal" autofocus></label>
+      <div class="actions"><button class="btn" data-close>Cancel</button><button class="btn primary" id="nsSave">Create</button></div>
+    </div>
+  </section>
+  <section class="sheet dialog" id="dlgAddSong" style="--w:480px" aria-labelledby="dlgAsTitle">
+    <div class="sheet-h"><h2 id="dlgAsTitle">Add a track to the setlist</h2></div>
+    <div class="sheet-b"><p class="muted">The current sound-engine settings are saved with it.</p><div class="list" id="asList"></div><div class="actions"><button class="btn" data-close>Close</button></div></div>
+  </section>
+  <section class="sheet dialog" id="dlgConfirm" data-feature="dialog-confirm" aria-labelledby="dlgCfTitle">
+    <div class="sheet-h"><h2 id="dlgCfTitle">Are you sure?</h2></div>
+    <div class="sheet-b"><p id="cfMsg" class="muted"></p><div class="actions"><button class="btn" data-close>Cancel</button><button class="btn danger" id="cfOk">Confirm</button></div></div>
+  </section>
+
   <script src="/static/chord_timeline.js"></script>
   <script src="/static/browser_api.js"></script>
   <script src="/static/ws_telemetry.js"></script>
-  <script>window.LW = window.LW || {};</script>
+  <script>window.LW = window.LW || {}; window.LW.page = "desktop";</script>
+  <script src="/static/js/kit/core.js"></script>
+  <script src="/static/js/kit/spring.js"></script>
+  <script src="/static/js/kit/icons.js"></script>
+  <script src="/static/js/kit/controls.js"></script>
+  <script src="/static/js/kit/island.js"></script>
+  <script src="/static/js/kit/sheet.js"></script>
+  <script src="/static/js/desktop/state.js"></script>
+  <script src="/static/js/desktop/telemetry.js"></script>
+  <script src="/static/js/desktop/layout.js"></script>
+  <script src="/static/js/desktop/transport.js"></script>
+  <script src="/static/js/desktop/waveform.js"></script>
+  <script src="/static/js/desktop/markers.js"></script>
+  <script src="/static/js/desktop/song.js"></script>
+  <script src="/static/js/desktop/status.js"></script>
+  <script src="/static/js/desktop/app.js"></script>
 </body>
 </html>

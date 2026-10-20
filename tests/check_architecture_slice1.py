@@ -176,7 +176,8 @@ def test_remote_drone_variable_declared():
 
 def test_chord_debounce_variable_scope():
     """lastRecordedChord and lastRecordedChordTime must NOT be declared inside renderTelemetry."""
-    index_path = os.path.join(REPO_ROOT, "src", "static", "index.html")
+    # The redesigned desktop keeps its telemetry hub in its own script.
+    index_path = os.path.join(REPO_ROOT, "src", "static", "js", "desktop", "telemetry.js")
     with open(index_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
