@@ -175,6 +175,11 @@ html[data-theme="light"] .sl.live .sl-th { box-shadow: inset 0 0 0 .5px rgba(0, 
 .row em { display: block; font-style: normal; font-size: 11.5px; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .grp { background: var(--s1); border-radius: var(--r-lg); padding: 4px 14px; }
 html[data-theme="dark"] .sheet .grp { background: var(--s3); }
+html[data-theme="dark"] .sheet .field, html[data-theme="dark"] .sheet .sel { background-color: var(--s3); }
+html[data-theme="dark"] .sheet .grp .field, html[data-theme="dark"] .sheet .grp .sel { background-color: #3A3A3C; }
+/* Neutral buttons sit on the dark sheet surface, so lift them one step to keep their shape visible. */
+html[data-theme="dark"] .sheet .btn:not(.primary):not(.tinted):not(.danger):not(.plain):not(.on):not([aria-pressed="true"]) { background: var(--s3); }
+html[data-theme="dark"] .sheet .btn:not(.primary):not(.tinted):not(.danger):not(.plain):not(.on):not([aria-pressed="true"]):hover { background: #3A3A3C; }
 .grp > .gr { display: flex; align-items: center; gap: 12px; min-height: 48px; border-bottom: .5px solid var(--sep); }
 .grp > .gr:last-child { border-bottom: 0; }
 .gr > .k { flex: none; min-width: 110px; font-weight: 500; }

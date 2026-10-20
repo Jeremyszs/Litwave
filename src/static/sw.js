@@ -1,11 +1,31 @@
 // Litwave Stage Remote - Service Worker (Offline PWA)
-const CACHE_NAME = "litwave-remote-v2";
+const CACHE_NAME = "litwave-remote-v3";
+// The redesigned phone shell: page, styles, bundled font, kit and remote modules.
 const STATIC_ASSETS = [
   "/remote",
   "/static/remote.html",
   "/static/chord_timeline.js",
   "/static/browser_api.js",
   "/static/ws_telemetry.js",
+  "/static/css/tokens.css",
+  "/static/css/kit.css",
+  "/static/css/remote.css",
+  "/static/fonts/inter-latin-wght-normal.woff2",
+  "/static/js/kit/core.js",
+  "/static/js/kit/spring.js",
+  "/static/js/kit/icons.js",
+  "/static/js/kit/controls.js",
+  "/static/js/kit/island.js",
+  "/static/js/kit/sheet.js",
+  "/static/js/remote/state.js",
+  "/static/js/remote/stage.js",
+  "/static/js/remote/pads.js",
+  "/static/js/remote/mix.js",
+  "/static/js/remote/parts.js",
+  "/static/js/remote/song.js",
+  "/static/js/remote/sheets.js",
+  "/static/js/remote/app.js",
+  "/manifest.json",
   "/static/manifest.json",
   "/static/icon-192.png",
   "/static/icon-512.png",

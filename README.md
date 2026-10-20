@@ -49,7 +49,7 @@ The application couples an asynchronous Python backend (Starlette / asyncio) wit
   - `src/api_practice.py`: Ear training exercises, ambient drone pad state & controls.
   - `src/api_setlist.py`: Setlist CRUD, reordering, patch snapshots, patch application.
   - `src/api_analysis.py`: MIR song analysis runner with executor isolation and synced lyrics fetching.
-- **`src/static/`**: Clean browser client assets (desktop studio `index.html`, phone stage remote `remote.html`, service worker `sw.js`).
+- **`src/static/`**: Clean browser client assets (desktop studio `index.html`, phone stage remote `remote.html`, service worker `sw.js`). The previous UI is kept unchanged at `/static/classic/index.html` and `/static/classic/remote.html` as a fallback.
 
 ---
 
@@ -66,8 +66,13 @@ Both desktop (`src/static/index.html`) and remote (`src/static/remote.html`) int
 3. **`/static/ws_telemetry.js`**
    - Resilient WebSocket connection manager (`createWsClient`), exponential backoff with jitter (`calculateBackoff`), automatic reconnect lifecycle, and message dispatcher.
    - UMD bundle: exposes `WsTelemetry` namespace and backwards-compatible globals.
-4. **Inline Application Scripts (`<script> ... </script>`)**
-   - UI binding, event listeners, canvas rendering, and DOM manipulation.
+4. **A one-line inline `<script>`** that creates the `window.LW` namespace and names the page (`desktop` or `remote`). A separate tiny script in `<head>` applies the saved light/dark theme before first paint.
+5. **The UI kit (`/static/js/kit/`)**, in this order: `core.js` (the shared `window.LW` namespace, DOM and API helpers, alerts, theme), `spring.js` (interruptible damping/response springs, momentum projection, rubber-banding), `icons.js`, `controls.js` (tabs, sliders, switches, steppers, menus), `island.js` (the Dynamic Island), `sheet.js` (sheets and dialogs).
+6. **Page modules**, which only talk to each other through `LW`:
+   - Desktop: `/static/js/desktop/` — `state.js` and `telemetry.js` first, `layout.js` next, then one file per feature (transport, waveform, markers, song, status, voicing, progression, lyrics, keyboard, mixer, eq, warmth, metronome, scenes, fxpads, drone, parts, engine, ear, setlist, prefs, stage) and `app.js` last.
+   - Phone: `/static/js/remote/` — `state.js` first, then stage, pads, mix, parts, song, sheets, and `app.js` last.
+
+Styles live in `/static/css/`: `tokens.css` (bundled Inter font and the light/dark colour tokens), `kit.css` (shared components), `studio.css` and `stage.css` (desktop), `remote.css` (phone). The font is bundled at `/static/fonts/` so the UI works offline. Every user-facing control carries a `data-feature` key, and `tests/check_redesign_parity.js` checks that none go missing.
 
 ---
 
@@ -96,6 +101,10 @@ These commands run purely in memory or with mock states, creating no audio strea
 # Frontend extraction & contract checks (Node.js vm & CommonJS)
 node tests/check_frontend_extraction.js
 node tests/check_chord_timeline.js
+node tests/check_redesign_kit.js
+node tests/check_redesign_desktop.js
+node tests/check_redesign_remote.js
+node tests/check_redesign_parity.js all
 
 # Architecture, imports, and lifespan safety (Python stdlib AST)
 python tests/check_architecture_slice1.py

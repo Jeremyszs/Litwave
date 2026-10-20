@@ -44,6 +44,59 @@ function testScriptSyntax() {
   console.log("PASS: script syntax checks (files & inline scripts)");
 }
 
+// 1b. Every redesign module under js/** parses, and every page script loads in a valid order.
+function walkJs(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => {
+    const p = path.join(dir, d.name);
+    return d.isDirectory() ? walkJs(p) : d.name.endsWith(".js") ? [p] : [];
+  });
+}
+function testRedesignModuleSyntax() {
+  const files = walkJs(path.join(STATIC_DIR, "js"));
+  assert(files.length >= 30, `expected the redesign modules under js/, found ${files.length}`);
+  files.forEach((f) => {
+    const rel = path.relative(STATIC_DIR, f);
+    assert.doesNotThrow(() => new vm.Script(fs.readFileSync(f, "utf8"), { filename: rel }), `Syntax error in ${rel}`);
+  });
+  console.log(`PASS: ${files.length} redesign modules under js/ parse`);
+}
+
+// 1c. The phone remote works offline: the service worker precaches its whole shell.
+function testRemoteOfflineShell() {
+  const html = fs.readFileSync(path.join(STATIC_DIR, "remote.html"), "utf8");
+  const sw = fs.readFileSync(path.join(STATIC_DIR, "sw.js"), "utf8");
+  assert(sw.includes('"litwave-remote-v3"'), "sw.js cache name must be litwave-remote-v3 so old shells are dropped");
+  const refs = [...html.matchAll(/(?:src|href)="(\/static\/[^"]+\.(?:js|css|woff2))"/g)].map((m) => m[1]);
+  assert(refs.length >= 20, `expected remote.html to load the kit and remote modules, found ${refs.length}`);
+  refs.forEach((r) => {
+    assert(fs.existsSync(path.join(STATIC_DIR, r.replace(/^\/static\//, ""))), `remote.html references a missing file: ${r}`);
+    assert(sw.includes(`"${r}"`), `sw.js must precache ${r}`);
+  });
+  ["/api/", "/ws", "/static/uploads/"].forEach((b) => assert(sw.includes(`"${b}"`), `sw.js must keep the ${b} network bypass`));
+  console.log(`PASS: service worker precaches all ${refs.length} remote shell assets`);
+}
+
+// 1d. The saved theme is applied in <head>, so a light-mode user never sees a dark first frame.
+function testThemeBeforePaint() {
+  ["index.html", "remote.html"].forEach((f) => {
+    const html = fs.readFileSync(path.join(STATIC_DIR, f), "utf8");
+    const head = html.slice(0, html.indexOf("</head>"));
+    const m = head.match(/<script>([\s\S]*?)<\/script>/);
+    assert(m && m[1].includes("lw-theme") && m[1].includes("data-theme"), `${f} must apply the saved theme in <head>`);
+    const attrs = {};
+    const run = (stored, osLight) => {
+      const ctx = { localStorage: { getItem: () => stored }, matchMedia: () => ({ matches: osLight }), document: { documentElement: { setAttribute: (k, v) => { attrs[k] = v; } } } };
+      vm.runInNewContext(m[1], ctx);
+      return attrs["data-theme"];
+    };
+    assert.strictEqual(run("light", false), "light");
+    assert.strictEqual(run("dark", true), "dark");
+    assert.strictEqual(run(null, true), "light");
+    assert.strictEqual(run("system", false), "dark");
+  });
+  console.log("PASS: saved theme applied before first paint on both pages");
+}
+
 // 2. Exported Helper Behavior (CommonJS require)
 function testChordTimelineHelpers() {
   const timeline = require("../src/static/chord_timeline.js");
@@ -373,6 +426,9 @@ function testSourceIntegration() {
 async function runAll() {
   console.log("Starting Frontend Extraction Regression Tests...\n");
   testScriptSyntax();
+  testRedesignModuleSyntax();
+  testRemoteOfflineShell();
+  testThemeBeforePaint();
   testChordTimelineHelpers();
   testBrowserApiHelpers();
   await testBrowserApiNetwork();
