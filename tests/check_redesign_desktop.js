@@ -171,3 +171,22 @@ run("setlist song subtitle shows key, pad root and engine", () => {
   const t = ctx.LW.setlist.songSub({ key: "E", patch_snapshot: { drone_root: "E", engine_type: "community" } });
   assert(/E/.test(t) && /community/i.test(t), t);
 });
+
+const T7 = [...KIT, "js/desktop/state.js", "js/desktop/telemetry.js", "js/desktop/song.js", "js/desktop/stage.js"];
+
+run("stage runway lays out playable chart chords by time", () => {
+  const ctx = load(T7);
+  const items = ctx.LW.stage.runwayItems([{ time: 0, chord: "N" }, { time: 2, chord: "C", nashville: "1" }, { time: 4, chord: "G" }], 10, 50);
+  assert.strictEqual(items.length, 2);
+  assert.strictEqual(items[0].x, 100);
+  assert.strictEqual(items[0].w, 100);
+  assert.strictEqual(items[1].w, 300);
+});
+
+run("stage hero falls back to the live MIDI chord without a chart", () => {
+  const ctx = load(T7);
+  ctx.LW.state.chart = [];
+  ctx.LW.state.midi = { active_notes: [57, 60, 64], active_note_names: ["A3", "C4", "E4"] };
+  assert.strictEqual(ctx.LW.stage.hero().chord, "Am");
+  assert.strictEqual(ctx.LW.stage.hero().runway, false);
+});

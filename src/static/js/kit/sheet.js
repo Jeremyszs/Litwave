@@ -10,7 +10,7 @@
     document.body.appendChild(scrim);
     return scrim;
   };
-  const syncScrim = () => { const s = ensureScrim(); if (s) s.classList.toggle("on", stack.length > 0); };
+  const syncScrim = () => { const s = ensureScrim(); if (s) s.classList.toggle("on", stack.some((x) => !x.noScrim)); };
 
   LW.sheet = (el, opts) => {
     const o = opts || {};
@@ -24,6 +24,7 @@
     const api = {
       el,
       modal: !!o.modal,
+      noScrim: !!o.noScrim,
       get isOpen() { return open; },
       open(origin) {
         if (origin && origin.getBoundingClientRect) {
