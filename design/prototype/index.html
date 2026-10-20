@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Litwave Redesign — Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js"></script>
+  <style>
+    .wrap { max-width: 960px; margin: 0 auto; padding: 56px 24px; display: flex; flex-direction: column; gap: 32px; }
+    .top { display: flex; align-items: center; gap: 12px; }
+    .top h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .intro { font-size: 15px; line-height: 1.6; color: var(--text-2); max-width: 640px; }
+    .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
+    .link { display: flex; flex-direction: column; gap: 10px; padding: 22px; text-decoration: none; color: var(--text); transition: transform .2s var(--ease), border-color .2s ease, box-shadow .2s ease; }
+    .link:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .link-ico { width: 40px; height: 40px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+    .link h2 { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+    .link p { font-size: 13px; line-height: 1.5; color: var(--text-2); }
+    .keys { font-size: 13px; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 14px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="top">
+    <h1 class="grow">Litwave</h1>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" class="seg-item" data-theme-set="light">Light</button>
+      <button type="button" class="seg-item" data-theme-set="dark">Dark</button>
+    </div>
+  </div>
+  <p class="intro">UI/UX redesign prototype. Open a screen below. The theme you pick is remembered across pages. Everything here is a mock-up: no audio engine or MIDI is connected, and song, setlist and lyric text are placeholders.</p>
+  <div class="links">
+    <a class="card link" href="studio.html">
+      <span class="link-ico"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M10 10v10"></path></svg></span>
+      <h2>Desktop studio</h2>
+      <p>Transport, live chord view with countdown, lyrics, MIDI keyboard, mixer, scenes, drone pad and command palette.</p>
+    </a>
+    <a class="card link" href="remote.html">
+      <span class="link-ico"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18H7z M11 18h2"></path></svg></span>
+      <h2>Phone stage remote</h2>
+      <p>Stage chords, FX pads, mix &amp; scenes, and setlist with a bottom tab bar. Fills the screen on a phone.</p>
+    </a>
+    <a class="card link" href="tokens.html">
+      <span class="link-ico"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1.2-1-1.5-1-2.5s.8-1.5 2-1.5H17a4 4 0 0 0 4-4c0-4.4-4-8.5-9-8.5z M7.5 11h.01 M10.5 7h.01 M15.5 8h.01"></path></svg></span>
+      <h2>Design tokens</h2>
+      <p>Colours for both themes, type scale, radius, spacing and motion — the basis for the shared stylesheet.</p>
+    </a>
+  </div>
+  <div class="keys">
+    <span><span class="kbd">Ctrl K</span> / <span class="kbd">⌘K</span> command palette</span>
+    <span><span class="kbd">Space</span> play / pause</span>
+    <span><span class="kbd">←</span> <span class="kbd">→</span> seek 5 s</span>
+  </div>
+</main>
+</body>
+</html>

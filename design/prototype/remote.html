@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Litwave Remote — Redesign prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js"></script>
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; align-items: center; justify-content: center; }
+    /* On a desktop browser the remote is shown inside a phone-sized frame; on a phone it fills the screen. */
+    .phone { position: relative; width: 390px; height: min(844px, calc(100dvh - 32px)); display: flex; flex-direction: column; overflow: hidden; background: var(--bg); border-radius: 44px; border: 1px solid var(--line-strong); box-shadow: var(--shadow-lg); transition: background-color var(--dur-theme) ease; }
+    @media (max-width: 500px), (max-height: 700px) {
+      body { display: block; }
+      .phone { width: 100%; height: 100dvh; border-radius: 0; border: 0; box-shadow: none; }
+    }
+    .r-header { display: flex; align-items: center; gap: 12px; padding: calc(18px + env(safe-area-inset-top)) 18px 12px; }
+    .r-title { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .r-btn { width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-2); transition: transform var(--dur-press) ease, background-color .2s ease; }
+    .r-btn:active { transform: scale(.92); }
+    .r-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 16px 16px; }
+    .page { display: none; flex-direction: column; gap: 12px; }
+    .page.is-active { display: flex; animation: page-in .32s var(--ease); }
+    @keyframes page-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+    .r-card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; transition: background-color var(--dur-theme) ease; }
+
+    .big-chord { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 0 6px; }
+    .big-chord b { font-size: 104px; line-height: .95; font-weight: 650; letter-spacing: -0.05em; }
+    .beats { display: flex; gap: 5px; }
+    .beats span { width: 9px; height: 9px; border-radius: 999px; background: var(--line-strong); transition: background-color .12s ease; }
+    .beats span.is-past { background: var(--text-3); }
+    .beats span.is-now { background: var(--accent); }
+    .beats span.is-now.is-one { background: var(--warm); }
+    .countdown { height: 6px; border-radius: 999px; background: var(--sunken); overflow: hidden; }
+    .countdown i { display: block; height: 100%; border-radius: 999px; background: var(--warm); }
+    .measures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .measure { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 14px; background: var(--sunken); border: 1px solid var(--line); transition: background-color .3s ease, border-color .3s ease, opacity .3s ease; }
+    .measure.is-past { opacity: .5; }
+    .measure.is-current { background: var(--accent-soft); border-color: var(--accent); }
+    .measure strong { font-size: 17px; font-weight: 650; }
+    .measure .progress { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); }
+    .r-transport { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; }
+    .r-transport .r-btn { width: 52px; height: 52px; border-radius: 999px; }
+    .r-play { width: 72px; height: 72px; border-radius: 999px; border: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--accent-ink); cursor: pointer; box-shadow: 0 10px 28px var(--accent-glow); transition: transform .15s var(--ease); }
+    .r-play:active { transform: scale(.92); }
+
+    .banks { display: flex; padding: 3px; gap: 2px; border-radius: 13px; background: var(--sunken); border: 1px solid var(--line); }
+    .banks button { flex: 1 1 0; height: 36px; border-radius: 10px; border: 0; background: transparent; color: var(--text-2); font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+    .banks button.is-active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .14), 0 0 0 1px var(--line); }
+    .pads { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .pad { --c: var(--p1); position: relative; aspect-ratio: 1 / 1; border-radius: 18px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; padding: 10px; cursor: pointer; text-align: left; color: var(--c); background: color-mix(in srgb, var(--c) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); transition: transform .1s ease; touch-action: manipulation; }
+    .pad:active { transform: scale(.93); }
+    .pad span:last-child { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.2; }
+    .pad.is-hit { animation: hit .55s var(--ease); }
+    @keyframes hit { 0% { box-shadow: 0 0 0 0 var(--c); filter: brightness(1.5); } 100% { box-shadow: 0 0 0 14px transparent; filter: none; } }
+
+    .r-row { display: flex; align-items: center; gap: 12px; }
+    .r-row label { width: 64px; font-size: 14px; font-weight: 500; color: var(--text-2); }
+    .r-row output { width: 40px; text-align: right; font-size: 13px; color: var(--text-3); }
+    .r-row .range { height: 28px; }
+    .r-row .range::-webkit-slider-runnable-track { height: 6px; }
+    .r-row .range::-moz-range-track, .r-row .range::-moz-range-progress { height: 6px; }
+    .r-row .range::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -9px; }
+    .r-row .range::-moz-range-thumb { width: 24px; height: 24px; }
+    .scenes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .scene { height: 56px; border-radius: 14px; border: 1px solid var(--line); background: var(--sunken); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; transition: background-color .2s ease, border-color .2s ease, transform .1s ease; }
+    .scene:active { transform: scale(.95); }
+    .scene small { font-size: 11px; font-weight: 600; opacity: .75; font-family: var(--font-mono); }
+    .scene span { font-size: 12px; font-weight: 600; }
+    .scene.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+    .song { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 10px 12px; border-radius: 16px; border: 1px solid transparent; background: transparent; cursor: pointer; text-align: left; transition: background-color .2s ease, border-color .2s ease; }
+    .song:active { background: var(--hover); }
+    .song.is-current { background: var(--accent-soft); border-color: var(--accent); }
+    .song .num { width: 26px; height: 26px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: var(--sunken); color: var(--text-2); }
+    .song .now { height: 24px; padding: 0 10px; border-radius: 999px; display: none; align-items: center; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+    .song.is-current .now { display: inline-flex; }
+
+    .tabbar { display: flex; gap: 4px; padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 16px)); border-top: 1px solid var(--line); background: var(--tabbar); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .tab { flex: 1 1 0; height: 56px; border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--text-3); cursor: pointer; border-radius: 14px; transition: color .2s ease; }
+    .tab .pill { width: 52px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center; transition: background-color .25s ease; }
+    .tab.is-active { color: var(--accent); }
+    .tab.is-active .pill { background: var(--accent-soft); }
+    .phone .toast { position: absolute; bottom: auto; top: 84px; white-space: nowrap; border-radius: 999px; padding: 10px 16px; animation-name: toast-down; }
+    @keyframes toast-down { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  </style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <header class="r-header">
+    <div style="display: flex; flex-direction: column; gap: 3px; flex: 1 1 auto; min-width: 0">
+      <span class="muted" style="font-size: 12px; color: var(--text-3); display: flex; align-items: center; gap: 6px"><span class="dot live"></span>Linked to Studio</span>
+      <h1 class="r-title" id="pageTitle">[Song title]</h1>
+    </div>
+    <button type="button" class="r-btn" data-theme-toggle data-icon-size="20" aria-label="Toggle light or dark theme"></button>
+    <button type="button" class="r-btn" id="panicBtn" aria-label="Panic — all notes off" style="color: var(--danger); background: var(--danger-soft); border-color: transparent">
+      <svg class="ico" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z M12 8v5 M12 16h.01"></path></svg>
+    </button>
+  </header>
+
+  <div class="r-content">
+    <section class="page is-active" id="page-stage" aria-label="Stage">
+      <div class="r-card" style="padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span class="chip chip-accent" style="height: 24px" id="sectionBadge">Chorus</span>
+          <span class="mono" style="font-size: 12px; color: var(--text-3)" id="barText">Bar 1/4</span>
+          <div class="grow"></div>
+          <div class="beats" id="beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        </div>
+        <div class="big-chord" id="chordNow" aria-live="polite">
+          <b id="curName">E</b>
+          <span class="mono" style="font-size: 18px; font-weight: 600; padding: 4px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent)" id="curNash">1</span>
+        </div>
+      </div>
+      <div class="r-card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span class="label">Next</span>
+          <span id="nextName" style="font-size: 30px; font-weight: 650; letter-spacing: -0.03em; line-height: 1">B</span>
+          <span class="mono" style="font-size: 13px; color: var(--text-3)" id="nextNash">5</span>
+          <div class="grow"></div>
+          <span class="mono" style="font-size: 13px; font-weight: 600; color: var(--warm)" id="beatsLeft">4 beats</span>
+        </div>
+        <div class="countdown"><i id="countdown"></i></div>
+      </div>
+      <div class="measures" id="measures"></div>
+      <div style="padding: 6px 4px; display: flex; flex-direction: column; gap: 6px" aria-label="Lyrics">
+        <p style="font-size: 18px; font-weight: 600; line-height: 1.4" id="lyricNow"></p>
+        <p style="font-size: 15px; line-height: 1.4; color: var(--text-3)" id="lyricNext"></p>
+      </div>
+      <div class="r-transport">
+        <button type="button" class="r-btn" id="prevSection" aria-label="Previous section"><svg class="ico-fill" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14L9 12z M5 5h2.2v14H5z"></path></svg></button>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <button type="button" class="r-play" id="playBtn" aria-label="Play"></button>
+          <span class="mono" style="font-size: 13px; color: var(--text-2)" id="timeNow">00:00.0 / 04:36.0</span>
+        </div>
+        <button type="button" class="r-btn" id="nextSection" aria-label="Next section"><svg class="ico-fill" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14l10-7z M16.8 5H19v14h-2.2z"></path></svg></button>
+      </div>
+    </section>
+
+    <section class="page" id="page-pads" aria-label="FX pads">
+      <div class="banks" role="group" aria-label="Pad bank" id="banks"></div>
+      <div class="pads" id="pads"></div>
+      <div class="r-card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <span class="label grow" id="lastPad">Last hit · —</span>
+          <button type="button" class="btn btn-danger" id="stopAll">Stop all</button>
+        </div>
+        <div class="r-row">
+          <label for="padsVol">Volume</label>
+          <input type="range" class="range" id="padsVol" min="0" max="100" value="72">
+          <output class="mono" id="padsVolOut">72%</output>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-mix" aria-label="Mix and scenes">
+      <div class="r-card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px" id="mixer">
+        <span class="label">Mixer</span>
+      </div>
+      <div class="r-card" style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <span class="label">Scenes</span>
+        <div class="scenes" id="scenes"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-setlist" aria-label="Setlist" style="gap: 4px">
+      <div style="display: flex; align-items: center; padding: 4px 4px 10px">
+        <span class="label grow">[Setlist name] · 7 songs</span>
+        <span class="mono" style="font-size: 12px; color: var(--text-3)">≈ 34 min</span>
+      </div>
+      <div id="songs" style="display: flex; flex-direction: column; gap: 4px"></div>
+    </section>
+  </div>
+
+  <nav class="tabbar" aria-label="Remote sections" id="tabbar"></nav>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const CHORDS = [["E", "1"], ["B", "5"], ["C#m", "6m"], ["A", "4"], ["E/G#", "1/3"], ["B", "5"], ["A", "4"], ["Bsus4", "5sus"]];
+  const SECTIONS = [
+    { label: "Intro", s: 0, e: 16 }, { label: "Verse 1", s: 16, e: 62 }, { label: "Chorus", s: 62, e: 95 },
+    { label: "Verse 2", s: 95, e: 140 }, { label: "Chorus", s: 140, e: 175 }, { label: "Bridge", s: 175, e: 215 },
+    { label: "Chorus", s: 215, e: 250 }, { label: "Outro", s: 250, e: 276 }
+  ];
+  const LYRICS = [
+    "[Chorus — lyric line 1]", "[Chorus — lyric line 2]", "[Chorus — lyric line 3]", "[Chorus — lyric line 4]",
+    "[Verse 2 — lyric line 1]", "[Verse 2 — lyric line 2]", "[Verse 2 — lyric line 3]", "[Verse 2 — lyric line 4]"
+  ];
+  const DUR = 276, BAR = 240 / 72, BEAT = 60 / 72;
+  const state = { playing: false, pos: 70.4, bank: "A" };
+
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const sectionIndex = (t) => Math.max(0, SECTIONS.findIndex((x) => t >= x.s && t < x.e));
+  const setFill = (input) => input.style.setProperty("--fill", input.value + "%");
+  const buzz = () => { if (navigator.vibrate) navigator.vibrate(10); };
+  const toast = (text) => {
+    Lit.toast(text);
+    const t = document.querySelector(".toast");
+    if (t) $("phone").appendChild(t);
+  };
+
+  // Tabs
+  const TABS = [["stage", "Stage", "library", "[Song title]"], ["pads", "Pads", "pads", "FX pads"], ["mix", "Mix", "mixer", "Mix & scenes"], ["setlist", "Setlist", "setlist", "Setlist"]];
+  TABS.forEach(([key, label, icon, title]) => {
+    const b = el("button", "tab" + (key === "stage" ? " is-active" : ""), '<span class="pill">' + Lit.icon(icon, 21) + "</span>" + label);
+    b.type = "button";
+    b.dataset.tab = key;
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((t) => { const on = t === b; t.classList.toggle("is-active", on); t.setAttribute("aria-current", on ? "page" : "false"); });
+      document.querySelectorAll(".page").forEach((p) => p.classList.toggle("is-active", p.id === "page-" + key));
+      $("pageTitle").textContent = title;
+    });
+    $("tabbar").appendChild(b);
+  });
+
+  // Stage
+  const measureEls = [0, 1, 2, 3].map(() => {
+    const m = el("div", "measure", '<strong></strong><span class="mono" style="font-size: 11px; color: var(--text-3)"></span><span class="progress" aria-hidden="true"></span>');
+    $("measures").appendChild(m);
+    return m;
+  });
+  function setPlaying(on) {
+    state.playing = on;
+    $("playBtn").innerHTML = Lit.icon(on ? "pause" : "play", 28, true);
+    $("playBtn").setAttribute("aria-label", on ? "Pause" : "Play");
+  }
+  setPlaying(false);
+  $("playBtn").addEventListener("click", () => { buzz(); setPlaying(!state.playing); });
+  $("prevSection").addEventListener("click", () => { state.pos = SECTIONS[(sectionIndex(state.pos) + SECTIONS.length - 1) % SECTIONS.length].s + 0.01; });
+  $("nextSection").addEventListener("click", () => { state.pos = SECTIONS[(sectionIndex(state.pos) + 1) % SECTIONS.length].s + 0.01; });
+  $("panicBtn").addEventListener("click", () => { buzz(); setPlaying(false); toast("All notes off"); });
+
+  // Pads
+  const PAD_NAMES = ["Riser", "Impact", "Sweep up", "Reverse cymbal", "Sub drop", "Swell", "Noise build", "Downlifter", "Vox chop", "Shaker loop", "Clap stack", "Tape stop"];
+  const padEls = PAD_NAMES.map((name, i) => {
+    const b = el("button", "pad", '<span class="mono" style="font-size: 11px; font-weight: 600"></span><span>' + name + "</span>");
+    b.type = "button";
+    b.style.setProperty("--c", "var(--p" + ((i % 6) + 1) + ")");
+    b.addEventListener("pointerdown", () => {
+      buzz();
+      Lit.replay(b, "is-hit");
+      $("lastPad").textContent = "Last hit · " + state.bank + (i + 1) + " " + name;
+    });
+    $("pads").appendChild(b);
+    return b;
+  });
+  function setBank(bank) {
+    state.bank = bank;
+    document.querySelectorAll("#banks button").forEach((b) => { const on = b.textContent === bank; b.classList.toggle("is-active", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    padEls.forEach((p, i) => { p.firstChild.textContent = bank + (i + 1); });
+  }
+  ["A", "B", "C", "D", "E", "F"].forEach((bank) => {
+    const b = el("button", "", bank);
+    b.type = "button";
+    b.addEventListener("click", () => setBank(bank));
+    $("banks").appendChild(b);
+  });
+  setBank("A");
+  $("padsVol").addEventListener("input", (e) => { setFill(e.target); $("padsVolOut").textContent = e.target.value + "%"; });
+  setFill($("padsVol"));
+  $("stopAll").addEventListener("click", () => toast("All pads stopped"));
+
+  // Mix
+  [["track", "Track", 78], ["synth", "Synth", 66], ["pads", "FX pads", 54], ["drone", "Drone", 40], ["click", "Click", 30], ["master", "Master", 84]].forEach(([key, label, v]) => {
+    const row = el("div", "r-row", '<label for="m-' + key + '">' + label + '</label><input type="range" class="range" id="m-' + key + '" min="0" max="100" value="' + v + '"><output class="mono">' + v + "</output>");
+    const input = row.querySelector("input"), out = row.querySelector("output");
+    setFill(input);
+    input.addEventListener("input", () => { setFill(input); out.textContent = input.value; });
+    $("mixer").appendChild(row);
+  });
+  ["Intro", "Verse", "Pre", "Chorus", "Bridge", "Tag", "Pads", "Outro"].forEach((name, i) => {
+    const b = el("button", "scene" + (i === 3 ? " is-active" : ""), "<small>S" + (i + 1) + "</small><span>" + name + "</span>");
+    b.type = "button";
+    b.addEventListener("click", () => {
+      buzz();
+      document.querySelectorAll(".scene").forEach((s) => s.classList.toggle("is-active", s === b));
+      toast("Scene " + (i + 1) + " recalled");
+    });
+    $("scenes").appendChild(b);
+  });
+
+  // Setlist
+  [["E", 76], ["A", 68], ["E", 72], ["D", 130], ["G", 64], ["B", 74], ["C", 120]].forEach(([key, bpm], i) => {
+    const b = el("button", "song" + (i === 2 ? " is-current" : ""),
+      '<span class="num mono">' + (i + 1) + "</span>" +
+      '<span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0"><span style="font-size: 15px; font-weight: 600">[Song ' + (i + 1) + " title]</span>" +
+      '<span class="mono" style="font-size: 12px; color: var(--text-3)">Key ' + key + " · " + bpm + " BPM</span></span>" +
+      '<span class="now">Now</span>');
+    b.type = "button";
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".song").forEach((s) => s.classList.toggle("is-current", s === b));
+      toast("Loading song " + (i + 1) + " on Studio");
+    });
+    $("songs").appendChild(b);
+  });
+
+  // Render loop
+  let lastIdx = -1, lastBeat = -1;
+  function render() {
+    const pos = state.pos;
+    const barNo = Math.floor(pos / BAR);
+    const idx = barNo % CHORDS.length;
+    const inBar = pos - barNo * BAR;
+    const frac = inBar / BAR;
+    const beat = Math.min(3, Math.floor(inBar / BEAT));
+    const group = Math.floor(idx / 4) * 4;
+    const m = Math.floor(pos / 60);
+
+    $("timeNow").textContent = String(m).padStart(2, "0") + ":" + (pos - m * 60).toFixed(1).padStart(4, "0") + " / 04:36.0";
+    $("sectionBadge").textContent = SECTIONS[sectionIndex(pos)].label;
+    $("barText").textContent = "Bar " + (idx - group + 1) + "/4";
+    $("countdown").style.width = (100 - frac * 100) + "%";
+
+    if (idx !== lastIdx) {
+      $("curName").textContent = CHORDS[idx][0];
+      $("curNash").textContent = CHORDS[idx][1];
+      $("nextName").textContent = CHORDS[(idx + 1) % CHORDS.length][0];
+      $("nextNash").textContent = CHORDS[(idx + 1) % CHORDS.length][1];
+      if (lastIdx !== -1) Lit.replay($("chordNow"), "anim-enter");
+      measureEls.forEach((el, k) => {
+        el.children[0].textContent = CHORDS[group + k][0];
+        el.children[1].textContent = CHORDS[group + k][1];
+        el.classList.toggle("is-current", group + k === idx);
+        el.classList.toggle("is-past", group + k < idx);
+        el.children[2].style.width = group + k < idx ? "100%" : "0";
+      });
+      const line = Math.floor(pos / (BAR * 2)) % LYRICS.length;
+      $("lyricNow").textContent = LYRICS[line];
+      $("lyricNext").textContent = LYRICS[(line + 1) % LYRICS.length];
+      lastIdx = idx;
+    }
+    measureEls[idx - group].children[2].style.width = (frac * 100) + "%";
+    if (beat !== lastBeat) {
+      $("beatsLeft").textContent = (4 - beat) + (4 - beat === 1 ? " beat" : " beats");
+      $("beats").querySelectorAll("span").forEach((d, b) => {
+        d.classList.toggle("is-now", b === beat);
+        d.classList.toggle("is-one", b === 0);
+        d.classList.toggle("is-past", b < beat);
+      });
+      lastBeat = beat;
+    }
+  }
+
+  let prev = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.1, (now - prev) / 1000);
+    prev = now;
+    if (state.playing) { state.pos += dt; if (state.pos >= DUR) state.pos = 0; }
+    render();
+    requestAnimationFrame(frame);
+  }
+  render();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

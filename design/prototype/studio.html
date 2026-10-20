@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Litwave Studio — Redesign prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="theme.css">
+  <script src="theme.js"></script>
+  <style>
+    .app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { display: flex; flex-direction: column; gap: 22px; padding: 20px 14px; border-right: 1px solid var(--line); background: var(--surface); position: sticky; top: 0; height: 100vh; overflow-y: auto; transition: background-color var(--dur-theme) ease; }
+    .brand { display: flex; align-items: center; height: 36px; padding: 0 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+    .nav { display: flex; flex-direction: column; gap: 18px; flex: 1 1 auto; }
+    .nav-group { display: flex; flex-direction: column; gap: 2px; }
+    .nav-group .label { padding: 0 12px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 12px; width: 100%; height: 38px; padding: 0 12px; border-radius: var(--r-md); border: 0; background: transparent; color: var(--text-2); font-size: 14px; font-weight: 500; cursor: pointer; text-align: left; transition: background-color var(--dur-hover) ease, color var(--dur-hover) ease; }
+    .nav-item:hover { background: var(--hover); color: var(--text); }
+    .nav-item.is-active { background: var(--accent-soft); color: var(--accent); }
+    .nav-item .badge { margin-left: auto; font-size: 11px; padding: 1px 7px; border-radius: var(--r-full); background: var(--accent-soft); color: var(--accent); }
+    .device { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--r-lg); background: var(--sunken); border: 1px solid var(--line); }
+    .device-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--raised); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--text-2); }
+
+    /* Main */
+    .main { min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: 16px 20px 24px; }
+    .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .search { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px 0 12px; width: 100%; max-width: 440px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--text-3); font-size: 13px; cursor: pointer; transition: border-color .2s ease, box-shadow .2s ease; }
+    .search:hover { border-color: var(--line-strong); box-shadow: 0 0 0 4px var(--accent-soft); }
+    .search span:first-of-type { flex: 1 1 auto; text-align: left; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+    .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+    .row-2 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
+
+    /* Transport */
+    .transport { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .song-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+    .art { width: 48px; height: 48px; border-radius: var(--r-lg); background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+    .song-title { font-size: 19px; font-weight: 650; letter-spacing: -0.02em; }
+    .muted { font-size: 13px; color: var(--text-3); }
+    .sections { display: flex; gap: 3px; }
+    .sec { height: 26px; border: 0; border-radius: 7px; background: var(--sunken); color: var(--text-3); font-size: 11px; font-weight: 600; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 8px; text-align: left; transition: background-color .2s ease, color .2s ease; }
+    .sec:hover { color: var(--text); }
+    .sec.is-current { background: var(--accent-soft); color: var(--accent); }
+    .wave-wrap { position: relative; }
+    .wave { position: relative; display: flex; align-items: center; gap: 2px; width: 100%; height: 84px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+    .bar { flex: 1 1 0; border-radius: 2px; background: var(--wave); transition: background-color .25s ease; }
+    .bar.is-played { background: var(--accent); }
+    .loop-region { position: absolute; top: -4px; bottom: -4px; border-radius: 8px; background: var(--accent-soft); border: 1px dashed var(--accent); pointer-events: none; transition: opacity .3s ease; }
+    .playhead { position: absolute; top: -8px; bottom: -8px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--text); pointer-events: none; will-change: left; }
+    .playhead::before { content: ''; position: absolute; top: -4px; left: -4px; width: 10px; height: 10px; border-radius: var(--r-full); background: var(--text); }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+    .timecode { display: flex; align-items: baseline; gap: 6px; }
+    .timecode b { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+    .stepper { display: flex; align-items: center; gap: 4px; padding: 3px; border-radius: 11px; background: var(--sunken); border: 1px solid var(--line); }
+    .stepper .btn { height: 28px; width: 28px; }
+    .stepper output { min-width: 64px; text-align: center; font-size: 12px; font-weight: 600; }
+
+    /* Chord */
+    .chord-card { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+    .card-head { display: flex; align-items: center; gap: 10px; }
+    .beats { display: flex; gap: 5px; }
+    .beats span { width: 8px; height: 8px; border-radius: var(--r-full); background: var(--line-strong); transition: background-color .12s ease; }
+    .beats span.is-past { background: var(--text-3); }
+    .beats span.is-now { background: var(--accent); }
+    .beats span.is-now.is-one { background: var(--warm); }
+    .chord-row { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+    .chord-now { display: flex; align-items: baseline; gap: 16px; flex: 1 1 auto; min-width: 0; }
+    .chord-name { font-size: 88px; line-height: .95; font-weight: 650; letter-spacing: -0.045em; }
+    .nash { font-size: 18px; font-weight: 600; padding: 4px 10px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); }
+    .next-box { display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; border-radius: 16px; background: var(--sunken); border: 1px solid var(--line); }
+    .ring { position: relative; width: 60px; height: 60px; }
+    .ring svg { transform: rotate(-90deg); }
+    .ring output { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: var(--warm); }
+    .next-name { font-size: 30px; font-weight: 650; letter-spacing: -0.03em; line-height: 1; }
+    .next-name small { font-size: 13px; font-weight: 500; color: var(--text-3); font-family: var(--font-mono); }
+    .measures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .measure { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--line); transition: background-color .3s ease, border-color .3s ease, opacity .3s ease; }
+    .measure.is-past { opacity: .55; }
+    .measure.is-current { background: var(--accent-soft); border-color: var(--accent); }
+    .measure strong { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; }
+    .measure .progress { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); }
+    .voicing-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .notes { display: flex; gap: 4px; }
+    .note { height: 26px; min-width: 32px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+    .note.is-bass { background: var(--warm-soft); color: var(--warm); }
+
+    /* Lyrics */
+    .lyrics-card { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .lyrics { display: flex; flex-direction: column; gap: 10px; min-height: 240px; }
+    .lyric { font-size: 17px; line-height: 1.45; font-weight: 500; color: var(--text-3); transition: color .35s ease, opacity .35s ease; }
+    .lyric.is-near { color: var(--text-2); }
+    .lyric.is-current { color: var(--text); font-weight: 600; }
+    .lyric.is-far { opacity: .5; }
+
+    /* Keyboard */
+    .midi-card { padding: 16px 20px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .keyboard { position: relative; display: flex; height: 96px; border-radius: 10px; overflow: hidden; border: 1px solid var(--key-line); background: var(--key-line); }
+    .key-w { position: relative; flex: 1 1 0; height: 100%; background: var(--key-white); border-right: 1px solid var(--key-line); border-radius: 0 0 7px 7px; transition: background-color .18s ease; }
+    .key-w span { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 10px; color: #6B7285; }
+    .key-b { position: absolute; top: 0; height: 60%; background: var(--key-black); border-radius: 0 0 6px 6px; box-shadow: 0 2px 4px rgba(0, 0, 0, .3); transition: background-color .18s ease; }
+    .key-w.is-on, .key-b.is-on { background: var(--accent); }
+    .key-w.is-bass, .key-b.is-bass { background: var(--warm); }
+
+    /* Inspector */
+    .panel { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+    .channel { display: flex; flex-direction: column; gap: 6px; }
+    .channel-row { display: flex; align-items: center; gap: 10px; }
+    .channel-row label { width: 60px; flex-shrink: 0; font-size: 13px; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+    .channel-row output { width: 62px; flex-shrink: 0; text-align: right; font-size: 12px; color: var(--text-3); white-space: nowrap; }
+    .meter { height: 3px; margin: 0 72px 0 70px; border-radius: var(--r-full); background: var(--sunken); overflow: hidden; }
+    .meter i { display: block; height: 100%; width: 0; border-radius: var(--r-full); background: var(--ok); }
+    .scenes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .scene { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 9px 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--sunken); cursor: pointer; text-align: left; transition: background-color .2s ease, border-color .2s ease, transform var(--dur-press) ease; }
+    .scene:hover { border-color: var(--line-strong); }
+    .scene:active { transform: scale(.97); }
+    .scene small { font-size: 11px; font-weight: 600; color: var(--text-3); font-family: var(--font-mono); }
+    .scene span { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .scene.is-active { background: var(--accent-soft); border-color: var(--accent); }
+    .scene.is-active small { color: var(--accent); }
+    .keychips { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+    .keychip { height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--sunken); color: var(--text-2); font-size: 12px; font-weight: 600; cursor: pointer; transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
+    .keychip:hover { color: var(--text); border-color: var(--line-strong); }
+    .keychip.is-active { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+
+    /* Command palette (native <dialog>) */
+    .palette { width: min(580px, calc(100vw - 32px)); margin: 110px auto auto; padding: 0; border-radius: 18px; background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); box-shadow: var(--shadow-lg); overflow: hidden; }
+    .palette[open] { animation: dialog-in .28s var(--ease); }
+    .palette::backdrop { background: var(--overlay); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fade-in .2s ease; }
+    .palette-input { display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 56px; border-bottom: 1px solid var(--line); color: var(--text-3); }
+    .palette-input input { flex: 1 1 auto; height: 40px; border: 0; outline: none; background: transparent; font-size: 15px; color: var(--text); }
+    .palette-list { padding: 8px; display: flex; flex-direction: column; gap: 2px; max-height: 380px; overflow-y: auto; }
+    .cmd { display: flex; align-items: center; gap: 12px; width: 100%; height: 42px; padding: 0 12px; border: 0; border-radius: var(--r-md); background: transparent; color: var(--text); font-size: 14px; cursor: pointer; text-align: left; }
+    .cmd-ico { width: 30px; height: 30px; border-radius: 8px; background: var(--sunken); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--text-2); }
+    .cmd.is-active, .cmd:hover { background: var(--accent-soft); }
+    .cmd.is-active .cmd-ico, .cmd:hover .cmd-ico { color: var(--accent); }
+    .cmd span:nth-child(2) { flex: 1 1 auto; }
+    .palette-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--text-3); }
+
+    @media (max-width: 1180px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 900px) { .row-2 { grid-template-columns: minmax(0, 1fr); } .chord-name { font-size: 64px; } }
+    @media (max-width: 760px) {
+      .app { grid-template-columns: minmax(0, 1fr); }
+      .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .nav { flex-direction: row; overflow-x: auto; gap: 4px; width: 100%; order: 3; }
+      .nav-group { flex-direction: row; }
+      .nav-group .label, .device, .nav-item .badge { display: none; }
+      .nav-item { width: auto; white-space: nowrap; }
+      .sidebar-foot { margin-left: auto; }
+      .main { padding: 12px 16px 20px; }
+      .topbar [data-theme-toggle], .engine-detail { display: none; }
+      .measures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Workspace navigation">
+    <div class="brand">Litwave</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidebar-foot" style="display: flex; flex-direction: column; gap: 12px">
+      <div class="device">
+        <div class="device-ico" id="deviceIcon"></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+          <span style="font-size: 13px; font-weight: 600">MONTAGE M</span>
+          <span class="muted" style="font-size: 12px; display: flex; align-items: center; gap: 6px"><span class="dot live"></span>MIDI connected</span>
+        </div>
+      </div>
+      <div class="seg" role="group" aria-label="Theme" style="width: 100%">
+        <button type="button" class="seg-item" data-theme-set="light" style="flex: 1 1 0"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16a4 4 0 1 0 0-8a4 4 0 0 0 0 8z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4"></path></svg>Light</button>
+        <button type="button" class="seg-item" data-theme-set="dark" style="flex: 1 1 0"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button type="button" class="search" id="openPalette" aria-label="Open command palette">
+        <svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14a7 7 0 0 0 0 14z M20 20l-3.5-3.5"></path></svg>
+        <span>Search tools, songs, sounds…</span>
+        <span class="kbd" id="paletteKbd">Ctrl K</span>
+      </button>
+      <div class="grow"></div>
+      <div class="chip" style="height: 36px; padding: 0 12px; border-radius: 11px; background: var(--surface)">
+        <span class="dot live"></span><span style="color: var(--text)">Engine ready</span><span class="mono engine-detail" style="color: var(--text-3)">48 kHz · 5.3 ms</span>
+      </div>
+      <button type="button" class="btn btn-danger" id="panicBtn" title="All notes off">
+        <svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8z M12 8v5 M12 16h.01"></path></svg>
+        Panic
+      </button>
+      <button type="button" class="btn icon-btn" data-theme-toggle aria-label="Toggle light or dark theme"></button>
+    </header>
+
+    <div class="layout">
+      <div class="col">
+        <section class="card transport" aria-label="Backing track">
+          <div class="song-head">
+            <div class="art"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13 M9 18a3 3 0 1 1-6 0a3 3 0 0 1 6 0z M21 16a3 3 0 1 1-6 0a3 3 0 0 1 6 0z"></path></svg></div>
+            <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+              <h1 class="song-title">[Song title]</h1>
+              <span class="muted">[Artist] · Setlist song 3 of 7</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              <span class="chip"><span style="color: var(--text-3)">Key</span><span style="color: var(--text); font-weight: 600">E major</span></span>
+              <span class="chip mono"><span style="color: var(--text); font-weight: 600">72</span> BPM</span>
+              <span class="chip mono">4/4</span>
+              <span class="chip" style="color: var(--ok)"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2.4"><path d="M5 12l5 5L20 7"></path></svg>Analyzed</span>
+            </div>
+            <div class="grow"></div>
+            <div style="display: flex; gap: 6px">
+              <button type="button" class="btn btn-ghost" data-toast="Bookmark added at playhead"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"></path></svg>Bookmark</button>
+              <button type="button" class="btn" data-toast="File picker would open here"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3 M7 8l5-5 5 5 M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"></path></svg>Load track</button>
+            </div>
+          </div>
+          <div class="sections" id="sections"></div>
+          <div class="wave-wrap">
+            <div class="loop-region" id="loopRegion" aria-hidden="true"></div>
+            <button type="button" class="wave" id="wave" aria-label="Waveform — click to seek"></button>
+            <div class="playhead" id="playhead" aria-hidden="true"></div>
+          </div>
+          <div class="controls">
+            <div style="display: flex; align-items: center; gap: 6px">
+              <button type="button" class="btn btn-ghost icon-btn" id="restartBtn" aria-label="Back to start"><svg class="ico-fill" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14L9 12z M5 5h2.2v14H5z"></path></svg></button>
+              <button type="button" class="play" id="playBtn" aria-label="Play"></button>
+              <button type="button" class="btn btn-ghost icon-btn" id="nextSectionBtn" aria-label="Next section"><svg class="ico-fill" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14l10-7z M16.8 5H19v14h-2.2z"></path></svg></button>
+            </div>
+            <div class="timecode mono"><b id="timeNow">00:00.0</b><span class="muted">/ 04:36.0</span></div>
+            <div class="grow"></div>
+            <button type="button" class="btn" id="loopBtn" aria-pressed="true"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4 M3 11V9a3 3 0 0 1 3-3h15 M7 22l-4-4 4-4 M21 13v2a3 3 0 0 1-3 3H3"></path></svg>Loop Chorus</button>
+            <div class="seg" role="group" aria-label="Playback speed" id="speedSeg">
+              <button type="button" class="seg-item mono" data-speed="0.75">0.75×</button>
+              <button type="button" class="seg-item mono is-active" data-speed="1">1.0×</button>
+              <button type="button" class="seg-item mono" data-speed="1.25">1.25×</button>
+            </div>
+            <div class="stepper" role="group" aria-label="Key shift">
+              <button type="button" class="btn btn-ghost icon-btn" id="keyDown" aria-label="Transpose down"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+              <output class="mono" id="keyShift">0 st</output>
+              <button type="button" class="btn btn-ghost icon-btn" id="keyUp" aria-label="Transpose up"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"></path></svg></button>
+            </div>
+          </div>
+        </section>
+
+        <div class="row-2">
+          <section class="card chord-card" aria-label="Chord progression">
+            <div class="card-head">
+              <span class="label">Now playing</span>
+              <span class="chip chip-accent" style="height: 22px; font-size: 11px" id="sectionBadge">Chorus · bar 1/4</span>
+              <div class="grow"></div>
+              <div class="beats" id="beats" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="chord-row">
+              <div class="chord-now" id="chordNow" aria-live="polite">
+                <span class="chord-name" id="curName">E</span>
+                <span class="nash mono" id="curNash">1</span>
+              </div>
+              <div class="next-box">
+                <div class="ring">
+                  <svg width="60" height="60" viewBox="0 0 60 60" aria-hidden="true">
+                    <circle cx="30" cy="30" r="26" fill="none" stroke="var(--line-strong)" stroke-width="4"></circle>
+                    <circle id="ring" cx="30" cy="30" r="26" fill="none" stroke="var(--warm)" stroke-width="4" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="0"></circle>
+                  </svg>
+                  <output class="mono" id="beatsLeft">4</output>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 3px">
+                  <span class="label">Next · beats left</span>
+                  <span class="next-name" id="nextWrap"><span id="nextName">B</span> <small id="nextNash">5</small></span>
+                </div>
+              </div>
+            </div>
+            <div class="measures" id="measures"></div>
+            <div class="voicing-row">
+              <span class="label">Voicing</span>
+              <div class="seg" role="group" aria-label="Voicing" id="voicingSeg">
+                <button type="button" class="seg-item is-active" data-voicing="root">Root</button>
+                <button type="button" class="seg-item" data-voicing="inv1">1st inv</button>
+                <button type="button" class="seg-item" data-voicing="inv2">2nd inv</button>
+                <button type="button" class="seg-item" data-voicing="sev">7th</button>
+                <button type="button" class="seg-item" data-voicing="add9">add9</button>
+              </div>
+              <div class="notes mono" id="noteChips"></div>
+              <div class="grow"></div>
+              <button type="button" class="btn" id="auditionBtn"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z M17 9a4 4 0 0 1 0 6"></path></svg>Audition</button>
+            </div>
+          </section>
+
+          <section class="card lyrics-card" aria-label="Lyrics">
+            <div class="card-head">
+              <span class="label">Lyrics</span>
+              <span class="chip" style="height: 22px; font-size: 11px">Synced</span>
+              <div class="grow"></div>
+              <span style="font-size: 12px; color: var(--text-2)" id="followLabel">Follow</span>
+              <button type="button" class="switch" role="switch" aria-checked="true" aria-labelledby="followLabel" id="followSwitch"></button>
+            </div>
+            <div class="lyrics" id="lyrics"></div>
+          </section>
+        </div>
+
+        <section class="card midi-card" aria-label="MIDI input">
+          <div class="card-head" style="flex-wrap: wrap">
+            <span class="label">MIDI input</span>
+            <span class="chip" style="height: 22px; font-size: 11px" id="rootChip">Root · E</span>
+            <span class="muted" style="font-size: 12px" id="voicingText"></span>
+            <div class="grow"></div>
+            <span class="chip" style="height: 24px"><span class="dot"></span>Sustain</span>
+            <span class="chip mono" style="height: 24px">Expr 100%</span>
+            <button type="button" class="btn btn-sm" data-toast="Play a chord on your keyboard to teach it"><span class="dot" style="background: var(--danger)"></span>Learn chords</button>
+          </div>
+          <div class="keyboard" id="keyboard" aria-hidden="true"></div>
+        </section>
+      </div>
+
+      <aside class="col" aria-label="Inspector">
+        <section class="card panel" aria-label="Mixer">
+          <div class="card-head"><span class="label">Mixer</span><div class="grow"></div><button type="button" class="btn btn-ghost btn-sm">EQ · Flat</button></div>
+          <div id="channels" style="display: flex; flex-direction: column; gap: 14px"></div>
+        </section>
+        <section class="card panel" aria-label="Scenes">
+          <div class="card-head"><span class="label">Scenes</span><div class="grow"></div><button type="button" class="btn btn-ghost btn-sm" data-toast="Current mix saved to scene">Save mix</button></div>
+          <div class="scenes" id="scenes"></div>
+        </section>
+        <section class="card panel" aria-label="Drone pad">
+          <div class="card-head">
+            <div style="display: flex; flex-direction: column; gap: 2px" class="grow">
+              <span class="label" id="droneLabel">Drone pad</span>
+              <span style="font-size: 13px; color: var(--text-2)">Ambient pad · follows song key</span>
+            </div>
+            <button type="button" class="switch" role="switch" aria-checked="true" aria-labelledby="droneLabel" id="droneSwitch"></button>
+          </div>
+          <div class="keychips" id="droneKeys"></div>
+          <div class="channel-row">
+            <label for="droneLevel">Level</label>
+            <input type="range" class="range" id="droneLevel" min="0" max="100" value="42">
+            <output class="mono" id="droneLevelOut" style="width: 40px">42%</output>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<dialog class="palette" id="palette" aria-label="Command palette">
+  <div class="palette-input">
+    <svg class="ico" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14a7 7 0 0 0 0 14z M20 20l-3.5-3.5"></path></svg>
+    <label for="paletteQuery" class="sr-only">Search commands</label>
+    <input id="paletteQuery" type="text" placeholder="Type a command or search…" autocomplete="off">
+    <span class="kbd">esc</span>
+  </div>
+  <div class="palette-list" id="paletteList" role="listbox" aria-label="Commands"></div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  // Sample progression in E major (Nashville numbers relative to the song key).
+  const CHORDS = [
+    { n: "E", nash: "1", pcs: [4, 8, 11], s7: 3, s9: 6, n7: "Emaj7", n9: "Eadd9" },
+    { n: "B", nash: "5", pcs: [11, 3, 6], s7: 9, s9: 1, n7: "B7", n9: "Badd9" },
+    { n: "C#m", nash: "6m", pcs: [1, 4, 8], s7: 11, s9: 3, n7: "C#m7", n9: "C#m(add9)" },
+    { n: "A", nash: "4", pcs: [9, 1, 4], s7: 8, s9: 11, n7: "Amaj7", n9: "Aadd9" },
+    { n: "E/G#", nash: "1/3", pcs: [8, 11, 4], s7: 3, s9: 6, n7: "Emaj7/G#", n9: "Eadd9/G#" },
+    { n: "B", nash: "5", pcs: [11, 3, 6], s7: 9, s9: 1, n7: "B7", n9: "Badd9" },
+    { n: "A", nash: "4", pcs: [9, 1, 4], s7: 8, s9: 11, n7: "Amaj7", n9: "Aadd9" },
+    { n: "Bsus4", nash: "5sus", pcs: [11, 4, 6], s7: 9, s9: 1, n7: "B7sus4", n9: "Bsus4(add9)" }
+  ];
+  const SECTIONS = [
+    { label: "Intro", s: 0, e: 16 }, { label: "Verse 1", s: 16, e: 62 }, { label: "Chorus", s: 62, e: 95 },
+    { label: "Verse 2", s: 95, e: 140 }, { label: "Chorus", s: 140, e: 175 }, { label: "Bridge", s: 175, e: 215 },
+    { label: "Chorus", s: 215, e: 250 }, { label: "Outro", s: 250, e: 276 }
+  ];
+  const LYRICS = [
+    "[Chorus — lyric line 1]", "[Chorus — lyric line 2]", "[Chorus — lyric line 3]", "[Chorus — lyric line 4]",
+    "[Verse 2 — lyric line 1]", "[Verse 2 — lyric line 2]", "[Verse 2 — lyric line 3]", "[Verse 2 — lyric line 4]"
+  ];
+  const DUR = 276, BAR = 240 / 72, BEAT = 60 / 72, LOOP_A = 62, LOOP_B = 95, NB = 150, RING = 163.4;
+
+  const state = {
+    playing: false, pos: 70.4, speed: 1, loop: true, keyShift: 0, voicing: "root", follow: true,
+    scene: 3, drone: true, droneKey: "E",
+    vols: { track: 78, synth: 66, pads: 54, drone: 40, master: 84 }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const shiftPc = (pc) => (pc + state.keyShift + 120) % 12;
+  const shiftName = (name) => state.keyShift ? name.replace(/[A-G]#?/g, (m) => NOTES[shiftPc(NOTES.indexOf(m))]) : name;
+  const sectionIndex = (t) => Math.max(0, SECTIONS.findIndex((x) => t >= x.s && t < x.e));
+  const fmt = (t) => { const m = Math.floor(t / 60); return String(m).padStart(2, "0") + ":" + (t - m * 60).toFixed(1).padStart(4, "0"); };
+  const setFill = (input) => input.style.setProperty("--fill", ((input.value - input.min) / (input.max - input.min) * 100) + "%");
+
+  function voice(c) {
+    switch (state.voicing) {
+      case "inv1": return { name: c.n, pcs: [c.pcs[1], c.pcs[2], c.pcs[0]] };
+      case "inv2": return { name: c.n, pcs: [c.pcs[2], c.pcs[0], c.pcs[1]] };
+      case "sev": return { name: c.n7, pcs: c.pcs.concat(c.s7) };
+      case "add9": return { name: c.n9, pcs: c.pcs.concat(c.s9) };
+      default: return { name: c.n, pcs: c.pcs };
+    }
+  }
+
+  function seek(t) { state.pos = Math.max(0, Math.min(DUR - 0.01, t)); render(true); }
+
+  /* ---------- Build static lists ---------- */
+
+  const NAV = [
+    ["Workspace", [["studio", "Studio"], ["setlist", "Setlist", "7"], ["library", "Song library"]]],
+    ["Instruments", [["pads", "FX pads"], ["drone", "Drone pad"], ["engine", "Sound engine"], ["mixer", "Parts mixer"]]],
+    ["Practice", [["ear", "Ear training"], ["remote", "Phone remote"]]]
+  ];
+  NAV.forEach(([label, items]) => {
+    const g = el("div", "nav-group");
+    g.appendChild(el("div", "label", label));
+    items.forEach(([key, text, badge]) => {
+      const b = el("button", "nav-item" + (key === "studio" ? " is-active" : ""), Lit.icon(key, 18) + "<span>" + text + "</span>" + (badge ? '<span class="badge mono">' + badge + "</span>" : ""));
+      b.type = "button";
+      if (key === "studio") b.setAttribute("aria-current", "page");
+      b.addEventListener("click", () => {
+        if (key === "remote") { location.href = "remote.html"; return; }
+        document.querySelectorAll(".nav-item").forEach((n) => { n.classList.remove("is-active"); n.removeAttribute("aria-current"); });
+        b.classList.add("is-active");
+        b.setAttribute("aria-current", "page");
+        if (key !== "studio") Lit.toast(text + " opens here — only Studio is mocked in this prototype");
+      });
+      g.appendChild(b);
+    });
+    $("nav").appendChild(g);
+  });
+  $("deviceIcon").innerHTML = Lit.icon("engine", 18);
+
+  const secEls = SECTIONS.map((x) => {
+    const b = el("button", "sec", x.label);
+    b.type = "button";
+    b.title = "Jump to " + x.label;
+    b.style.flex = "0 0 calc(" + ((x.e - x.s) / DUR * 100) + "% - 3px)";
+    b.addEventListener("click", () => seek(x.s + 0.01));
+    $("sections").appendChild(b);
+    return b;
+  });
+
+  const barEls = [];
+  for (let i = 0; i < NB; i++) {
+    const t = i / NB * DUR;
+    const label = SECTIONS[sectionIndex(t)].label;
+    const energy = label.startsWith("Chorus") ? 1 : label === "Bridge" ? 0.85 : label.startsWith("Verse") ? 0.65 : 0.4;
+    const b = el("span", "bar");
+    b.style.height = (14 + energy * 78 * (0.45 + 0.55 * Math.abs(Math.sin(i * 0.61) * Math.cos(i * 0.17)))) + "%";
+    $("wave").appendChild(b);
+    barEls.push(b);
+  }
+  $("wave").addEventListener("click", (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    seek((e.clientX - r.left) / r.width * DUR);
+  });
+  $("loopRegion").style.left = (LOOP_A / DUR * 100) + "%";
+  $("loopRegion").style.width = ((LOOP_B - LOOP_A) / DUR * 100) + "%";
+
+  const measureEls = [0, 1, 2, 3].map(() => {
+    const m = el("div", "measure", '<span class="mono muted" style="font-size: 11px"></span><strong></strong><span class="mono muted" style="font-size: 12px"></span><span class="progress" aria-hidden="true"></span>');
+    $("measures").appendChild(m);
+    return m;
+  });
+
+  const lyricEls = [];
+  for (let k = 0; k < 7; k++) { const p = el("p", "lyric"); $("lyrics").appendChild(p); lyricEls.push(p); }
+
+  const whiteKeys = [], blackKeys = [];
+  const WHITE = [0, 2, 4, 5, 7, 9, 11], BLACK = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
+  const ww = 100 / 21, bw = ww * 0.58;
+  for (let o = 0; o < 3; o++) {
+    WHITE.forEach((pc) => {
+      const k = el("div", "key-w", pc === 0 ? '<span class="mono">C' + (o + 2) + "</span>" : "");
+      $("keyboard").appendChild(k);
+      whiteKeys.push({ el: k, pc: pc, oct: o });
+    });
+  }
+  for (let o = 0; o < 3; o++) {
+    BLACK.forEach(([pc, after]) => {
+      const k = el("div", "key-b");
+      k.style.left = ((o * 7 + after + 1) * ww - bw / 2) + "%";
+      k.style.width = bw + "%";
+      $("keyboard").appendChild(k);
+      blackKeys.push({ el: k, pc: pc, oct: o });
+    });
+  }
+
+  const CHANNELS = [["track", "Track", 0], ["synth", "Synth", 1.3], ["pads", "FX pads", 2.1], ["drone", "Drone", 3.4], ["master", "Master", 0.6]];
+  const dbText = (v) => v === 0 ? "−∞ dB" : ((v - 80) * 0.45).toFixed(1).replace("-", "−") + " dB";
+  const meterEls = CHANNELS.map(([key, label, phase]) => {
+    const wrap = el("div", "channel",
+      '<div class="channel-row"><label for="vol-' + key + '">' + label + '</label>' +
+      '<input type="range" class="range" id="vol-' + key + '" min="0" max="100" value="' + state.vols[key] + '">' +
+      '<output class="mono">' + dbText(state.vols[key]) + "</output></div>" +
+      '<div class="meter" aria-hidden="true"><i></i></div>');
+    $("channels").appendChild(wrap);
+    const input = wrap.querySelector("input"), out = wrap.querySelector("output");
+    setFill(input);
+    input.addEventListener("input", () => { state.vols[key] = Number(input.value); out.textContent = dbText(state.vols[key]); setFill(input); });
+    return { key: key, phase: phase, bar: wrap.querySelector(".meter i") };
+  });
+
+  ["Intro", "Verse", "Pre", "Chorus", "Bridge", "Tag", "Pad only", "Outro"].forEach((name, i) => {
+    const b = el("button", "scene" + (i === state.scene ? " is-active" : ""), "<small>S" + (i + 1) + "</small><span>" + name + "</span>");
+    b.type = "button";
+    b.addEventListener("click", () => {
+      state.scene = i;
+      document.querySelectorAll(".scene").forEach((s, j) => s.classList.toggle("is-active", j === i));
+      Lit.toast("Scene " + (i + 1) + " · " + name + " recalled");
+    });
+    $("scenes").appendChild(b);
+  });
+
+  NOTES.forEach((k) => {
+    const b = el("button", "keychip" + (k === state.droneKey ? " is-active" : ""), k);
+    b.type = "button";
+    b.setAttribute("aria-pressed", k === state.droneKey ? "true" : "false");
+    b.addEventListener("click", () => {
+      state.droneKey = k;
+      document.querySelectorAll(".keychip").forEach((c) => { const on = c.textContent === k; c.classList.toggle("is-active", on); c.setAttribute("aria-pressed", on ? "true" : "false"); });
+    });
+    $("droneKeys").appendChild(b);
+  });
+
+  /* ---------- Controls ---------- */
+
+  function setPlaying(on) {
+    state.playing = on;
+    $("playBtn").innerHTML = Lit.icon(on ? "pause" : "play", 22, true);
+    $("playBtn").setAttribute("aria-label", on ? "Pause" : "Play");
+  }
+  setPlaying(false);
+  $("playBtn").addEventListener("click", () => setPlaying(!state.playing));
+  $("restartBtn").addEventListener("click", () => seek(0));
+  $("nextSectionBtn").addEventListener("click", () => seek(SECTIONS[(sectionIndex(state.pos) + 1) % SECTIONS.length].s + 0.01));
+
+  function setLoop(on) {
+    state.loop = on;
+    $("loopBtn").classList.toggle("btn-primary", on);
+    $("loopBtn").setAttribute("aria-pressed", on ? "true" : "false");
+    $("loopRegion").style.opacity = on ? 1 : 0;
+  }
+  setLoop(true);
+  $("loopBtn").addEventListener("click", () => setLoop(!state.loop));
+
+  $("speedSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-speed]");
+    if (!b) return;
+    state.speed = Number(b.dataset.speed);
+    $("speedSeg").querySelectorAll(".seg-item").forEach((s) => s.classList.toggle("is-active", s === b));
+  });
+
+  function setKeyShift(v) {
+    state.keyShift = Math.max(-12, Math.min(12, v));
+    $("keyShift").textContent = (state.keyShift > 0 ? "+" : state.keyShift < 0 ? "−" : "") + Math.abs(state.keyShift) + " st";
+    render(true);
+  }
+  $("keyDown").addEventListener("click", () => setKeyShift(state.keyShift - 1));
+  $("keyUp").addEventListener("click", () => setKeyShift(state.keyShift + 1));
+
+  $("voicingSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-voicing]");
+    if (!b) return;
+    state.voicing = b.dataset.voicing;
+    $("voicingSeg").querySelectorAll(".seg-item").forEach((s) => s.classList.toggle("is-active", s === b));
+    render(true);
+  });
+
+  function bindSwitch(id, key) {
+    $(id).addEventListener("click", () => { state[key] = !state[key]; $(id).setAttribute("aria-checked", state[key] ? "true" : "false"); });
+  }
+  bindSwitch("followSwitch", "follow");
+  bindSwitch("droneSwitch", "drone");
+
+  $("droneLevel").addEventListener("input", (e) => { setFill(e.target); $("droneLevelOut").textContent = e.target.value + "%"; });
+  setFill($("droneLevel"));
+
+  $("auditionBtn").addEventListener("click", () => Lit.toast("Auditioning " + $("curName").textContent + " on MONTAGE M"));
+  $("panicBtn").addEventListener("click", () => { setPlaying(false); Lit.toast("All notes off · controllers reset"); });
+  document.querySelectorAll("[data-toast]").forEach((b) => b.addEventListener("click", () => Lit.toast(b.dataset.toast)));
+
+  /* ---------- Command palette ---------- */
+
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+  $("paletteKbd").textContent = isMac ? "⌘K" : "Ctrl K";
+  const COMMANDS = [
+    { label: "Toggle light / dark theme", icon: "sun", run: () => Lit.toggleTheme() },
+    { label: "Play / pause", icon: "play", hint: "Space", run: () => setPlaying(!state.playing) },
+    { label: "Jump to Chorus", icon: "jump", run: () => seek(LOOP_A + 0.01) },
+    { label: "Panic — all notes off", icon: "panic", run: () => $("panicBtn").click() },
+    { label: "Load backing track…", icon: "upload", run: () => Lit.toast("File picker would open here") },
+    { label: "Analyze key, BPM & chords", icon: "sparkle", run: () => Lit.toast("Analysis complete · E major · 72 BPM") },
+    { label: "Open FX pads", icon: "pads", run: () => Lit.toast("FX pads — see the phone remote prototype") },
+    { label: "Ear training", icon: "ear", run: () => Lit.toast("Ear training opens here") },
+    { label: "Open phone remote prototype", icon: "remote", run: () => { location.href = "remote.html"; } }
+  ];
+  let matches = COMMANDS, activeCmd = 0;
+
+  function renderPalette() {
+    const q = $("paletteQuery").value.trim().toLowerCase();
+    matches = COMMANDS.filter((c) => !q || c.label.toLowerCase().includes(q));
+    activeCmd = Math.min(activeCmd, Math.max(0, matches.length - 1));
+    const list = $("paletteList");
+    list.innerHTML = "";
+    if (!matches.length) { list.appendChild(el("div", "palette-empty", "No matching commands")); return; }
+    matches.forEach((c, i) => {
+      const b = el("button", "cmd" + (i === activeCmd ? " is-active" : ""), '<span class="cmd-ico">' + Lit.icon(c.icon, 16) + "</span><span>" + c.label + "</span>" + (c.hint ? '<span class="kbd">' + c.hint + "</span>" : ""));
+      b.type = "button";
+      b.setAttribute("role", "option");
+      b.setAttribute("aria-selected", i === activeCmd ? "true" : "false");
+      b.addEventListener("click", () => runCmd(c));
+      b.addEventListener("mousemove", () => { if (activeCmd !== i) { activeCmd = i; renderPalette(); } });
+      list.appendChild(b);
+    });
+  }
+  function openPalette() {
+    $("paletteQuery").value = "";
+    activeCmd = 0;
+    renderPalette();
+    $("palette").showModal();
+    $("paletteQuery").focus();
+  }
+  function runCmd(c) { $("palette").close(); c.run(); }
+
+  $("openPalette").addEventListener("click", openPalette);
+  $("paletteQuery").addEventListener("input", () => { activeCmd = 0; renderPalette(); });
+  $("paletteQuery").addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); activeCmd = (activeCmd + 1) % Math.max(1, matches.length); renderPalette(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); activeCmd = (activeCmd - 1 + matches.length) % Math.max(1, matches.length); renderPalette(); }
+    else if (e.key === "Enter" && matches[activeCmd]) { e.preventDefault(); runCmd(matches[activeCmd]); }
+  });
+  $("palette").addEventListener("click", (e) => { if (e.target === $("palette")) $("palette").close(); });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("palette").open ? $("palette").close() : openPalette(); return; }
+    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || $("palette").open;
+    if (typing) return;
+    if (e.code === "Space") { e.preventDefault(); setPlaying(!state.playing); }
+    else if (e.key === "ArrowRight") seek(state.pos + 5);
+    else if (e.key === "ArrowLeft") seek(state.pos - 5);
+  });
+
+  /* ---------- Render loop ---------- */
+
+  let last = { idx: -1, sec: -1, line: -1, played: -1, beat: -1, chordKey: "" };
+
+  function render(force) {
+    const pos = state.pos;
+    const barNo = Math.floor(pos / BAR);
+    const idx = barNo % CHORDS.length;
+    const inBar = pos - barNo * BAR;
+    const frac = inBar / BAR;
+    const beat = Math.min(3, Math.floor(inBar / BEAT));
+    const group = Math.floor(idx / 4) * 4;
+    const sec = sectionIndex(pos);
+
+    $("timeNow").textContent = fmt(pos);
+    $("playhead").style.left = (pos / DUR * 100) + "%";
+
+    const played = Math.floor(pos / DUR * NB);
+    if (played !== last.played) {
+      barEls.forEach((b, i) => b.classList.toggle("is-played", i < played));
+      last.played = played;
+    }
+
+    if (sec !== last.sec || force) {
+      secEls.forEach((b, i) => b.classList.toggle("is-current", i === sec));
+      last.sec = sec;
+    }
+    $("sectionBadge").textContent = SECTIONS[sec].label + " · bar " + (idx - group + 1) + "/4";
+
+    const chordKey = idx + "|" + state.voicing + "|" + state.keyShift;
+    if (chordKey !== last.chordKey || force) {
+      const cur = CHORDS[idx], nxt = CHORDS[(idx + 1) % CHORDS.length];
+      const vo = voice(cur);
+      const vpcs = vo.pcs.map(shiftPc);
+      const bass = shiftPc(cur.pcs[0]);
+      $("curName").textContent = shiftName(vo.name);
+      $("curNash").textContent = cur.nash;
+      $("nextName").textContent = shiftName(voice(nxt).name);
+      $("nextNash").textContent = nxt.nash;
+      if (idx !== last.idx) { Lit.replay($("chordNow"), "anim-enter"); Lit.replay($("nextWrap"), "anim-enter"); }
+      $("noteChips").innerHTML = vpcs.map((pc, i) => '<span class="note' + (i === 0 ? " is-bass" : "") + '">' + NOTES[pc] + "</span>").join("");
+      $("rootChip").textContent = "Root · " + NOTES[bass];
+      $("voicingText").textContent = vpcs.map((p) => NOTES[p]).join(" · ");
+      whiteKeys.concat(blackKeys).forEach((k) => {
+        k.el.classList.toggle("is-bass", k.oct === 0 && k.pc === bass);
+        k.el.classList.toggle("is-on", k.oct === 1 && vpcs.includes(k.pc));
+      });
+      measureEls.forEach((m, k) => {
+        const c = CHORDS[group + k];
+        m.children[0].textContent = "Bar " + (barNo - (idx - group) + k + 1);
+        m.children[1].textContent = shiftName(voice(c).name);
+        m.children[2].textContent = c.nash;
+        m.classList.toggle("is-current", group + k === idx);
+        m.classList.toggle("is-past", group + k < idx);
+        m.children[3].style.width = group + k < idx ? "100%" : "0";
+      });
+      last.idx = idx;
+      last.chordKey = chordKey;
+    }
+    measureEls[idx - group].children[3].style.width = (frac * 100) + "%";
+
+    $("ring").setAttribute("stroke-dashoffset", (RING * frac).toFixed(2));
+    if (beat !== last.beat || force) {
+      $("beatsLeft").textContent = 4 - beat;
+      $("beats").querySelectorAll("span").forEach((d, b) => {
+        d.classList.toggle("is-now", b === beat);
+        d.classList.toggle("is-one", b === 0);
+        d.classList.toggle("is-past", b < beat);
+      });
+      last.beat = beat;
+    }
+
+    const line = Math.floor(pos / (BAR * 2)) % LYRICS.length;
+    if ((line !== last.line && state.follow) || force) {
+      lyricEls.forEach((p, i) => {
+        const k = i - 1;
+        p.textContent = LYRICS[(line + k + LYRICS.length) % LYRICS.length];
+        p.className = "lyric" + (k === 0 ? " is-current" : Math.abs(k) === 1 ? " is-near" : k >= 4 ? " is-far" : "");
+      });
+      last.line = line;
+    }
+
+    const t = performance.now() / 1000;
+    meterEls.forEach((m) => {
+      const live = state.playing || (m.key === "drone" && state.drone);
+      const level = live ? state.vols[m.key] * (0.55 + 0.4 * Math.abs(Math.sin(t * 5.5 + m.phase) * Math.cos(t * 2.1 + m.phase))) : 0;
+      m.bar.style.width = level + "%";
+    });
+  }
+
+  let prev = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.1, (now - prev) / 1000);
+    prev = now;
+    if (state.playing) {
+      state.pos += dt * state.speed;
+      if (state.loop && state.pos >= LOOP_B) state.pos = LOOP_A;
+      if (state.pos >= DUR) state.pos = 0;
+    }
+    render(false);
+    requestAnimationFrame(frame);
+  }
+  render(true);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
