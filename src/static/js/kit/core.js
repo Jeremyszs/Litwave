@@ -46,7 +46,7 @@
       else if (k === "html") el.innerHTML = v; // trusted, static markup only (icons)
       else if (k === "on") for (const ev in v) el.addEventListener(ev, v[ev]);
       else if (k === "data") for (const dk in v) el.dataset[dk] = v[dk];
-      else if (k === "style") Object.assign(el.style, v);
+      else if (k === "style") for (const sk in v) { if (sk.startsWith("--")) el.style.setProperty(sk, v[sk]); else el.style[sk] = v[sk]; }
       else el.setAttribute(k, v === true ? "" : v);
     }
     children.flat().forEach((c) => { if (c == null || c === false) return; el.append(typeof c === "string" ? c : c); });

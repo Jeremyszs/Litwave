@@ -141,3 +141,33 @@ run("scene telemetry updates the active scene and names", () => {
   assert.strictEqual(ctx.LW.state.scenes.active, 5);
   assert.strictEqual(ctx.LW.sceneName(5), "<i>Bridge</i>");
 });
+
+const T6 = [...KIT, "js/desktop/state.js", "js/desktop/telemetry.js", "js/desktop/fxpads.js", "js/desktop/drone.js", "js/desktop/parts.js", "js/desktop/setlist.js"];
+
+run("fx pads for a bank are filtered and ordered by pad index", () => {
+  const ctx = load(T6);
+  ctx.LW.state.fxPads.pads = { b2: { id: "b2", bank: "B", pad_index: 1 }, a1: { id: "a1", bank: "A", pad_index: 0 }, b1: { id: "b1", bank: "B", pad_index: 0 } };
+  assert.deepStrictEqual(Array.from(ctx.LW.fx.padsForBank("B")).map((p) => p.id), ["b1", "b2"]);
+});
+
+run("drone keeps the user's choice for 600 ms against incoming telemetry", () => {
+  const ctx = load(T6);
+  ctx.LW.drone.setRoot("D");
+  ctx.renderTelemetry({ drone_pad: { active: false, root: "C", volume: 95, cutoff: 68 } });
+  assert.strictEqual(ctx.LW.state.drone.root, "D");
+});
+
+run("parts telemetry merges names and mixer values", () => {
+  const ctx = load(T6);
+  ctx.renderTelemetry({ montage: { part_names: { 3: "<b>Strings</b>" }, part_volumes: { 3: 77 }, part_mutes: { 2: true } } });
+  const p = ctx.LW.parts.state;
+  assert.strictEqual(p[2].name, "<b>Strings</b>");
+  assert.strictEqual(p[2].val, 77);
+  assert.strictEqual(p[1].mute, true);
+});
+
+run("setlist song subtitle shows key, pad root and engine", () => {
+  const ctx = load(T6);
+  const t = ctx.LW.setlist.songSub({ key: "E", patch_snapshot: { drone_root: "E", engine_type: "community" } });
+  assert(/E/.test(t) && /community/i.test(t), t);
+});
