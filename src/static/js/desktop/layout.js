@@ -4,13 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const app = $("app");
 
-  LW.hydrateIcons = (scope) => {
-    LW.$$("[data-icon]", scope).forEach((el) => {
-      if (el._iconed) return;
-      el._iconed = true;
-      el.insertAdjacentHTML("afterbegin", LW.icon(el.dataset.icon));
-    });
-  };
+
   const setIcon = (id, name) => { const el = $(id); if (el) el.innerHTML = LW.icon(name); };
 
   LW.layout = {

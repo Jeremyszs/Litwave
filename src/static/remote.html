@@ -1,11 +1,238 @@
 <!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Litwave</title></head>
-<body>
-  <p>Redesign in progress. Classic UI: <a href="/static/classic/index.html">desktop</a> · <a href="/static/classic/remote.html">remote</a></p>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Litwave Remote</title>
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="preload" href="/static/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/kit.css">
+  <link rel="stylesheet" href="/static/css/remote.css">
+</head>
+<body class="phone">
+  <div class="island-host ph-island"><div id="island" data-feature="island"></div><button class="bubble" id="bubble" aria-label="Drone pad running"></button></div>
+
+  <header class="ph-head">
+    <div class="ph-title roll" id="pageTitle" aria-live="polite"></div>
+    <span class="chip ph-conn" id="conn" data-feature="conn"><span class="dot" id="connDot"></span><span id="connTxt">Connecting</span></span>
+    <button class="lg round ph-more" id="btnMore" data-feature="more-menu" aria-label="More" data-press="grow"></button>
+  </header>
+
+  <main class="pages" id="pagesWrap">
+    <div class="pages-track" id="pages">
+
+      <!-- ===== Stage ===== -->
+      <section class="page" data-page="stage" aria-label="Stage">
+        <div class="ph-card key-card">
+          <label class="kk"><span class="lbl">Song key</span>
+            <select class="sel" id="keySelect" data-feature="key-select" aria-label="Song key for Nashville numbers">
+              <option value="C">C</option><option value="C#">C♯/D♭</option><option value="D">D</option><option value="D#">D♯/E♭</option><option value="E">E</option><option value="F">F</option><option value="F#">F♯/G♭</option><option value="G">G</option><option value="G#">G♯/A♭</option><option value="A">A</option><option value="A#">A♯/B♭</option><option value="B">B</option>
+            </select>
+          </label>
+          <div class="kk right"><span class="lbl">MIDI input</span><b class="num" id="lastNote" data-feature="last-note">Ready</b></div>
+        </div>
+        <div class="hero">
+          <div class="lbl">Playing</div>
+          <div class="roll big hero-chord" id="liveChord" data-feature="live-chord"></div>
+          <div class="hero-nash" id="liveNash" data-feature="nashville"></div>
+        </div>
+        <div class="ph-card next-card" data-feature="next-chord">
+          <div class="ring"><svg viewBox="0 0 56 56"><circle class="t" cx="28" cy="28" r="23"/><circle class="p" cx="28" cy="28" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/></svg><b id="nextIn">--</b></div>
+          <div class="grow"><div class="lbl">Next</div><div class="roll nc" id="nextChord"></div></div>
+        </div>
+        <div class="ph-card drone-card">
+          <div class="dc-h"><span class="dot" id="droneDot"></span><b>Drone pad</b><span class="faint" id="droneSub">Off</span><button class="sw" id="droneSwitch" data-feature="drone-toggle" aria-label="Drone pad on or off"></button></div>
+          <div class="roots" id="droneRoots" data-feature="drone-roots"></div>
+          <select class="sel" id="droneVoice" data-feature="drone-voice" aria-label="Drone voice">
+            <option value="6:4" selected>Chateau ultra-soft ambient pad</option>
+            <option value="17:89">Zenology pure warm pad</option>
+            <option value="17:94">Zenology halo pad</option>
+            <option value="17:49">Zenology slow swell strings</option>
+            <option value="17:53">Zenology choir oohs</option>
+            <option value="2:89">SC-88 warm analog pad</option>
+            <option value="2:91">Soft choir pad</option>
+            <option value="2:92">Bowed silk string pad</option>
+            <option value="1:11">Yamaha DynaPad soft</option>
+            <option value="1:56">Yamaha atmosphere wash</option>
+          </select>
+          <div class="sl-row"><span class="faint">Volume</span><div class="grow" id="droneVol" data-feature="drone-volume"></div><b class="num" id="droneVolV">75%</b></div>
+        </div>
+      </section>
+
+      <!-- ===== Pads ===== -->
+      <section class="page" data-page="pads" aria-label="FX pads">
+        <div class="seg banks" id="fxBanks" data-feature="fx-bank">
+          <button class="tab on" data-k="A">A</button><button class="tab" data-k="B">B</button><button class="tab" data-k="C">C</button><button class="tab" data-k="D">D</button><button class="tab" data-k="E">E</button><button class="tab" data-k="F">F</button>
+        </div>
+        <div class="ph-card lvl-card"><span class="faint" id="bankName">Perc</span><div class="grow" id="fxLevel" data-feature="fx-level"></div><b class="num" id="fxLevelV">-1.4 dB</b>
+          <button class="btn sm danger" id="fxStop" data-feature="fx-stop-all">Stop all</button></div>
+        <div class="ph-pads" id="fxGrid" data-feature="fx-pads"></div>
+      </section>
+
+      <!-- ===== Mix ===== -->
+      <section class="page" data-page="mix" aria-label="Mix">
+        <div class="lbl sec-l">Levels</div>
+        <div class="grp">
+          <div class="gr"><span class="k">Backing track</span><div class="grow" id="volTrack" data-feature="vol-track"></div><b class="v num" id="volTrackV"></b></div>
+          <div class="gr"><span class="k">Synth</span><div class="grow" id="volSynth" data-feature="vol-synth"></div><b class="v num" id="volSynthV"></b></div>
+          <div class="gr"><span class="k">FX pads</span><div class="grow" id="volFx" data-feature="vol-fx"></div><b class="v num" id="volFxV"></b></div>
+          <div class="gr"><span class="k">Master</span><div class="grow" id="volMaster" data-feature="vol-master"></div><b class="v num" id="volMasterV"></b></div>
+          <div class="gr"><span class="k">Click level</span><div class="grow" id="clickLevel" data-feature="click-level"></div><b class="v num" id="clickLevelV"></b></div>
+        </div>
+        <div class="lbl sec-l">Metronome</div>
+        <div class="grp">
+          <div class="gr"><span class="k">Click</span><span class="grow"></span><button class="sw" id="metroSwitch" data-feature="metro-toggle" aria-label="Metronome on or off"></button></div>
+          <div class="gr"><span class="k">Tempo</span><b class="grow num" id="bpm" data-feature="bpm">120 BPM</b><button class="btn tinted" id="btnTap" data-feature="tap-tempo">Tap</button></div>
+          <div class="gr"><span class="k">Sound</span><select class="sel grow" id="metroSound" data-feature="metro-sound"><option value="treble">Treble click</option><option value="woodblock">Woodblock</option><option value="beep">Digital beep</option></select></div>
+          <div class="gr"><span class="k">Time</span><select class="sel grow" id="timeSig" data-feature="time-sig"><option value="4">4/4</option><option value="3">3/4</option><option value="6">6/8</option><option value="5">5/4</option><option value="7">7/8</option><option value="2">2/4</option></select></div>
+        </div>
+        <div class="sec-row"><span class="lbl sec-l">Master EQ <span class="sec-note">· ±18 dB</span></span><button class="btn sm plain" id="eqFlat" data-feature="eq-flat">Flat</button></div>
+        <div class="grp" id="eqBands" data-feature="eq-bands"></div>
+      </section>
+
+      <!-- ===== Parts ===== -->
+      <section class="page" data-page="parts" aria-label="Parts and scenes">
+        <div class="sec-row"><span class="lbl sec-l">Scenes</span><span class="chip accent" id="sceneActive">Scene 1</span><span class="grow"></span>
+          <button class="btn sm plain" id="sceneRename" data-feature="scene-rename">Rename</button></div>
+        <div class="scenes" id="scenes" data-feature="scenes"></div>
+        <button class="btn tinted wide" id="sceneSave" data-feature="scene-save"><span id="sceneSaveTxt">Save mix to scene</span></button>
+        <div class="sec-row"><span class="lbl sec-l">Parts 1–8</span><span class="chip" id="partsEngine">MONTAGE M</span></div>
+        <div class="parts" id="parts" data-feature="parts part-rename"></div>
+      </section>
+
+      <!-- ===== Song ===== -->
+      <section class="page" data-page="song" aria-label="Song">
+        <div class="ph-card song-card">
+          <div class="sc-top"><span class="isl-art" id="songArt"></span><div class="grow"><b id="songTitle" data-feature="song-title">No track loaded</b><em class="num" id="songTime" data-feature="time">0:00 / 0:00</em></div></div>
+          <div class="scrub" id="seek" data-feature="seek"><div class="scrub-fill" id="seekFill"></div><div class="scrub-thumb" id="seekThumb"></div></div>
+          <div class="sc-acts">
+            <button class="btn" id="btnStop" data-feature="stop"><span data-icon="stop"></span>Stop</button>
+            <button class="btn" id="btnLoop" data-feature="loop" aria-pressed="false"><span data-icon="loop"></span>Loop</button>
+            <button class="btn tinted" id="btnAnalyze" data-feature="analyze"><span data-icon="sparkle"></span><span id="btnAnalyzeTxt">Analyze</span></button>
+          </div>
+        </div>
+        <div class="sec-row"><span class="lbl sec-l">Sections</span><button class="btn sm plain" id="btnBookmark" data-feature="bookmark-add">Add bookmark</button></div>
+        <div class="marks" id="marks" data-feature="bookmarks"></div>
+        <div class="grp">
+          <div class="gr"><span class="k">Key shift</span><span class="grow"></span><span id="keyShift" data-feature="key-shift"></span><button class="btn sm plain" id="keyReset" data-feature="key-shift-reset">Reset</button></div>
+        </div>
+        <div class="sec-row"><span class="lbl sec-l">Lyrics</span><span class="grow"></span><span id="lyricsFont" data-feature="lyrics-font"></span></div>
+        <div class="ph-card lyrics" id="lyrics" data-feature="lyrics"><div class="empty">Tap Analyze to load synced lyrics.</div></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="ph-bottom">
+    <nav class="lg cap tabbar" id="tabs">
+      <button class="tab on" data-k="stage" data-feature="tab-stage"><span data-icon="note"></span><span>Stage</span></button>
+      <button class="tab" data-k="pads" data-feature="tab-pads"><span data-icon="grid"></span><span>Pads</span></button>
+      <button class="tab" data-k="mix" data-feature="tab-mix"><span data-icon="sliders"></span><span>Mix</span></button>
+      <button class="tab" data-k="parts" data-feature="tab-parts"><span data-icon="layers"></span><span>Parts</span></button>
+      <button class="tab" data-k="song" data-feature="tab-song"><span data-icon="list"></span><span>Song</span></button>
+    </nav>
+    <button class="lg round ph-play" id="btnPlay" data-feature="play" aria-label="Play or pause" data-press="grow"></button>
+  </div>
+
+  <!-- ===== More (action sheet) ===== -->
+  <section class="sheet ph-sheet" id="sheetMore" aria-labelledby="moreTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="moreTitle">Litwave</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="grp list more-list">
+        <button class="gr act" id="mEngine" data-feature="sheet-engine"><span data-icon="synth"></span><span class="grow">Sound engine</span><span class="faint" id="mEngineSub">MONTAGE M</span></button>
+        <button class="gr act" id="mEar" data-feature="sheet-ear"><span data-icon="ear"></span><span class="grow">Ear training</span></button>
+        <button class="gr act" id="mSetlist" data-feature="sheet-setlist"><span data-icon="list"></span><span class="grow">Setlist &amp; library</span></button>
+      </div>
+      <div class="grp list more-list">
+        <button class="gr act" id="mTheme"><span data-icon="moon"></span><span class="grow" id="mThemeTxt">Light appearance</span></button>
+        <button class="gr act" id="mFull" data-feature="fullscreen"><span data-icon="fullscreen"></span><span class="grow">Full screen</span></button>
+        <button class="gr act" id="mInstall" data-feature="install" hidden><span data-icon="install"></span><span class="grow">Install app</span></button>
+        <button class="gr act" id="mRefresh" data-feature="refresh"><span data-icon="refresh"></span><span class="grow">Refresh</span></button>
+        <a class="gr act" href="/static/classic/remote.html"><span data-icon="link"></span><span class="grow">Classic remote</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet ph-sheet" id="sheetEngine" aria-labelledby="engTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="engTitle">Sound engine</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="list eng-opts">
+        <button class="row eng" data-engine="yamaha"><span class="radio"></span><span class="grow"><b>Yamaha MONTAGE M</b><em>Official VST3 host</em></span><span class="chip ok" data-badge="yamaha" hidden>Active</span></button>
+        <button class="row eng" data-engine="community"><span class="radio"></span><span class="grow"><b>Litwave Community</b><em>Romantic grand, RD, Chateau and synths</em></span><span class="chip ok" data-badge="community" hidden>Active</span></button>
+      </div>
+      <div class="kv"><span>Status</span><span id="engStatus">Checking…</span></div>
+      <div class="eng-acts"><button class="btn primary lgx" id="engOpen">Launch engine</button><button class="btn danger lgx" id="engKill">Stop</button></div>
+    </div>
+  </section>
+
+  <section class="sheet ph-sheet" id="sheetEar" aria-labelledby="earTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="earTitle">Ear training</h2><span class="chip accent num" id="earScore">0/0</span><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="seg" id="earTabs"><button class="tab on" data-k="chord_quality">Chords</button><button class="tab" data-k="progression">Progressions</button><button class="tab" data-k="relative_interval">Intervals</button></div>
+      <div class="ph-card"><div class="ear-qrow"><b id="earQ">Loading…</b><button class="btn sm" id="earReplay">Replay</button></div><div class="ear-fb" id="earFb" aria-live="polite"></div></div>
+      <div class="ear-choices" id="earChoices"></div>
+      <button class="btn primary lgx" id="earNext">Next</button>
+    </div>
+  </section>
+
+  <section class="sheet ph-sheet" id="sheetSetlist" aria-labelledby="slTitle">
+    <div class="grab"><i></i></div>
+    <div class="sheet-h"><h2 id="slTitle">Setlist &amp; library</h2><button class="ib" data-close aria-label="Close"></button></div>
+    <div class="sheet-b">
+      <div class="seg" id="slTabs"><button class="tab on" data-k="setlist">Setlist</button><button class="tab" data-k="library">Library</button></div>
+      <div id="slPaneSet"><select class="sel wide" id="slSelect" aria-label="Setlist"></select><div class="list" id="slSongs"></div></div>
+      <div id="slPaneLib" hidden><div class="list" id="slLib"></div></div>
+    </div>
+  </section>
+
+  <section class="sheet dialog ph-sheet" id="dlgBookmark" aria-labelledby="bmTitle">
+    <div class="sheet-h"><h2 id="bmTitle">Add bookmark</h2></div>
+    <div class="sheet-b">
+      <label class="row-l"><span class="lbl">Section name</span><input class="field" id="bmName" maxlength="24" placeholder="Verse, Chorus, Solo"></label>
+      <label class="row-l"><span class="lbl">Recall a scene here</span><select class="sel" id="bmScene"></select></label>
+      <div class="actions"><button class="btn" data-close>Cancel</button><button class="btn primary" id="bmSave">Save</button></div>
+    </div>
+  </section>
+  <section class="sheet dialog ph-sheet" id="dlgRenamePart" aria-labelledby="rpTitle">
+    <div class="sheet-h"><h2 id="rpTitle">Rename part</h2></div>
+    <div class="sheet-b">
+      <label class="row-l"><span class="lbl">Part label</span><input class="field" id="rpName" maxlength="24" placeholder="CFX Piano, Strings"></label>
+      <div class="actions"><button class="btn" data-close>Cancel</button><button class="btn primary" id="rpSave">Save</button></div>
+    </div>
+  </section>
+  <section class="sheet dialog ph-sheet" id="dlgRenameScene" aria-labelledby="rsTitle">
+    <div class="sheet-h"><h2 id="rsTitle">Rename scene</h2></div>
+    <div class="sheet-b">
+      <label class="row-l"><span class="lbl">Scene label</span><input class="field" id="rsName" maxlength="24" placeholder="Intro, Verse, Solo"></label>
+      <div class="actions"><button class="btn" data-close>Cancel</button><button class="btn primary" id="rsSave">Save</button></div>
+    </div>
+  </section>
+
   <script src="/static/chord_timeline.js"></script>
   <script src="/static/browser_api.js"></script>
   <script src="/static/ws_telemetry.js"></script>
-  <script>window.LW = window.LW || {};</script>
+  <script>window.LW = window.LW || {}; window.LW.page = "remote";</script>
+  <script src="/static/js/kit/core.js"></script>
+  <script src="/static/js/kit/spring.js"></script>
+  <script src="/static/js/kit/icons.js"></script>
+  <script src="/static/js/kit/controls.js"></script>
+  <script src="/static/js/kit/island.js"></script>
+  <script src="/static/js/kit/sheet.js"></script>
+  <script src="/static/js/remote/state.js"></script>
+  <script src="/static/js/remote/stage.js"></script>
+  <script src="/static/js/remote/pads.js"></script>
+  <script src="/static/js/remote/mix.js"></script>
+  <script src="/static/js/remote/parts.js"></script>
+  <script src="/static/js/remote/song.js"></script>
+  <script src="/static/js/remote/sheets.js"></script>
+  <script src="/static/js/remote/app.js"></script>
 </body>
 </html>

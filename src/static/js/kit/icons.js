@@ -67,4 +67,12 @@
   };
   LW.icons = I;
   LW.icon = (name) => I[name] || "";
+  // Fill every [data-icon] placeholder once with its (static, trusted) SVG.
+  LW.hydrateIcons = (scope) => {
+    LW.$$("[data-icon]", scope).forEach((el) => {
+      if (el._iconed) return;
+      el._iconed = true;
+      el.insertAdjacentHTML("afterbegin", LW.icon(el.dataset.icon));
+    });
+  };
 })(typeof window !== "undefined" ? window : globalThis);

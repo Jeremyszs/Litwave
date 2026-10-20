@@ -153,7 +153,7 @@ def test_pwa_sw_js_api_bypass():
 
 def test_remote_drone_variable_declared():
     """g_lastRemoteDroneInteraction must be declared before use in remote.html."""
-    remote_path = os.path.join(REPO_ROOT, "src", "static", "remote.html")
+    remote_path = os.path.join(REPO_ROOT, "src", "static", "js", "remote", "stage.js")  # redesigned phone remote
     with open(remote_path, "r", encoding="utf-8") as f:
         source = f.read()
 
