@@ -8,6 +8,8 @@ and patch recall (engine, part mixer, drone root, FX bank) without circular impo
 from typing import Optional, Tuple
 from starlette.responses import JSONResponse
 
+from src.api_validation import ApiError, require_text
+
 
 def create_setlist_handler(app_state, supported_banks: Optional[Tuple[str, ...]] = None):
     """
@@ -44,8 +46,10 @@ def create_setlist_handler(app_state, supported_banks: Optional[Tuple[str, ...]]
                 ok = setlist.move_song(sid, song_id, direction)
                 return JSONResponse({"success": ok, "setlists": setlist.get_setlists()})
             elif action == "add_song":
-                sid = data.get("setlist_id")
-                song = data.get("song_data", {})
+                sid = require_text(data.get("setlist_id"), "setlist_id")
+                song = data.get("song_data")
+                if not isinstance(song, dict) or not (song.get("filename") or song.get("title")):
+                    raise ApiError("song_data must be an object with a filename or title")
                 # Include current patch snapshot
                 patch_snapshot = {
                     "engine_type": app_state.montage.engine_type,
@@ -91,6 +95,8 @@ def create_setlist_handler(app_state, supported_banks: Optional[Tuple[str, ...]]
                         app_state.audio.fx_sampler.persist_settings()
                 return JSONResponse({"success": True, "applied": True})
             return JSONResponse({"success": False, "error": "Unknown action"}, status_code=400)
+        except (ValueError, TypeError, KeyError) as e:
+            return JSONResponse({"success": False, "error": str(e)}, status_code=400)
         except Exception as e:
             return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 

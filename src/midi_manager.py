@@ -13,6 +13,8 @@ import mido
 
 from src import user_data
 
+VELOCITY_CURVES = ("linear", "light1", "light2", "heavy1", "heavy2", "fixed")  # names the velocity mapper understands
+
 NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 def midi_note_to_name(note_number: int) -> str:

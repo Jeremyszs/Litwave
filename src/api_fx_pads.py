@@ -10,6 +10,8 @@ import asyncio
 from typing import Optional, Tuple
 from starlette.responses import JSONResponse
 
+from src.api_validation import ApiError, num, one_of, require_text
+
 
 def create_fx_pads_handler(app_state, supported_banks: Optional[Tuple[str, ...]] = None):
     """
@@ -31,8 +33,10 @@ def create_fx_pads_handler(app_state, supported_banks: Optional[Tuple[str, ...]]
 
             if action == "trigger":
                 pad_id = data.get("pad_id")
-                velocity = int(data.get("velocity", 127))
-                act = data.get("press_type", "press")  # 'press' or 'release'
+                if request.method == "POST":
+                    pad_id = require_text(pad_id, "pad_id")
+                velocity = num(data.get("velocity", 127), "velocity", lo=0, hi=127, integer=True)
+                act = one_of(data.get("press_type", "press"), ("press", "release"), "press_type")
                 ok = sampler.trigger_pad(pad_id, velocity=velocity, action=act)
 
                 # Broadcast instant lightweight pad pulse over WebSocket to all clients
@@ -51,15 +55,17 @@ def create_fx_pads_handler(app_state, supported_banks: Optional[Tuple[str, ...]]
                 return JSONResponse({"success": True})
 
             elif action == "bank":
-                bank = data.get("bank", "A").upper()
-                if bank in banks:
-                    sampler.active_bank = bank
-                    sampler.persist_settings()
+                bank = require_text(data.get("bank", "A"), "bank").upper()
+                valid = bank in banks
+                if not valid:
+                    raise ApiError(f"bank must be one of: {', '.join(banks)}")
+                sampler.active_bank = bank
+                sampler.persist_settings()
                 return JSONResponse({"success": True, "active_bank": sampler.active_bank})
 
             elif action == "bus":
                 if "volume" in data:
-                    sampler.bus_volume = max(0.0, min(1.5, float(data["volume"])))
+                    sampler.bus_volume = max(0.0, min(1.5, num(data["volume"], "volume")))
                 if "muted" in data:
                     sampler.bus_muted = bool(data["muted"])
                 sampler.persist_settings()
@@ -67,6 +73,15 @@ def create_fx_pads_handler(app_state, supported_banks: Optional[Tuple[str, ...]]
 
             elif action == "update_pad":
                 pad_id = data.get("pad_id")
+                if "trigger_mode" in data:
+                    one_of(data["trigger_mode"], ("oneshot", "gate", "toggle"), "trigger_mode")
+                for key, lo, hi in (("volume", 0, 4), ("pan", -1, 1), ("pitch", -48, 48)):
+                    if key in data:
+                        num(data[key], key, lo=lo, hi=hi)
+                if "choke_group" in data:
+                    num(data["choke_group"], "choke_group", lo=0, hi=16, integer=True)
+                if data.get("midi_note") is not None:
+                    num(data["midi_note"], "midi_note", lo=0, hi=127, integer=True)
                 if pad_id in sampler.pads:
                     p = sampler.pads[pad_id]
                     for key in ["name", "sample_path", "trigger_mode", "choke_group", "volume", "pan", "pitch", "midi_note", "velocity_sensitive"]:
@@ -98,8 +113,11 @@ def create_fx_pads_handler(app_state, supported_banks: Optional[Tuple[str, ...]]
                 # Handled via multipart or upload endpoint
                 pass
 
+            elif request.method == "POST" and action not in ("trigger", "stop_all", "bank", "bus", "update_pad", "upload_custom_sample"):
+                raise ApiError(f"Unknown fx-pads action: {action!r}")
+
             return JSONResponse(sampler.get_status())
         except Exception as e:
-            return JSONResponse({"error": str(e)}, status_code=400)
+            return JSONResponse({"success": False, "error": str(e)}, status_code=400)
 
     return handle_fx_pads

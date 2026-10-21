@@ -7,6 +7,9 @@ for ambient worship drone pad (/api/drone-pad) and ear training (/api/ear-traini
 
 from starlette.responses import JSONResponse
 
+from src.api_validation import ApiError, num, one_of
+from src.drone_pad import DronePadManager as DronePad
+
 
 def create_practice_handlers(app_state):
     """
@@ -43,6 +46,8 @@ def create_practice_handlers(app_state):
 
             if action == "start":
                 root = data.get("root")
+                if root is not None:
+                    one_of(root, DronePad.ROOT_MIDI, "root")
                 drone.start_drone(root)
             elif action == "stop":
                 drone.stop_drone()
@@ -51,22 +56,28 @@ def create_practice_handlers(app_state):
                     drone.stop_drone()
                 else:
                     root = data.get("root")
+                    if root is not None:
+                        one_of(root, DronePad.ROOT_MIDI, "root")
                     drone.start_drone(root)
             elif action == "set_root":
-                root = data.get("root", "C")
+                root = one_of(data.get("root", "C"), DronePad.ROOT_MIDI, "root")
                 drone.set_root(root)
             elif action == "set_volume":
-                vol = data.get("volume", 95)
+                vol = num(data.get("volume", 95), "volume", lo=0, hi=127)
                 drone.set_volume(vol)
             elif action == "set_cutoff":
-                cutoff = data.get("cutoff", 68)
+                cutoff = num(data.get("cutoff", 68), "cutoff", lo=0, hi=127)
                 drone.set_cutoff(cutoff)
             elif action == "set_voice":
                 vid = data.get("voice_id", "")
-                bank = data.get("bank", 6)
-                preset = data.get("preset", 4)
+                bank = num(data.get("bank", 6), "bank", lo=0, hi=127, integer=True)
+                preset = num(data.get("preset", 4), "preset", lo=0, hi=127, integer=True)
                 drone.set_voice(vid, bank, preset)
+            elif action != "stop":
+                raise ApiError(f"Unknown drone action: {action!r}")
             return JSONResponse({"success": True, "drone_pad": drone.get_status()})
+        except (ValueError, TypeError, KeyError) as e:
+            return JSONResponse({"success": False, "error": str(e)}, status_code=400)
         except Exception as e:
             return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 

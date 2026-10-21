@@ -171,13 +171,13 @@ def test_bank_validation():
     assert state.audio.fx_sampler.active_bank == "E"
     assert state.audio.fx_sampler.persisted is True
 
-    # Invalid bank Z ignored
+    # Invalid bank Z is rejected (400) and changes nothing
     state.audio.fx_sampler.persisted = False
     req = make_request("POST", {"action": "bank", "bank": "Z"})
     resp = asyncio.run(handler(req))
-    assert resp.status_code == 200
+    assert resp.status_code == 400
     data = json.loads(bytes(resp.body).decode("utf-8"))
-    assert data["active_bank"] == "E"
+    assert data["success"] is False and "bank" in data["error"]
     assert state.audio.fx_sampler.active_bank == "E"
     assert state.audio.fx_sampler.persisted is False
     print("PASS: bank validation (A-F) verified")

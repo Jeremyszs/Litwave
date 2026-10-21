@@ -23,6 +23,8 @@ from src.api_montage import create_montage_handlers
 from src.api_practice import create_practice_handlers
 from src.api_setlist import create_setlist_handler
 from src.api_analysis import create_analysis_handler
+from src.api_validation import ApiError, num, one_of, validated
+from src.midi_manager import VELOCITY_CURVES
 
 logger = logging.getLogger("litwave")
 
@@ -78,17 +80,18 @@ async def api_transport(request):
             cur_sec = sp.current_frame / float(state.audio.samplerate)
             state.audio.metronome.sync_to_playhead(cur_sec, downbeat)
     elif action == "seek":
-        sec = float(body.get("seconds", 0.0))
+        # "position" is accepted too: the classic lyrics view always sent it, and it used to be ignored (seeking to 0:00)
+        sec = num(body.get("seconds", body.get("position", 0.0)), "seconds", lo=0)
         sp.seek_seconds(sec)
         if state.audio.metronome.enabled:
             downbeat = sp.get_beat_origin()
             state.audio.metronome.sync_to_playhead(sec, downbeat)
     elif action == "loop_a":
         sec = body.get("seconds")
-        sp.set_loop_a(float(sec) if sec is not None else None)
+        sp.set_loop_a(num(sec, "seconds", lo=0) if sec is not None else None)
     elif action == "loop_b":
         sec = body.get("seconds")
-        sp.set_loop_b(float(sec) if sec is not None else None)
+        sp.set_loop_b(num(sec, "seconds", lo=0) if sec is not None else None)
     elif action == "toggle_loop":
         sp.toggle_loop()
     elif action == "clear_loop":
@@ -99,13 +102,13 @@ async def api_transport(request):
         name = body.get("name")
         sec = body.get("time")
         scene = body.get("scene")
-        sp.add_marker(name, sec, scene)
+        sp.add_marker(name, num(sec, "time", lo=0) if sec is not None else None, scene)
     elif action == "remove_marker":
-        m_id = int(body.get("id", 0))
+        m_id = num(body.get("id", 0), "id", integer=True)
         sp.remove_marker(m_id)
     elif action == "update_marker":
-        m_id = int(body.get("id", 0))
-        new_time = float(body["time"]) if "time" in body else None
+        m_id = num(body.get("id", 0), "id", integer=True)
+        new_time = num(body["time"], "time", lo=0) if "time" in body else None
         name = body.get("name")
         scene = body.get("scene")
         sp.update_marker(m_id, new_sec=new_time, name=name, scene=scene)
@@ -116,19 +119,21 @@ async def api_transport(request):
         nash = body.get("nashville", "")
         sec = body.get("time")
         if c_name:
-            sp.record_chord(c_name, nash, float(sec) if sec is not None else None)
+            sp.record_chord(c_name, nash, num(sec, "time", lo=0) if sec is not None else None)
     elif action == "clear_chords":
         sp.clear_chord_chart()
     elif action == "speed":
-        spd = float(body.get("speed", 1.0))
+        spd = num(body.get("speed", 1.0), "speed", lo=0.5, hi=1.5)
         sp.set_speed(spd)
     elif action == "pitch_shift":
-        semi = int(body.get("semitones", 0))
+        semi = num(body.get("semitones", 0), "semitones", lo=-12, hi=12, integer=True)
         sp.set_pitch_shift(semi)
     elif action == "volume":
-        vol = float(body.get("volume", 0.8))
+        vol = num(body.get("volume", 0.8), "volume", lo=0, hi=1.5)
         sp.set_volume(vol)
         state.audio.track_volume = vol
+    else:
+        raise ApiError(f"Unknown transport action: {action!r}")
         
     telem = sp.get_telemetry()
     telem["success"] = True
@@ -137,21 +142,21 @@ async def api_transport(request):
 async def api_mixer(request):
     body = await request.json()
     if "master_volume" in body:
-        mv = float(body["master_volume"])
+        mv = num(body["master_volume"], "master_volume", lo=0, hi=2)
         state.audio.master_volume = mv
         state.montage.set_master_output_gain(mv)
     if "track_volume" in body:
-        v = float(body["track_volume"])
+        v = num(body["track_volume"], "track_volume", lo=0, hi=1.5)
         state.audio.track_volume = v
         state.audio.song_player.set_volume(v)
     if "metronome_volume" in body:
-        state.audio.metronome_volume = float(body["metronome_volume"])
+        state.audio.metronome_volume = num(body["metronome_volume"], "metronome_volume", lo=0, hi=2)
     if "metronome_profile" in body:
         state.audio.metronome.set_sound_profile(str(body["metronome_profile"]))
     if "metronome_bpm" in body:
-        state.audio.metronome.set_bpm(float(body["metronome_bpm"]))
+        state.audio.metronome.set_bpm(num(body["metronome_bpm"], "metronome_bpm", lo=30, hi=300))
     if "metronome_time_sig" in body:
-        state.audio.metronome.set_time_sig(int(body["metronome_time_sig"]))
+        state.audio.metronome.set_time_sig(num(body["metronome_time_sig"], "metronome_time_sig", lo=1, hi=16, integer=True))
     if "toggle_metronome" in body:
         state.audio.metronome.toggle()
         # Immediately lock phase to backing track if song is playing
@@ -163,10 +168,12 @@ async def api_mixer(request):
         
     if "equalizer_band" in body:
         b_info = body["equalizer_band"]
-        idx = int(b_info.get("index", 0))
-        freq = float(b_info["freq"]) if "freq" in b_info else None
-        gain = float(b_info["gain"]) if "gain" in b_info else None
-        q = float(b_info["q"]) if "q" in b_info else None
+        if not isinstance(b_info, dict):
+            raise ApiError("equalizer_band must be an object")
+        idx = num(b_info.get("index", 0), "index", lo=0, hi=3, integer=True)
+        freq = num(b_info["freq"], "freq", lo=1, hi=100000) if "freq" in b_info else None
+        gain = num(b_info["gain"], "gain", lo=-36, hi=36) if "gain" in b_info else None
+        q = num(b_info["q"], "q", lo=0.05, hi=50) if "q" in b_info else None
         state.audio.equalizer.update_band(idx, freq=freq, gain=gain, q=q)
         # Simultaneously update native montage_live_engine C++ VST host
         b_obj = state.audio.equalizer.bands[idx]
@@ -187,9 +194,13 @@ async def api_mixer(request):
 
 async def api_audio_device(request):
     body = await request.json()
-    dev_id = int(body.get("device_id", 0))
+    dev_id = num(body.get("device_id", 0), "device_id", lo=0, integer=True)
     sr = body.get("samplerate")
     bs = body.get("blocksize")
+    if sr is not None:
+        sr = num(sr, "samplerate", lo=8000, hi=192000, integer=True)
+    if bs is not None:
+        bs = num(bs, "blocksize", lo=32, hi=8192, integer=True)
     ok = state.audio.start_stream(device_id=dev_id, samplerate=sr, blocksize=bs)
     return JSONResponse({"success": ok, "telemetry": state.audio.get_telemetry()})
 
@@ -207,6 +218,16 @@ async def api_midi_velocity(request):
     offset = body.get("offset")
     min_v = body.get("min")
     max_v = body.get("max")
+    if curve is not None:
+        curve = one_of(str(curve).lower(), VELOCITY_CURVES, "curve")
+    if scale is not None:
+        scale = num(scale, "scale", lo=0.1, hi=4)
+    if offset is not None:
+        offset = num(offset, "offset", lo=-127, hi=127, integer=True)
+    if min_v is not None:
+        min_v = num(min_v, "min", lo=0, hi=127, integer=True)
+    if max_v is not None:
+        max_v = num(max_v, "max", lo=0, hi=127, integer=True)
     state.midi.set_velocity_config(curve=curve, scale=scale, offset=offset, min_v=min_v, max_v=max_v)
     cfg = state.midi.get_snapshot().get("velocity_config", {})
     if state.montage:
@@ -394,29 +415,29 @@ routes = [
     Route("/manifest.json", manifest_file),
     Route("/api/remote-info", api_remote_info, methods=["GET"]),
     Route("/api/status", api_status, methods=["GET"]),
-    Route("/api/transport", api_transport, methods=["POST"]),
-    Route("/api/mixer", api_mixer, methods=["POST"]),
-    Route("/api/audio/device", api_audio_device, methods=["POST"]),
-    Route("/api/midi/device", api_midi_device, methods=["POST"]),
-    Route("/api/midi/velocity", api_midi_velocity, methods=["POST"]),
+    Route("/api/transport", validated(api_transport), methods=["POST"]),
+    Route("/api/mixer", validated(api_mixer), methods=["POST"]),
+    Route("/api/audio/device", validated(api_audio_device), methods=["POST"]),
+    Route("/api/midi/device", validated(api_midi_device), methods=["POST"]),
+    Route("/api/midi/velocity", validated(api_midi_velocity), methods=["POST"]),
     Route("/api/upload", api_upload_song, methods=["POST"]),
     Route("/api/playlist", api_playlist, methods=["GET"]),
-    Route("/api/playlist/select", api_playlist_select, methods=["POST"]),
-    Route("/api/analyze", api_analyze_song, methods=["GET", "POST"]),
-    Route("/api/montage/editor", api_open_editor, methods=["POST"]),
+    Route("/api/playlist/select", validated(api_playlist_select), methods=["POST"]),
+    Route("/api/analyze", validated(api_analyze_song), methods=["GET", "POST"]),
+    Route("/api/montage/editor", validated(api_open_editor), methods=["POST"]),
     Route("/api/montage/voices", api_voices_catalog, methods=["GET"]),
-    Route("/api/montage/assign_voice", api_assign_voice, methods=["POST"]),
-    Route("/api/montage/volume", api_montage_volume, methods=["POST"]),
-    Route("/api/montage/scene", api_montage_scene, methods=["POST"]),
-    Route("/api/montage/names", api_custom_names, methods=["GET", "POST"]),
-    Route("/api/montage/audition", api_play_voicing, methods=["POST"]),
-    Route("/api/midi/panic", api_midi_panic, methods=["POST"]),
-    Route("/api/master/dsp", api_master_dsp, methods=["POST"]),
-    Route("/api/drone-pad", api_drone_pad, methods=["POST"]),
-    Route("/api/fx-pads", api_fx_pads, methods=["GET", "POST"]),
-    Route("/api/setlist", api_setlist, methods=["GET", "POST"]),
-    Route("/api/ear-training", api_ear_exercise, methods=["GET", "POST"]),
-    Route("/api/montage/license", api_launch_license_manager, methods=["POST"]),
+    Route("/api/montage/assign_voice", validated(api_assign_voice), methods=["POST"]),
+    Route("/api/montage/volume", validated(api_montage_volume), methods=["POST"]),
+    Route("/api/montage/scene", validated(api_montage_scene), methods=["POST"]),
+    Route("/api/montage/names", validated(api_custom_names), methods=["GET", "POST"]),
+    Route("/api/montage/audition", validated(api_play_voicing), methods=["POST"]),
+    Route("/api/midi/panic", validated(api_midi_panic), methods=["POST"]),
+    Route("/api/master/dsp", validated(api_master_dsp), methods=["POST"]),
+    Route("/api/drone-pad", validated(api_drone_pad), methods=["POST"]),
+    Route("/api/fx-pads", validated(api_fx_pads), methods=["GET", "POST"]),
+    Route("/api/setlist", validated(api_setlist), methods=["GET", "POST"]),
+    Route("/api/ear-training", validated(api_ear_exercise), methods=["GET", "POST"]),
+    Route("/api/montage/license", validated(api_launch_license_manager), methods=["POST"]),
     WebSocketRoute("/ws", ws_telemetry),
     Mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 ]

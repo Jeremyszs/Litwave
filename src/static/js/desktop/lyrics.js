@@ -28,7 +28,7 @@
     }
     sheet.forEach((row, i) => {
       const line = LW.h("button", { class: "lyr-line", type: "button", data: { i: String(i) }, title: `Jump to ${LW.fmt(row.time)}` }, row.text == null ? "" : String(row.text));
-      line.addEventListener("click", () => LW.transport.action("seek", { position: row.time }));
+      line.addEventListener("click", () => LW.transport.action("seek", { seconds: row.time }));
       box.append(line);
     });
   }

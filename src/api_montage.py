@@ -12,6 +12,8 @@ import time
 from typing import Optional
 from starlette.responses import JSONResponse
 
+from src.api_validation import num
+
 
 class CustomJSONEncoder(json.JSONEncoder):
     """Encodes NumPy types if present when serializing telemetry payloads."""
@@ -100,12 +102,12 @@ def create_montage_handlers(app_state, catalog_path: Optional[str] = None):
         try:
             data = await request.json()
             if "master_volume" in data:
-                val = int(data["master_volume"])
+                val = num(data["master_volume"], "master_volume", lo=0, hi=127, integer=True)
                 ok = app_state.montage.set_master_vst_volume(val)
                 return JSONResponse({"success": ok, "master_volume": val})
-            part = int(data.get("part", 1))
+            part = num(data.get("part", 1), "part", lo=1, hi=8, integer=True)
             if "reverb" in data:
-                rev = int(data["reverb"])
+                rev = num(data["reverb"], "reverb", lo=0, hi=127, integer=True)
                 ok = app_state.montage.set_part_reverb(part, rev)
                 return JSONResponse({"success": ok, "part": part, "reverb": rev})
             if "mute" in data:
@@ -116,40 +118,40 @@ def create_montage_handlers(app_state, catalog_path: Optional[str] = None):
                 ok = app_state.montage.toggle_part_solo(part)
                 return JSONResponse({"success": ok, "part": part, "solos": app_state.montage.part_solos, "mutes": app_state.montage.part_mutes})
             if "pan" in data:
-                pan = int(data["pan"])
+                pan = num(data["pan"], "pan", lo=0, hi=127, integer=True)
                 app_state.montage.part_pans[part] = pan
                 ok = app_state.montage.send_part_cc(part, 10, pan)  # CC#10 Pan
                 return JSONResponse({"success": ok, "part": part, "pan": pan})
             if "cutoff" in data:
-                cut = int(data["cutoff"])
+                cut = num(data["cutoff"], "cutoff", lo=0, hi=127, integer=True)
                 app_state.montage.part_cutoffs[part] = cut
                 ok = app_state.montage.send_part_cc(part, 74, cut)  # CC#74 Brightness / Cutoff
                 return JSONResponse({"success": ok, "part": part, "cutoff": cut})
             if "resonance" in data:
-                res = int(data["resonance"])
+                res = num(data["resonance"], "resonance", lo=0, hi=127, integer=True)
                 app_state.montage.part_resonances[part] = res
                 ok = app_state.montage.send_part_cc(part, 71, res)  # CC#71 Harmonic / Resonance
                 return JSONResponse({"success": ok, "part": part, "resonance": res})
             if "attack" in data:
-                att = int(data["attack"])
+                att = num(data["attack"], "attack", lo=0, hi=127, integer=True)
                 app_state.montage.part_attacks[part] = att
                 ok = app_state.montage.send_part_cc(part, 73, att)  # CC#73 Attack Time
                 return JSONResponse({"success": ok, "part": part, "attack": att})
             if "release" in data:
-                rel = int(data["release"])
+                rel = num(data["release"], "release", lo=0, hi=127, integer=True)
                 app_state.montage.part_releases[part] = rel
                 ok = app_state.montage.send_part_cc(part, 72, rel)  # CC#72 Release Time
                 return JSONResponse({"success": ok, "part": part, "release": rel})
             if "chorus" in data:
-                cho = int(data["chorus"])
+                cho = num(data["chorus"], "chorus", lo=0, hi=127, integer=True)
                 app_state.montage.part_chorus[part] = cho
                 ok = app_state.montage.send_part_cc(part, 93, cho)  # CC#93 Chorus Send
                 return JSONResponse({"success": ok, "part": part, "chorus": cho})
-            volume = int(data.get("volume", 100))  # 0 - 127
+            volume = num(data.get("volume", 100), "volume", lo=0, hi=127, integer=True)  # 0 - 127
             ok = app_state.montage.set_part_volume(part, volume)
             return JSONResponse({"success": ok, "part": part, "volume": volume})
         except Exception as e:
-            return JSONResponse({"error": str(e)}, status_code=400)
+            return JSONResponse({"success": False, "error": str(e)}, status_code=400)
 
     async def handle_montage_scene(request):
         """Handles selecting, saving, and recalling Montage scenes, broadcasting updates to WS clients."""
