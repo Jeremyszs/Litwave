@@ -24,7 +24,6 @@
       $("sbAddSong").innerHTML = `${LW.icon("plus")}<span>Add song</span>`;
       LW.$$("[data-expand]").forEach((b) => { b.innerHTML = LW.icon("expand"); });
       LW.$$("[data-close]").forEach((b) => { if (b.classList.contains("ib")) b.innerHTML = LW.icon("close"); });
-      const logo = document.querySelector(".logo"); if (logo) logo.innerHTML = LW.icon("wave");
       LW.hydrateIcons(document);
       this.themeButton();
       this.collapsers();

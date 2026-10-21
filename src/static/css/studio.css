@@ -16,8 +16,6 @@ body.studio { overflow: hidden; }
 .sb-in { width: 256px; height: 100%; display: flex; flex-direction: column; padding: 12px 10px 8px; gap: 6px; opacity: var(--sbo, 1); }
 .sb-brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 8px; }
 .sb-brand b { font-size: 16px; letter-spacing: -.02em; flex: 1; }
-.logo { width: 26px; height: 26px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; }
-.logo svg { width: 16px; height: 16px; }
 .sb-sec { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
 .sb-grow { flex: 1; }
 .sb-h { display: flex; align-items: center; gap: 6px; padding: 8px 6px 0; }
