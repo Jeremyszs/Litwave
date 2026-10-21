@@ -262,6 +262,9 @@ html[data-theme="light"] .island { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
 .isl-alert .tx { min-width: 0; flex: 1; }
 .isl-alert .a1 { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .isl-alert .a2 { font-size: 11.5px; color: rgba(255, 255, 255, .55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.isl-act { flex: none; height: 28px; padding: 0 13px; margin-left: 4px; border: 0; border-radius: 14px; background: rgba(255, 255, 255, .17); color: #fff; font-size: 12.5px; font-weight: 650; cursor: pointer; transition: background-color .2s; }
+.isl-act:hover { background: rgba(255, 255, 255, .28); }
+.isl-act[hidden] { display: none; }
 .isl-alert .ar { margin-left: auto; font-size: 12px; font-weight: 600; color: #4DA2FF; white-space: nowrap; flex: none; }
 .bubble { position: absolute; z-index: 59; top: 10px; left: 50%; width: 40px; height: 40px; border-radius: 50%; background: #000; display: grid; place-items: center; scale: 0; cursor: pointer; border: 0; padding: 0; }
 html[data-theme="dark"] .bubble { box-shadow: 0 0 0 .5px rgba(255, 255, 255, .14); }

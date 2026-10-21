@@ -43,10 +43,15 @@ function load(files, opts) {
   return ctx;
 }
 
-const KIT = ["core.js", "spring.js", "icons.js", "controls.js", "island.js", "sheet.js"].map((f) => "js/kit/" + f);
+const KIT = ["core.js", "spring.js", "icons.js", "controls.js", "island.js", "sheet.js", "undo.js"].map((f) => "js/kit/" + f);
 
 function run(name, fn) {
-  try { fn(); console.log("PASS:", name); } catch (e) { console.error("FAIL:", name, "-", e.message); process.exitCode = 1; }
+  const fail = (e) => { console.error("FAIL:", name, "-", e.message); process.exitCode = 1; };
+  try {
+    const r = fn();
+    if (r && typeof r.then === "function") r.then(() => console.log("PASS:", name), fail); // async tests report when they settle
+    else console.log("PASS:", name);
+  } catch (e) { fail(e); }
 }
 
 run("telemetry drag guard keeps a dragged fader where the user holds it", () => {
@@ -226,4 +231,94 @@ run("drone sliders send to the server only on release; dragging just previews", 
   assert.strictEqual(LW.state.drone.cutoff, 80);
   sliders[0].onChange(80); sliders[1].onChange(50);
   assert.strictEqual(JSON.stringify(posts), JSON.stringify([{ action: "set_volume", volume: 80 }, { action: "set_cutoff", cutoff: 50 }]));
+});
+
+const T_UNDO = [...KIT, "js/desktop/state.js", "js/desktop/telemetry.js", "js/desktop/transport.js", "js/desktop/markers.js", "js/desktop/song.js"];
+const settle = () => new Promise((r) => setImmediate(r));
+
+run("Ctrl/Cmd+Z undoes the latest destructive action, but never steals Undo inside a text field", () => {
+  const ctx = load([...KIT, "js/desktop/app.js"], { readyState: "loading" });
+  const LW = ctx.LW;
+  let undone = 0;
+  LW.sheets = { closeTop() { return false; } }; LW.transport = {}; LW.layout = {};
+  LW.undo = { available: true, run() { undone++; return true; } };
+  const plain = { tagName: "DIV", getAttribute() { return null; }, closest() { return null; } };
+  const input = { tagName: "INPUT", getAttribute() { return null; }, closest() { return null; } };
+  let prevented = 0;
+  const key = (target, extra) => ({ key: "z", code: "KeyZ", target, preventDefault() { prevented++; }, ...extra });
+  LW.keys.handle(key(plain, { ctrlKey: true }));
+  LW.keys.handle(key(plain, { metaKey: true }));
+  assert.strictEqual(undone, 2, "Ctrl+Z and Cmd+Z both undo");
+  assert.strictEqual(prevented, 2);
+  LW.keys.handle(key(input, { ctrlKey: true }));
+  assert.strictEqual(undone, 2, "inside a text field the browser's own undo wins");
+  LW.undo.available = false;
+  prevented = 0;
+  LW.keys.handle(key(plain, { ctrlKey: true }));
+  assert.strictEqual(prevented, 0, "with nothing to undo the key is left alone");
+  LW.keys.handle(key(plain, { ctrlKey: true, shiftKey: true }));
+  assert.strictEqual(undone, 2, "Ctrl+Shift+Z is not undo");
+});
+
+run("deleting a section can be undone: the same name, time and scene come back", async () => {
+  const ctx = load(T_UNDO);
+  const LW = ctx.LW;
+  const calls = [];
+  LW.transport.action = (a, b) => { calls.push([a, b]); return Promise.resolve({}); };
+  LW.state.markers = [{ id: 3, name: "Verse", time: 40, scene: 2 }, { id: 4, name: "Chorus", time: 80, scene: null }];
+  await LW.markers.remove(3);
+  assert.strictEqual(JSON.stringify(calls), JSON.stringify([["remove_marker", { id: 3 }]]));
+  assert.strictEqual(LW.undo.available, true, "an undo should be on offer");
+  calls.length = 0;
+  LW.undo.run();
+  await settle();
+  assert.strictEqual(JSON.stringify(calls), JSON.stringify([["add_marker", { name: "Verse", time: 40, scene: 2 }]]));
+  calls.length = 0;
+  await LW.markers.remove(4);
+  LW.undo.run(); await settle();
+  assert.strictEqual(JSON.stringify(calls[1]), JSON.stringify(["add_marker", { name: "Chorus", time: 80, scene: null }]));
+});
+
+run("deleting a section that is not in the list sends the delete and offers no undo", async () => {
+  const ctx = load(T_UNDO);
+  const LW = ctx.LW;
+  const calls = [];
+  LW.transport.action = (a, b) => { calls.push([a, b]); return Promise.resolve({}); };
+  LW.state.markers = [];
+  await LW.markers.remove(9);
+  assert.strictEqual(calls.length, 1);
+  assert.strictEqual(LW.undo.available, false);
+});
+
+run("clearing the song can be undone: the file reloads and position, speed, key shift and loop come back", async () => {
+  const ctx = load(T_UNDO);
+  const LW = ctx.LW;
+  const log = [];
+  LW.transport.action = (a, b) => { log.push(["action", a, b]); return Promise.resolve({}); };
+  LW.api.post = (u, b) => { log.push(["post", u, b]); return Promise.resolve({ success: true }); };
+  Object.assign(LW.state, { hasTrack: true, song: { filename: "Demo Song.mp3", current_time_seconds: 61.5, speed: 0.75, pitch_shift: 2, loop_a: 30, loop_b: 60, loop_enabled: true } });
+  await LW.song.clear();
+  assert.strictEqual(JSON.stringify(log[0]), JSON.stringify(["action", "clear_track", undefined]));
+  assert.strictEqual(LW.undo.available, true);
+  log.length = 0;
+  LW.undo.run();
+  await settle(); await settle();
+  assert.strictEqual(JSON.stringify(log), JSON.stringify([
+    ["post", "/api/playlist/select", { filename: "Demo Song.mp3" }],
+    ["action", "speed", { speed: 0.75 }],
+    ["action", "pitch_shift", { semitones: 2 }],
+    ["action", "loop_a", { seconds: 30 }],
+    ["action", "loop_b", { seconds: 60 }],
+    ["action", "toggle_loop", undefined],
+    ["action", "seek", { seconds: 61.5 }],
+  ]));
+});
+
+run("clearing when no song is loaded offers nothing to undo", async () => {
+  const ctx = load(T_UNDO);
+  const LW = ctx.LW;
+  LW.transport.action = () => Promise.resolve({});
+  Object.assign(LW.state, { hasTrack: false, song: {} });
+  await LW.song.clear();
+  assert.strictEqual(LW.undo.available, false);
 });

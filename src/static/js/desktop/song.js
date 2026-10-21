@@ -120,11 +120,29 @@
       } catch (_) {}
     },
     async clear() {
+      // Everything needed to put the song back: the file (its chart, markers, analysis and lyrics live in a sidecar
+      // file and come back with it) plus the playhead, speed, key shift and loop.
+      const sg = S().song || {};
+      const snap = S().hasTrack && sg.filename
+        ? { filename: sg.filename, time: sg.current_time_seconds || 0, speed: sg.speed, pitch: sg.pitch_shift || 0, a: sg.loop_a, b: sg.loop_b, loop: !!sg.loop_enabled }
+        : null;
       LW.local.mark("song");
       await LW.transport.action("clear_track");
       $("intel").hidden = true;
       lastAnalysisKey = "";
-      LW.alert({ icon: "close", title: "Track cleared" }, 1200);
+      if (!snap) { LW.alert({ icon: "close", title: "Track cleared" }, 1200); return; }
+      LW.undo.push({ icon: "close", label: "Track cleared", sub: snap.filename, run: () => LW.song.restore(snap) });
+    },
+    async restore(snap) {
+      LW.local.mark("song");
+      const res = await LW.api.post("/api/playlist/select", { filename: snap.filename });
+      if (res && res.success === false) throw new Error("Could not reload the track");
+      if (snap.speed && snap.speed !== 1) await LW.transport.action("speed", { speed: snap.speed });
+      if (snap.pitch) await LW.transport.action("pitch_shift", { semitones: snap.pitch });
+      if (snap.a != null) await LW.transport.action("loop_a", { seconds: snap.a });
+      if (snap.b != null) await LW.transport.action("loop_b", { seconds: snap.b });
+      if (snap.loop && snap.a != null && snap.b != null) await LW.transport.action("toggle_loop");
+      await LW.transport.action("seek", { seconds: snap.time });
     },
     async analyze() {
       if (analyzing) return;

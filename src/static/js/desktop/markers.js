@@ -130,7 +130,15 @@
       await LW.transport.action("add_marker", { name, scene: sv ? parseInt(sv, 10) : null });
       LW.alert({ icon: "bookmark", tone: "ok", title: "Bookmark added", sub: `${name} · ${LW.fmt(S().time)}` }, 1500);
     },
-    remove(id) { return LW.transport.action("remove_marker", { id: Number(id) }); },
+    async remove(id) {
+      const m = (S().markers || []).find((x) => x.id === Number(id));
+      const res = await LW.transport.action("remove_marker", { id: Number(id) });
+      if (m) {
+        const back = { name: m.name, time: m.time, scene: m.scene == null ? null : m.scene };
+        LW.undo.push({ icon: "bookmark", label: "Section deleted", sub: `${m.name} · ${LW.fmt(m.time)}`, run: () => LW.transport.action("add_marker", back) });
+      }
+      return res;
+    },
     render() { cacheKey = ""; render(); },
   };
 

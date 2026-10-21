@@ -44,7 +44,8 @@
       // alert
       refs.aic = h("div", { class: "ic" });
       refs.a1 = h("div", { class: "a1" }); refs.a2 = h("div", { class: "a2" }); refs.ar = h("span", { class: "ar" });
-      const alertL = h("div", { class: "isl-layer isl-alert", data: { s: "alert" }, style: box("alert") }, refs.aic, h("div", { class: "tx" }, refs.a1, refs.a2), refs.ar);
+      refs.act = h("button", { type: "button", class: "isl-act", hidden: true });
+      const alertL = h("div", { class: "isl-layer isl-alert", data: { s: "alert" }, style: box("alert") }, refs.aic, h("div", { class: "tx" }, refs.a1, refs.a2), refs.ar, refs.act);
 
       el.append(compact, expanded, alertL);
       const layers = [compact, expanded, alertL];
@@ -58,11 +59,25 @@
       const sr = LW.spring(R, { response: 0.5, damping: 0.9, eps: 0.1 }, (v) => { R = v; apply(); });
 
       let state = "compact", base = "compact", pinned = false, timer = null, playing = false, progress = 0;
+      // An alert with an action (e.g. Undo) is "sticky": alerts that arrive meanwhile wait their turn, so the
+      // button can't be bumped off before its time is up. Only the latest few are kept.
+      let current = null, sticky = false;
+      const queued = [];
       const go = (s) => {
         state = s; el.dataset.state = s;
         const z = sizes[s];
         sw.to(z.w); sh.to(z.h); sr.to(z.r != null ? z.r : z.h / 2);
         layers.forEach((l) => l.classList.toggle("on", l.dataset.s === s));
+      };
+
+      // Back to the resting state, or on to the alert that was waiting behind a sticky one.
+      const finishAlert = () => {
+        sticky = false; current = null;
+        refs.act.hidden = true;
+        const next = queued.pop();
+        queued.length = 0;
+        if (next) api.alert(next[0], next[1]);
+        else go(pinned ? "expanded" : base);
       };
 
       let bOn = false;
@@ -75,14 +90,19 @@
         go(s) { base = s; if (state !== "alert") go(s); },
         alert(a, ms) {
           const x = a || {};
+          if (sticky && !x.action) { queued.push([a, ms]); if (queued.length > 3) queued.shift(); return; }
           refs.aic.className = "ic " + (x.tone || "");
           refs.aic.innerHTML = LW.icon(x.icon || "info"); // static icon markup
           refs.a1.textContent = x.title == null ? "" : String(x.title);
           refs.a2.textContent = x.sub == null ? "" : String(x.sub);
           refs.ar.textContent = x.right == null ? "" : String(x.right);
+          current = x.action || null;
+          sticky = !!current;
+          refs.act.hidden = !current;
+          refs.act.textContent = current ? String(current.label || "Undo") : "";
           go("alert");
           clearTimeout(timer);
-          timer = setTimeout(() => go(pinned ? "expanded" : base), ms || 2200);
+          timer = setTimeout(() => finishAlert(), ms || 2200);
         },
         update(d) {
           const u = d || {};
@@ -115,6 +135,16 @@
         });
       }
       el.addEventListener("click", (e) => {
+        const u = e.target.closest && e.target.closest("button.isl-act");
+        if (u) {
+          e.stopPropagation();
+          const act = current;
+          if (!act) return;
+          clearTimeout(timer);
+          finishAlert();
+          if (act.run) act.run();
+          return;
+        }
         const b = e.target.closest && e.target.closest("button[data-a]");
         if (b) { e.stopPropagation(); if (o.onAction) o.onAction(b.dataset.a); return; }
         if (e.target.closest && e.target.closest(".pb")) {
@@ -122,7 +152,7 @@
           if (o.onSeek && r.width) o.onSeek(LW.clamp((e.clientX - r.left) / r.width, 0, 1));
           return;
         }
-        if (state === "alert") { clearTimeout(timer); go(pinned ? "expanded" : base); return; }
+        if (state === "alert") { clearTimeout(timer); finishAlert(); return; }
         pinned = !pinned;
         base = pinned ? "expanded" : "compact";
         go(base);

@@ -32,6 +32,7 @@
     chevd: `<svg ${S}><path d="M6 9l6 6 6-6"/></svg>`,
     check: `<svg ${S}><path d="M20 6 9 17l-5-5"/></svg>`,
     midi: `<svg ${S}><circle cx="12" cy="12" r="9"/><circle cx="8" cy="11" r="1" fill="currentColor"/><circle cx="16" cy="11" r="1" fill="currentColor"/><circle cx="12" cy="8" r="1" fill="currentColor"/><path d="M10 16h4"/></svg>`,
+    undo: `<svg ${S}><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>`,
     info: `<svg ${S}><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>`,
     key: `<svg ${S}><circle cx="8" cy="15" r="5"/><path d="M12 11l9-9M17 6l3 3"/></svg>`,
     plus: `<svg ${S}><path d="M12 5v14M5 12h14"/></svg>`,

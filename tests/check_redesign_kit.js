@@ -55,6 +55,7 @@ function loadKit() {
   // the vendored QR library (a classic-script global) and the kit's QR module
   vm.runInContext(fs.readFileSync(path.join(KIT, "..", "..", "vendor", "qrcode.js"), "utf8"), ctx, { filename: "vendor/qrcode.js" });
   vm.runInContext(fs.readFileSync(path.join(KIT, "qr.js"), "utf8"), ctx, { filename: "qr.js" });
+  vm.runInContext(fs.readFileSync(path.join(KIT, "undo.js"), "utf8"), ctx, { filename: "undo.js" });
   return ctx.LW;
 }
 
@@ -63,7 +64,8 @@ function run(name, fn) {
 }
 
 let LW;
-try { LW = loadKit(); } catch (e) { console.error("FAIL: kit failed to load -", e.message); process.exit(1); }
+let MAIN_CTX = null;
+try { LW = loadKit(); MAIN_CTX = lastCtx; } catch (e) { console.error("FAIL: kit failed to load -", e.message); process.exit(1); }
 
 run("esc escapes HTML", () => {
   assert.strictEqual(LW.esc(`<b>&"'`), "&lt;b&gt;&amp;&quot;&#39;");
@@ -200,7 +202,7 @@ run("qr: svg has a white quiet zone and one path with a square per dark module",
 run("qr: our matrix equals, module for module, what the vendored library itself draws", () => {
   const url = "http://192.0.2.10:8080/remote";
   const ours = LW.qr.matrix(url);
-  const q = lastCtx.qrcode(0, "M"); q.addData(url); q.make();
+  const q = MAIN_CTX.qrcode(0, "M"); q.addData(url); q.make();
   const theirs = q.createSvgTag({ cellSize: 1, margin: 0 });
   const dark = new Set();
   for (const m of theirs.matchAll(/M(\d+),(\d+)l/g)) dark.add(`${m[2]},${m[1]}`); // row,col
@@ -209,4 +211,71 @@ run("qr: our matrix equals, module for module, what the vendored library itself 
   assert(mine.size > 200, "expected a populated symbol");
   assert.strictEqual(mine.size, dark.size, "dark module count differs from the library");
   for (const k of mine) assert(dark.has(k), `module ${k} differs from the library output`);
+});
+
+function fakeTimers() {
+  const q = []; let id = 0;
+  MAIN_CTX.setTimeout = (fn, ms) => { q.push({ id: ++id, fn, ms }); return id; };
+  MAIN_CTX.clearTimeout = (i) => { const k = q.findIndex((x) => x.id === i); if (k >= 0) q.splice(k, 1); };
+  return { q, fireNext() { const x = q.shift(); if (x) x.fn(); } };
+}
+const clickIsland = (host, act, target) => (host._listeners.click || []).forEach((f) => f({ target: target || { closest: (s) => (s === "button.isl-act" ? act : null) }, stopPropagation() {}, clientX: 0 }));
+
+run("island: an alert can carry an action button; clicking it runs the action once and dismisses the alert", () => {
+  fakeTimers();
+  const host = fakeElement("div");
+  const isl = LW.island.create(host, null, {});
+  let ran = 0;
+  isl.alert({ title: "Section deleted", action: { label: "Undo", run: () => { ran++; } } }, 5000);
+  assert.strictEqual(isl.refs.act.textContent, "Undo");
+  assert.strictEqual(isl.refs.act.hidden, false, "button visible while the alert has an action");
+  clickIsland(host, isl.refs.act);
+  assert.strictEqual(ran, 1);
+  assert.strictEqual(isl.state, "compact", "alert dismissed");
+  clickIsland(host, isl.refs.act);
+  assert.strictEqual(ran, 1, "the action can only run once");
+  isl.alert({ title: "Plain" }, 1000);
+  assert.strictEqual(isl.refs.act.hidden, true, "no button on a plain alert");
+});
+
+run("island: other alerts wait behind an action alert instead of replacing it", () => {
+  const t = fakeTimers();
+  const host = fakeElement("div");
+  const isl = LW.island.create(host, null, {});
+  isl.alert({ title: "Track cleared", action: { label: "Undo", run() {} } }, 5000);
+  isl.alert({ title: "Remote · Play" }, 1200);
+  isl.alert({ title: "Remote · Pause" }, 1200);
+  assert.strictEqual(isl.refs.a1.textContent, "Track cleared", "the undo alert stays up");
+  t.fireNext(); // its time is up
+  assert.strictEqual(isl.refs.a1.textContent, "Remote · Pause", "then the most recent waiting alert shows");
+});
+
+run("undo: push raises an alert with an Undo action, runs once, and expires", () => {
+  const t = fakeTimers();
+  const alerts = [];
+  LW.on("alert", (a, ms) => alerts.push([a, ms]));
+  let undone = 0;
+  LW.undo.push({ label: "Section deleted", sub: "Verse · 0:40", run: () => { undone++; } });
+  const first = alerts[alerts.length - 1];
+  assert.strictEqual(first[0].title, "Section deleted");
+  assert.strictEqual(first[0].action.label, "Undo");
+  assert.strictEqual(LW.undo.available, true);
+  first[0].action.run(); // what the island button does
+  assert.strictEqual(undone, 1);
+  assert.strictEqual(LW.undo.available, false);
+  assert.strictEqual(LW.undo.run(), false, "nothing left to undo");
+  LW.undo.push({ label: "Second", run: () => { undone++; } });
+  t.fireNext(); // expiry timer
+  assert.strictEqual(LW.undo.available, false, "expired");
+  assert.strictEqual(undone, 1);
+});
+
+run("undo: only the latest action can be undone; a newer one replaces it", () => {
+  fakeTimers();
+  const log = [];
+  LW.undo.push({ label: "A", run: () => log.push("A") });
+  LW.undo.push({ label: "B", run: () => log.push("B") });
+  LW.undo.run();
+  assert.deepStrictEqual(log, ["B"]);
+  assert.strictEqual(LW.undo.available, false);
 });

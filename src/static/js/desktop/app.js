@@ -53,6 +53,9 @@
         LW.transport.seek(0);
         return;
       }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === "z" || e.key === "Z") && LW.undo && LW.undo.available) {
+        e.preventDefault(); LW.undo.run(); return;
+      }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.target.closest && e.target.closest(".sl, .tabbar, .seg") && e.key.startsWith("Arrow")) return;
       if (e.code === "Space") { e.preventDefault(); LW.transport.toggle(); }
