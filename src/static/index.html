@@ -437,7 +437,7 @@
     <div class="sheet-h"><h2 id="remoteTitle">Phone remote</h2><button class="ib" data-close aria-label="Close"></button></div>
     <div class="sheet-b remote-b">
       <p class="muted">Scan with your phone camera to control playback, pads, parts and the mix from the stage.</p>
-      <div class="qr"><img id="qrImg" width="200" height="200" alt="QR code for the phone remote" data-feature="remote-qr" hidden></div>
+      <div class="qr" id="qrBox" data-feature="remote-qr"></div>
       <div class="sl-bar"><input class="field grow" id="remoteUrl" readonly aria-label="Remote address"><button class="btn tinted" id="remoteCopy" data-feature="remote-copy"><span data-icon="copy"></span>Copy</button></div>
     </div>
   </section>
@@ -484,6 +484,8 @@
   <script src="/static/js/kit/controls.js"></script>
   <script src="/static/js/kit/island.js"></script>
   <script src="/static/js/kit/sheet.js"></script>
+  <script src="/static/vendor/qrcode.js"></script>
+  <script src="/static/js/kit/qr.js"></script>
   <script src="/static/js/desktop/state.js"></script>
   <script src="/static/js/desktop/telemetry.js"></script>
   <script src="/static/js/desktop/layout.js"></script>

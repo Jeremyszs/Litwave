@@ -68,12 +68,12 @@ Both desktop (`src/static/index.html`) and remote (`src/static/remote.html`) int
    - Resilient WebSocket connection manager (`createWsClient`), exponential backoff with jitter (`calculateBackoff`), automatic reconnect lifecycle, and message dispatcher.
    - UMD bundle: exposes `WsTelemetry` namespace and backwards-compatible globals.
 4. **A one-line inline `<script>`** that creates the `window.LW` namespace and names the page (`desktop` or `remote`). A separate tiny script in `<head>` applies the saved light/dark theme before first paint.
-5. **The UI kit (`/static/js/kit/`)**, in this order: `core.js` (the shared `window.LW` namespace, DOM and API helpers, alerts, theme), `spring.js` (interruptible damping/response springs, momentum projection, rubber-banding), `icons.js`, `controls.js` (tabs, sliders, switches, steppers, menus), `island.js` (the Dynamic Island), `sheet.js` (sheets and dialogs).
+5. **The UI kit (`/static/js/kit/`)**, in this order: `core.js` (the shared `window.LW` namespace, DOM and API helpers, alerts, theme), `spring.js` (interruptible damping/response springs, momentum projection, rubber-banding), `icons.js`, `controls.js` (tabs, sliders, switches, steppers, menus), `island.js` (the Dynamic Island), `sheet.js` (sheets and dialogs), then the vendored `/static/vendor/qrcode.js` and `qr.js` (offline QR code for the phone-remote address).
 6. **Page modules**, which only talk to each other through `LW`:
    - Desktop: `/static/js/desktop/` — `state.js` and `telemetry.js` first, `layout.js` next, then one file per feature (transport, waveform, markers, song, status, voicing, progression, lyrics, keyboard, mixer, eq, warmth, metronome, scenes, fxpads, drone, parts, engine, ear, setlist, prefs, stage) and `app.js` last.
    - Phone: `/static/js/remote/` — `state.js` first, then stage, pads, mix, parts, song, sheets, and `app.js` last.
 
-Styles live in `/static/css/`: `tokens.css` (bundled Inter font and the light/dark colour tokens), `kit.css` (shared components), `studio.css` and `stage.css` (desktop), `remote.css` (phone). The font is bundled at `/static/fonts/` so the UI works offline. Every user-facing control carries a `data-feature` key, and `tests/check_redesign_parity.js` checks that none go missing.
+Styles live in `/static/css/`: `tokens.css` (bundled Inter font and the light/dark colour tokens), `kit.css` (shared components), `studio.css` and `stage.css` (desktop), `remote.css` (phone). The font is bundled at `/static/fonts/` so the UI works offline. Third-party code is vendored, unmodified, in `/static/vendor/` with its license: `qrcode-generator` 1.4.4 (MIT, Kazuhiko Arase), checked against the npm registry hash. The classic UI under `/static/classic/` still draws its QR code through an outside service and so needs internet. Every user-facing control carries a `data-feature` key, and `tests/check_redesign_parity.js` checks that none go missing.
 
 ---
 

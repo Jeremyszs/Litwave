@@ -80,10 +80,10 @@
       let url = `${root.location.origin}/remote`;
       try { const d = await LW.api.get("/api/remote-info"); if (d && d.local_url) url = d.local_url; } catch (_) {}
       $("remoteUrl").value = url;
-      const img = $("qrImg");
-      img.onload = () => { img.hidden = false; };
-      img.onerror = () => { img.hidden = true; };
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+      // Drawn locally, so it works with no internet; the address and Copy button stay as the fallback.
+      const box = $("qrBox");
+      box.textContent = "";
+      try { box.append(LW.qr.svg(url, { label: "QR code for the phone remote" })); } catch (_) {}
     });
     $("remoteCopy").addEventListener("click", async () => {
       const v = $("remoteUrl").value;

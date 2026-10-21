@@ -32,7 +32,7 @@ function fakeElement(tag) {
   return el;
 }
 
-let lastBody = null;
+let lastBody = null, lastCtx = null;
 function loadKit() {
   const documentStub = {
     documentElement: fakeElement("html"), body: fakeElement("body"),
@@ -47,10 +47,14 @@ function loadKit() {
     requestAnimationFrame: () => 0, addEventListener() {},
   };
   ctx.window = ctx; ctx.globalThis = ctx;
+  lastCtx = ctx;
   vm.createContext(ctx);
   for (const f of ["core.js", "spring.js", "icons.js", "controls.js", "island.js", "sheet.js"]) {
     vm.runInContext(fs.readFileSync(path.join(KIT, f), "utf8"), ctx, { filename: f });
   }
+  // the vendored QR library (a classic-script global) and the kit's QR module
+  vm.runInContext(fs.readFileSync(path.join(KIT, "..", "..", "vendor", "qrcode.js"), "utf8"), ctx, { filename: "vendor/qrcode.js" });
+  vm.runInContext(fs.readFileSync(path.join(KIT, "qr.js"), "utf8"), ctx, { filename: "qr.js" });
   return ctx.LW;
 }
 
@@ -163,4 +167,46 @@ run("clicking the dim area closes a dialog, a sheet, and only the top layer", ()
   assert.strictEqual(sheet.isOpen, true, "the sheet under it stays open");
   scrim._listeners.click.forEach((f) => f({}));
   assert.strictEqual(sheet.isOpen, false);
+});
+
+run("qr: builds a real QR matrix (finder patterns in three corners, stable size, input-dependent)", () => {
+  const url = "http://192.0.2.10:8080/remote";
+  const m = LW.qr.matrix(url);
+  const n = m.length;
+  assert(n >= 25 && n <= 41 && (n - 17) % 4 === 0, `unexpected symbol size ${n}`);
+  assert(m.every((row) => row.length === n), "matrix must be square");
+  const finder = (r0, c0) => {
+    for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
+      const edge = r === 0 || r === 6 || c === 0 || c === 6, core = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+      assert.strictEqual(m[r0 + r][c0 + c], edge || core, `finder pattern broken at ${r0 + r},${c0 + c}`);
+    }
+  };
+  finder(0, 0); finder(0, n - 7); finder(n - 7, 0);
+  assert.strictEqual(JSON.stringify(LW.qr.matrix(url)), JSON.stringify(m), "same text, same code");
+  assert.notStrictEqual(JSON.stringify(LW.qr.matrix(url + "x")), JSON.stringify(m), "different text, different code");
+});
+
+run("qr: svg has a white quiet zone and one path with a square per dark module", () => {
+  const url = "http://192.0.2.10:8080/remote";
+  const svg = LW.qr.svg(url);
+  const m = LW.qr.matrix(url);
+  const dark = m.flat().filter(Boolean).length;
+  assert.strictEqual(svg.attributes.viewBox, `0 0 ${m.length + 8} ${m.length + 8}`);
+  const path = svg.children.find((c) => c.tagName === "PATH");
+  assert(path, "path of dark modules");
+  assert.strictEqual((path.attributes.d.match(/h1v1h-1z/g) || []).length, dark);
+});
+
+run("qr: our matrix equals, module for module, what the vendored library itself draws", () => {
+  const url = "http://192.0.2.10:8080/remote";
+  const ours = LW.qr.matrix(url);
+  const q = lastCtx.qrcode(0, "M"); q.addData(url); q.make();
+  const theirs = q.createSvgTag({ cellSize: 1, margin: 0 });
+  const dark = new Set();
+  for (const m of theirs.matchAll(/M(\d+),(\d+)l/g)) dark.add(`${m[2]},${m[1]}`); // row,col
+  const mine = new Set();
+  ours.forEach((row, r) => row.forEach((on, c) => { if (on) mine.add(`${r},${c}`); }));
+  assert(mine.size > 200, "expected a populated symbol");
+  assert.strictEqual(mine.size, dark.size, "dark module count differs from the library");
+  for (const k of mine) assert(dark.has(k), `module ${k} differs from the library output`);
 });

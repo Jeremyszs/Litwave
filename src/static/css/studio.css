@@ -308,7 +308,9 @@ html[data-theme="light"] .sl-row .no { background: var(--s2); }
 kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 6px; background: var(--s3); color: var(--ink); font: 600 11.5px var(--font); text-align: center; }
 html[data-theme="light"] kbd { background: var(--s2); }
 .remote-b { align-items: center; text-align: center; }
-.qr { width: 224px; height: 224px; border-radius: 22px; background: #fff; display: grid; place-items: center; }
+.qr { width: 224px; height: 224px; border-radius: 22px; background: #fff; display: grid; place-items: center; overflow: hidden; }
+.qr:empty { display: none; }
+.qr svg { width: 100%; height: 100%; display: block; }
 .remote-b .sl-bar { width: 100%; }
 .sheet a { color: var(--accent-ink); }
 
