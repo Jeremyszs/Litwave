@@ -16,10 +16,14 @@
   // Sends at most every 40 ms while dragging, plus the final value on release.
   function throttled(ch) {
     let last = 0, timer = null, pending = null;
-    const flush = () => { timer = null; last = performance.now(); const v = pending; pending = null; CH[ch].send(v).catch(() => {}); };
+    const flush = () => {
+      clearTimeout(timer); timer = null; // an overdue update sent at once must not leave its timer behind
+      if (pending === null) return;      // nothing waiting: never send an empty value
+      last = performance.now(); const v = pending; pending = null; CH[ch].send(v).catch(() => {});
+    };
     return (v, final) => {
       pending = v;
-      if (final) { clearTimeout(timer); flush(); return; }
+      if (final) { flush(); return; }
       const wait = 40 - (performance.now() - last);
       if (wait <= 0) flush(); else if (!timer) timer = setTimeout(flush, wait);
     };

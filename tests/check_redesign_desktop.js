@@ -322,3 +322,26 @@ run("clearing when no song is loaded offers nothing to undo", async () => {
   await LW.song.clear();
   assert.strictEqual(LW.undo.available, false);
 });
+
+run("mixer faders never send null/NaN, even when a throttled update is overdue (stale timer after an immediate send)", () => {
+  const ctx = load([...KIT, "js/desktop/state.js", "js/desktop/mixer.js"]);
+  const LW = ctx.LW;
+  let now = 1000;
+  ctx.performance.now = () => now;
+  const timers = [];
+  ctx.setTimeout = (fn) => { timers.push(fn); return timers.length; };
+  ctx.clearTimeout = (id) => { if (id) timers[id - 1] = null; };
+  const posts = [];
+  LW.api.post = (u, b) => { posts.push(b); return Promise.resolve({}); };
+  const sliders = {};
+  LW.ui.slider = (el, o) => { sliders[o.label] = o; return { set() {}, get() { return 0.5; } }; };
+  LW.emit("ready");
+  const master = sliders["master volume"];
+  now = 1100; master.onInput(0.9); // first update goes out at once
+  now = 1110; master.onInput(0.8); // too soon: waits on a timer
+  now = 1300; master.onInput(0.7); // the wait is long over: goes out at once, the timer is now stale
+  timers.forEach((fn) => fn && fn()); // ...and fires late
+  const sent = posts.map((p) => p.master_volume);
+  assert(sent.every((v) => typeof v === "number" && Number.isFinite(v)), `a fader sent ${JSON.stringify(sent)}`);
+  assert.strictEqual(JSON.stringify(sent), JSON.stringify([0.9, 0.7]));
+});
