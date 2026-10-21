@@ -20,6 +20,7 @@ Regression tests for Montage M & Native Host API boundary extraction:
 """
 
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 import json
 import asyncio

@@ -11,6 +11,8 @@ import struct
 import subprocess
 from typing import Dict, Any, Optional, List
 
+from src import user_data
+
 NATIVE_STATUS_MAGIC = 0x5354574C
 SPECTRUM_MAGIC = 0x54435053
 NATIVE_STATUS_FORMAT = "<IffIIIIfffIIfIf32s96s"
@@ -38,9 +40,9 @@ class MontageHost:
         self.part_mutes = {i: False for i in range(1, 9)}
         self.part_solos = {i: False for i in range(1, 9)}
         self.current_scene = 1
-        self.presets_file = os.path.join(os.path.dirname(__file__), "scene_presets.json")
-        self.names_file = os.path.join(os.path.dirname(__file__), "custom_names.json")
-        self.dsp_settings_file = os.path.join(os.path.dirname(__file__), "master_dsp_settings.json")
+        self.presets_file = user_data.data_path("scene_presets.json")
+        self.names_file = user_data.data_path("custom_names.json")
+        self.dsp_settings_file = user_data.data_path("master_dsp_settings.json")
         self.analyzer_enabled = True
         self.analyzer_active = True
         self.warmth_enabled = True

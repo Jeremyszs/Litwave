@@ -11,6 +11,8 @@ import threading
 from typing import Callable, Optional, List, Dict, Any
 import mido
 
+from src import user_data
+
 NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 def midi_note_to_name(note_number: int) -> str:
@@ -47,7 +49,7 @@ class MidiManager:
         self.velocity_offset: int = 0
         self.velocity_min: int = 1
         self.velocity_max: int = 127
-        self.settings_file = os.path.join(os.path.dirname(__file__), "midi_settings.json")
+        self.settings_file = user_data.data_path("midi_settings.json")
         self._load_settings()
 
         # Background worker for auto-detect and reading

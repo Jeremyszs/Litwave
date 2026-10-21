@@ -1,5 +1,6 @@
 """Regression checks for native bridge parsing, Panic, and persisted DSP controls."""
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import struct
 import sys
 import tempfile

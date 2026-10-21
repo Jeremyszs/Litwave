@@ -1,4 +1,5 @@
 """Adversarial stress and edge case verification for realtime safety additions."""
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import numpy as np
 from starlette.testclient import TestClient
 from src.server import app, state

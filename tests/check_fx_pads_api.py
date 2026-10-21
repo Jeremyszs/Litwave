@@ -9,6 +9,7 @@ Regression tests for FX-pad API boundary extraction (Slice 3):
 """
 
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 import json
 import asyncio

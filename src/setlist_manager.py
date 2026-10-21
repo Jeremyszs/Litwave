@@ -2,6 +2,8 @@ import os
 import json
 from typing import List, Dict, Any, Optional
 
+from src import user_data
+
 class SetlistManager:
     """
     Manages Setlists and Patch Snapshots for live performance & practice.
@@ -13,7 +15,7 @@ class SetlistManager:
     """
     def __init__(self, data_file: Optional[str] = None):
         if not data_file:
-            data_file = os.path.join(os.path.dirname(__file__), "saved_setlists.json")
+            data_file = user_data.data_path("saved_setlists.json")
         self.data_file = data_file
         self.setlists: List[Dict[str, Any]] = self._load()
 

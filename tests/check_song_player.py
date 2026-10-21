@@ -1,6 +1,7 @@
 """Regression checks for chart identity, manual edits, and persistence."""
 import json
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 import tempfile
 from pathlib import Path

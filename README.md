@@ -49,6 +49,7 @@ The application couples an asynchronous Python backend (Starlette / asyncio) wit
   - `src/api_practice.py`: Ear training exercises, ambient drone pad state & controls.
   - `src/api_setlist.py`: Setlist CRUD, reordering, patch snapshots, patch application.
   - `src/api_analysis.py`: MIR song analysis runner with executor isolation and synced lyrics fetching.
+- **`src/user_data.py`**: Where the user's own data lives (scenes, custom names, setlists, playlist, FX pad, MIDI and DSP settings): a git-ignored `data/` folder in the project, or `LITWAVE_DATA_DIR`. On first run each file is copied from its legacy twin in `src/` (which stays untouched as the default) and is never overwritten afterwards. Back up or move `data/` to keep your settings.
 - **`src/static/`**: Clean browser client assets (desktop studio `index.html`, phone stage remote `remote.html`, service worker `sw.js`). The previous UI is kept unchanged at `/static/classic/index.html` and `/static/classic/remote.html` as a fallback.
 
 ---
@@ -114,6 +115,7 @@ node tests/check_e2e.mjs panels     # only tests whose name contains "panels"
 # Architecture, imports, and lifespan safety (Python stdlib AST)
 python tests/check_architecture_slice1.py
 python tests/check_runtime_extraction.py
+python tests/check_user_data.py
 
 # Modular API contracts & dummy-state handlers
 python tests/check_fx_pads_api.py

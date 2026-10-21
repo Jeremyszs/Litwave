@@ -2,6 +2,8 @@ import os
 import json
 from typing import List, Dict, Any, Optional
 
+from src import user_data
+
 class PlaylistManager:
     """
     Manages the DAW Practice Playlist library.
@@ -12,7 +14,7 @@ class PlaylistManager:
     def __init__(self, data_file: Optional[str] = None, upload_dir: Optional[str] = None):
         base_dir = os.path.dirname(__file__)
         if not data_file:
-            data_file = os.path.join(base_dir, "saved_playlist.json")
+            data_file = user_data.data_path("saved_playlist.json")
         if not upload_dir:
             upload_dir = os.path.join(base_dir, "static", "uploads")
         self.data_file = data_file

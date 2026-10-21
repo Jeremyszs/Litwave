@@ -9,6 +9,7 @@ Regression tests for architecture foundation slice 1:
 - Canvas EQ CSS property resolution (structural check)
 """
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 import re
 import importlib

@@ -1,6 +1,7 @@
 """Test scene renaming, persistence, and bookmark scene dispatch."""
 import json
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

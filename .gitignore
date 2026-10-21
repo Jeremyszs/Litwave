@@ -63,3 +63,6 @@ cpp_host/soundfonts/
 
 # Brainstorming mockups (local only)
 .superpowers/
+
+# User data (scenes, names, setlists, FX pads, MIDI/DSP settings): see src/user_data.py
+data/

@@ -21,7 +21,9 @@ import numpy as np
 import miniaudio
 from typing import Dict, List, Optional, Any
 
-SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "fx_pads_settings.json")
+from src import user_data
+
+SETTINGS_FILE = user_data.data_path("fx_pads_settings.json")
 MANIFEST_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fx-pads", "factory_manifest.json")
 
 class FxVoice:

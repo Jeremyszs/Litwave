@@ -4,6 +4,7 @@ Ensures documentation matches actual codebase structure and loading order contra
 """
 
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 import ast
 import re

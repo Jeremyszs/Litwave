@@ -1,5 +1,6 @@
 """Test dynamic hotplug device discovery and reconnection for MIDI and Audio."""
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 import time
 

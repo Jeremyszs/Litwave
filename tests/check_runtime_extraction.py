@@ -7,6 +7,7 @@ Regression tests for runtime lifecycle extraction (Slice 2):
 - Shutdown is idempotent and safe when unbooted or booted
 """
 import os
+import isolate_data  # noqa: F401  (tests never touch the real data folder)
 import sys
 import importlib
 import ast
