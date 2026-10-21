@@ -209,3 +209,21 @@ run("Escape closes the top sheet even while a text field has focus, and never re
   LW.keys.handle({ key: " ", code: "Space", target: input, preventDefault() {} });
   assert.strictEqual(seeks, 0, "Space typed into a field must not toggle playback");
 });
+
+run("drone sliders send to the server only on release; dragging just previews", () => {
+  const ctx = load([...KIT, "js/desktop/state.js", "js/desktop/drone.js"]);
+  const LW = ctx.LW;
+  const posts = [];
+  LW.api.post = (u, b) => { posts.push(b); return Promise.resolve({}); };
+  const sliders = [];
+  LW.ui.slider = (el, o) => { sliders.push(o); return { set() {}, get dragging() { return false; } }; };
+  LW.registerSheet = () => {}; LW.sheet = () => ({});
+  LW.emit("ready");
+  assert.strictEqual(sliders.length, 2, "volume and cutoff sliders");
+  sliders.forEach((o) => { o.onInput(40); o.onInput(80); });
+  assert.strictEqual(posts.length, 0, "dragging must not post");
+  assert.strictEqual(LW.state.drone.volume, 80, "dragging still updates the live value");
+  assert.strictEqual(LW.state.drone.cutoff, 80);
+  sliders[0].onChange(80); sliders[1].onChange(50);
+  assert.strictEqual(JSON.stringify(posts), JSON.stringify([{ action: "set_volume", volume: 80 }, { action: "set_cutoff", cutoff: 50 }]));
+});

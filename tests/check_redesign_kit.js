@@ -32,12 +32,14 @@ function fakeElement(tag) {
   return el;
 }
 
+let lastBody = null;
 function loadKit() {
   const documentStub = {
     documentElement: fakeElement("html"), body: fakeElement("body"),
     createElement: fakeElement, createElementNS: (_ns, t) => fakeElement(t),
     addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; }, getElementById() { return null; },
   };
+  lastBody = documentStub.body;
   const ctx = {
     console, setTimeout, clearTimeout, performance: { now: () => 0 },
     document: documentStub, navigator: {}, localStorage: { getItem() { return null; }, setItem() {} },
@@ -147,4 +149,18 @@ run("tabs: dragging the selected droplet past the threshold captures the pointer
   fire("click", { target: tabs[1] });
   assert.strictEqual(picked.length, afterDrag, "the click that ends a drag must not select again");
   assert.strictEqual(cap.on, false, "capture released on pointerup");
+});
+
+run("clicking the dim area closes a dialog, a sheet, and only the top layer", () => {
+  const LWs = loadKit();
+  const sheet = LWs.sheet(fakeElement("section"));
+  const dialog = LWs.dialog(fakeElement("section"));
+  sheet.open(); dialog.open();
+  const scrim = lastBody.children.find((c) => c._listeners && c._listeners.click);
+  assert(scrim, "scrim should exist once something is open");
+  scrim._listeners.click.forEach((f) => f({}));
+  assert.strictEqual(dialog.isOpen, false, "scrim click must close the top dialog");
+  assert.strictEqual(sheet.isOpen, true, "the sheet under it stays open");
+  scrim._listeners.click.forEach((f) => f({}));
+  assert.strictEqual(sheet.isOpen, false);
 });

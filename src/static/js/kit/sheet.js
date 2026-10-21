@@ -6,7 +6,8 @@
   const ensureScrim = () => {
     if (scrim || typeof document === "undefined" || !document.body) return scrim;
     scrim = LW.h("div", { class: "scrim" });
-    scrim.addEventListener("click", () => { const top = stack[stack.length - 1]; if (top && !top.modal) top.close(); });
+    // The dim area dismisses the top layer, dialogs included (Cancel is always safe).
+    scrim.addEventListener("click", () => { const top = stack[stack.length - 1]; if (top) top.close(); });
     document.body.appendChild(scrim);
     return scrim;
   };

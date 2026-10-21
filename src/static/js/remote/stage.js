@@ -42,11 +42,15 @@ let g_lastRemoteDroneInteraction = -Infinity; // optimistic-UI window: telemetry
       if (S.drone.active) LW.alert({ icon: "wave", title: `Drone · ${LABEL[k] || k}` }, 1100);
       return apply(post({ action: "set_root", root: k }));
     },
-    setVolume(v) {
+    // Dragging only previews (live value + readout); the server hears about it once, on release.
+    previewVolume(v) {
       g_lastRemoteDroneInteraction = performance.now();
       S.drone.volume = Math.round(v);
       LW.setText($("droneVolV"), pct(v));
-      post({ action: "set_volume", volume: Math.round(v) }).catch(() => {});
+    },
+    setVolume(v) {
+      R.drone.previewVolume(v);
+      return post({ action: "set_volume", volume: Math.round(v) }).catch(() => {});
     },
     setVoice(val) {
       const [bank, preset] = String(val).split(":").map((x) => parseInt(x, 10));
@@ -76,7 +80,7 @@ let g_lastRemoteDroneInteraction = -Infinity; // optimistic-UI window: telemetry
       roots.append(b);
     });
     sw = LW.ui.toggle($("droneSwitch"), false, (on) => R.drone.toggle(on));
-    vol = LW.ui.slider($("droneVol"), { min: 0, max: 127, step: 1, value: 95, label: "Drone volume", format: pct, onInput: (v) => R.drone.setVolume(v) });
+    vol = LW.ui.slider($("droneVol"), { min: 0, max: 127, step: 1, value: 95, label: "Drone volume", format: pct, onInput: (v) => R.drone.previewVolume(v), onChange: (v) => R.drone.setVolume(v) });
     $("droneVol").classList.add("thin");
     $("droneVoice").addEventListener("change", (e) => R.drone.setVoice(e.target.value));
     $("keySelect").addEventListener("change", (e) => { S.key = e.target.value; lastChord = null; renderChord(); });
@@ -87,7 +91,7 @@ let g_lastRemoteDroneInteraction = -Infinity; // optimistic-UI window: telemetry
   LW.on("r-key", (k) => { const sel = $("keySelect"); if (sel) sel.value = k; });
 
   LW.on("r-telemetry", (msg) => {
-    if (msg.drone_pad && performance.now() - g_lastRemoteDroneInteraction > 600) {
+    if (msg.drone_pad && performance.now() - g_lastRemoteDroneInteraction > 600 && !(vol && vol.dragging)) {
       const prev = S.drone, next = msg.drone_pad;
       const changed = prev.root !== next.root || prev.active !== next.active || prev.volume !== next.volume;
       S.drone = Object.assign({}, prev, next);

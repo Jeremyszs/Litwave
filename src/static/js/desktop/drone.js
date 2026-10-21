@@ -54,8 +54,11 @@
       const [bank, preset] = String(v).split(":").map((x) => parseInt(x, 10));
       post({ action: "set_voice", bank, preset }).catch(() => {});
     },
-    setVolume(v) { lastUser = performance.now(); S().drone.volume = Math.round(v); LW.setText($("droneVolV"), pct(v)); post({ action: "set_volume", volume: Math.round(v) }).catch(() => {}); },
-    setCutoff(v) { lastUser = performance.now(); S().drone.cutoff = Math.round(v); LW.setText($("droneCutV"), pct(v)); post({ action: "set_cutoff", cutoff: Math.round(v) }).catch(() => {}); },
+    // Dragging only previews (live value + readout); the server hears about it once, on release.
+    previewVolume(v) { lastUser = performance.now(); S().drone.volume = Math.round(v); LW.setText($("droneVolV"), pct(v)); },
+    previewCutoff(v) { lastUser = performance.now(); S().drone.cutoff = Math.round(v); LW.setText($("droneCutV"), pct(v)); },
+    setVolume(v) { LW.drone.previewVolume(v); return post({ action: "set_volume", volume: Math.round(v) }).catch(() => {}); },
+    setCutoff(v) { LW.drone.previewCutoff(v); return post({ action: "set_cutoff", cutoff: Math.round(v) }).catch(() => {}); },
     onChange(fn) { subs.add(fn); return () => subs.delete(fn); },
   };
 
@@ -71,8 +74,8 @@
     LW.ui.press(keys);
     $("droneToggle").addEventListener("click", () => LW.drone.toggle());
     $("droneVoice").addEventListener("change", (e) => LW.drone.setVoice(e.target.value));
-    vol = LW.ui.slider($("droneVol"), { min: 0, max: 127, step: 1, value: S().drone.volume, label: "Drone volume", format: pct, onInput: (v) => LW.drone.setVolume(v) });
-    cut = LW.ui.slider($("droneCut"), { min: 0, max: 127, step: 1, value: S().drone.cutoff, label: "Drone warmth", format: pct, onInput: (v) => LW.drone.setCutoff(v) });
+    vol = LW.ui.slider($("droneVol"), { min: 0, max: 127, step: 1, value: S().drone.volume, label: "Drone volume", format: pct, onInput: (v) => LW.drone.previewVolume(v), onChange: (v) => LW.drone.setVolume(v) });
+    cut = LW.ui.slider($("droneCut"), { min: 0, max: 127, step: 1, value: S().drone.cutoff, label: "Drone warmth", format: pct, onInput: (v) => LW.drone.previewCutoff(v), onChange: (v) => LW.drone.setCutoff(v) });
     $("droneVol").classList.add("thin"); $("droneCut").classList.add("thin");
     sbSwitch = LW.ui.toggle($("sbDroneSwitch"), false, (on) => LW.drone.toggle(on));
     $("sbDroneSwitch").addEventListener("click", (e) => e.stopPropagation());
@@ -83,7 +86,7 @@
 
   LW.on("telemetry", (d) => {
     if (!d.drone_pad) return;
-    if (performance.now() - lastUser <= 600) return;
+    if (performance.now() - lastUser <= 600 || (vol && vol.dragging) || (cut && cut.dragging)) return;
     const prev = S().drone;
     const next = d.drone_pad;
     const changed = prev.root !== next.root || prev.active !== next.active || prev.volume !== next.volume || prev.cutoff !== next.cutoff;

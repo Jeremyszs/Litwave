@@ -108,3 +108,19 @@ run("phone seek: tapping the same spot again in a new gesture seeks again", () =
   ctx.LW.R.song.scrubBegin(); ctx.LW.R.song.scrub(0.5); ctx.LW.R.song.scrub(0.5, true);
   assert.deepStrictEqual(sent, [100, 100]);
 });
+
+run("phone drone volume posts only on release; dragging just previews", () => {
+  const ctx = load(R.slice(0, 8));
+  const LW = ctx.LW;
+  const posts = [];
+  LW.api.post = (u, b) => { posts.push(b); return Promise.resolve({}); };
+  let slider = null;
+  LW.ui.slider = (el, o) => { slider = o; return { set() {}, get dragging() { return false; } }; };
+  LW.emit("r-ready");
+  assert(slider, "drone volume slider should be created");
+  slider.onInput(30); slider.onInput(90);
+  assert.strictEqual(posts.length, 0, "dragging must not post");
+  assert.strictEqual(LW.R.state.drone.volume, 90);
+  slider.onChange(90);
+  assert.strictEqual(JSON.stringify(posts), JSON.stringify([{ action: "set_volume", volume: 90 }]));
+});
