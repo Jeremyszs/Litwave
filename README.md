@@ -106,6 +106,11 @@ node tests/check_redesign_desktop.js
 node tests/check_redesign_remote.js
 node tests/check_redesign_parity.js all
 
+# End-to-end UI checks: real Chrome, real mouse/touch/keyboard input, fake Litwave server (no hardware, no data files touched).
+# Needs Chrome or Edge (set CHROME_PATH if it is not found); skips with a notice otherwise.
+node tests/check_e2e.mjs            # everything
+node tests/check_e2e.mjs panels     # only tests whose name contains "panels"
+
 # Architecture, imports, and lifespan safety (Python stdlib AST)
 python tests/check_architecture_slice1.py
 python tests/check_runtime_extraction.py

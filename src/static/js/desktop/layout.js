@@ -102,46 +102,79 @@
       place();
     },
 
-    /* Expand a panel to fill the main area with a spring; Esc or the button returns it. */
+    /* Expand a panel to fill the main area with a spring; Esc or the button returns it.
+       While expanded the panel lives in <body> (so the dimmed layout can't fade it) and a hidden placeholder
+       keeps its slot. On the way back the panel is only put home once its springs have come to rest, and the
+       springs are stopped first so they can never write a stale position onto the settled panel. */
     expanders() {
       const main = $("main");
-      let cur = null, springs = null, home = null;
+      let cur = null;      // panel currently expanded
+      let closing = null;  // panel animating home: { panel, home, springs, timer }
       const rect = (el) => el.getBoundingClientRect();
       const put = (el, b) => Object.assign(el.style, { left: b.x + "px", top: b.y + "px", width: b.w + "px", height: b.h + "px" });
+      const KEYS = ["x", "y", "w", "h"];
+
+      const finish = (c) => {
+        clearInterval(c.timer);
+        c.springs.forEach((s) => s.set(s.target)); // lands on the placeholder's box and stops the spring
+        c.panel.classList.remove("expanded");
+        c.panel.style.left = c.panel.style.top = c.panel.style.width = c.panel.style.height = "";
+        if (c.home.parentNode) { c.home.parentNode.insertBefore(c.panel, c.home); c.home.remove(); }
+        if (closing === c) closing = null;
+        LW.emit("panel-expand", c.panel.id, false);
+      };
+      const atRest = (c) => c.springs.every((s) => Math.abs(s.x - s.target) < 0.6 && Math.abs(s.v) < 8);
+
+      const setButton = (panel, on) => {
+        const b = panel.querySelector("[data-expand]");
+        if (b) { b.innerHTML = LW.icon(on ? "collapse" : "expand"); b.setAttribute("aria-label", on ? "Restore panel" : "Expand panel"); }
+      };
+
       const expand = (panel) => {
         if (cur) return collapse();
-        const r = rect(panel), m = rect(main);
-        home = document.createElement("div");
-        home.className = panel.className.replace("panel", "panel-ph");
-        home.style.cssText = `width:${r.width}px;height:${r.height}px;visibility:hidden`;
-        panel.parentNode.insertBefore(home, panel);
-        const box = { x: r.left, y: r.top, w: r.width, h: r.height };
-        document.body.appendChild(panel); // lift out of the dimmed layout while expanded
-        panel.classList.add("expanded");
-        put(panel, box);
+        const m = rect(main);
+        let c;
+        if (closing && closing.panel === panel) {
+          // Re-expanded while still gliding home: carry on from where it is, with the same placeholder.
+          clearInterval(closing.timer);
+          c = closing; closing = null;
+        } else {
+          if (closing) finish(closing); // another panel is still settling: put it home first
+          const r = rect(panel);
+          const home = document.createElement("div");
+          home.className = panel.className.replace("panel", "panel-ph");
+          home.style.cssText = `width:${r.width}px;height:${r.height}px;visibility:hidden`;
+          panel.parentNode.insertBefore(home, panel);
+          const box = { x: r.left, y: r.top, w: r.width, h: r.height };
+          document.body.appendChild(panel); // lift out of the dimmed layout while expanded
+          panel.classList.add("expanded");
+          put(panel, box);
+          const springs = KEYS.map((k) => LW.spring(box[k], { response: 0.5, damping: 0.86, eps: 0.3 }, (v) => {
+            if (!panel.classList.contains("expanded")) return;
+            box[k] = v; put(panel, box);
+          }));
+          c = { panel, home, springs, timer: null };
+        }
         main.classList.add("has-expanded");
-        springs = ["x", "y", "w", "h"].map((k) => LW.spring(box[k], { response: 0.5, damping: 0.86, eps: 0.3 }, (v) => { box[k] = v; put(panel, box); }));
         const tgt = { x: m.left, y: m.top, w: m.width, h: m.height };
-        ["x", "y", "w", "h"].forEach((k, i) => springs[i].to(tgt[k]));
-        const b = panel.querySelector("[data-expand]"); if (b) { b.innerHTML = LW.icon("collapse"); b.setAttribute("aria-label", "Restore panel"); }
-        cur = panel;
+        KEYS.forEach((k, i) => c.springs[i].to(tgt[k], { response: 0.5, damping: 0.86 }));
+        setButton(panel, true);
+        cur = c;
         LW.emit("panel-expand", panel.id, true);
       };
+
       const collapse = () => {
         if (!cur) return false;
-        const panel = cur, r = rect(home);
+        const c = cur;
+        const r = rect(c.home);
         const tgt = { x: r.left, y: r.top, w: r.width, h: r.height };
-        ["x", "y", "w", "h"].forEach((k, i) => springs[i].to(tgt[k], { response: 0.45, damping: 0.95 }));
+        KEYS.forEach((k, i) => c.springs[i].to(tgt[k], { response: 0.45, damping: 0.95 }));
         main.classList.remove("has-expanded");
-        const b = panel.querySelector("[data-expand]"); if (b) { b.innerHTML = LW.icon("expand"); b.setAttribute("aria-label", "Expand panel"); }
+        setButton(c.panel, false);
         cur = null;
-        setTimeout(() => {
-          if (cur === panel) return;
-          panel.classList.remove("expanded");
-          panel.style.left = panel.style.top = panel.style.width = panel.style.height = "";
-          if (home) { home.parentNode.insertBefore(panel, home); home.remove(); home = null; }
-          LW.emit("panel-expand", panel.id, false);
-        }, 480);
+        closing = c;
+        const t0 = performance.now();
+        c.timer = setInterval(() => { if (atRest(c) || performance.now() - t0 > 1800) finish(c); }, 40);
         return true;
       };
       LW.layout.collapsePanel = collapse;
