@@ -155,7 +155,7 @@ python src/main.py --browser
 This will:
 1. Boot `AppState` and bind audio/MIDI engines.
 2. Bind Starlette on `http://0.0.0.0:8080`.
-3. Open the studio in its own desktop window (pywebview on Edge WebView2, icon `assets/app.ico`). Closing the window stops the server and shuts audio and MIDI down. With `--browser`, it opens the default browser at `http://127.0.0.1:8080` instead.
+3. Open the studio in its own desktop window (pywebview on Edge WebView2, icon `assets/icon/app.ico`, drawn by `tools/make_icon.py`). Closing the window stops the server and shuts audio and MIDI down. With `--browser`, it opens the default browser at `http://127.0.0.1:8080` instead.
 4. Provide mobile companion at `http://<LAN_IP>:8080/remote`.
 
 If port 8080 is already in use, it says Litwave is already running and exits, since a second copy would collide on the audio/VST UDP sockets. Started without a console (`pythonw src/main.py`, as a desktop shortcut does), the server log goes to `data/litwave.log`.

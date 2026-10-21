@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 PORT = 8080
 URL = f"http://127.0.0.1:{PORT}"
 APP_ID = "Litwave.Desktop"
-ICON = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets", "app.ico"))
+ICON = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets", "icon", "app.ico"))
 
 SPLASH = """<!doctype html><html><body style="margin:0;height:100vh;display:grid;place-items:center;
 background:#000;color:#8E8E93;font:15px -apple-system,'Segoe UI',sans-serif">Starting Litwave…</body></html>"""

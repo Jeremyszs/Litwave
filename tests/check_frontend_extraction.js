@@ -65,7 +65,7 @@ function testRedesignModuleSyntax() {
 function testRemoteOfflineShell() {
   const html = fs.readFileSync(path.join(STATIC_DIR, "remote.html"), "utf8");
   const sw = fs.readFileSync(path.join(STATIC_DIR, "sw.js"), "utf8");
-  assert(sw.includes('"litwave-remote-v3"'), "sw.js cache name must be litwave-remote-v3 so old shells are dropped");
+  assert(sw.includes('"litwave-remote-v4"'), "sw.js cache name must be litwave-remote-v4 so old shells are dropped");
   const refs = [...html.matchAll(/(?:src|href)="(\/static\/[^"]+\.(?:js|css|woff2))"/g)].map((m) => m[1]);
   assert(refs.length >= 20, `expected remote.html to load the kit and remote modules, found ${refs.length}`);
   refs.forEach((r) => {

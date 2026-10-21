@@ -1,5 +1,5 @@
 // Litwave Stage Remote - Service Worker (Offline PWA)
-const CACHE_NAME = "litwave-remote-v3";
+const CACHE_NAME = "litwave-remote-v4";
 // The redesigned phone shell: page, styles, bundled font, kit and remote modules.
 const STATIC_ASSETS = [
   "/remote",
@@ -28,8 +28,7 @@ const STATIC_ASSETS = [
   "/manifest.json",
   "/static/manifest.json",
   "/static/icon-192.png",
-  "/static/icon-512.png",
-  "/static/icon.svg"
+  "/static/icon-512.png"
 ];
 
 // Install: Cache Shell Assets
